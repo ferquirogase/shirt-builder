@@ -1,9 +1,9 @@
-import { Viewer3D } from "@/components/builder/Viewer3D";
+import { BuilderPage } from "@/components/builder/BuilderPage";
 
 export default function Home() {
   return (
     <main>
-      <Viewer3D />
+      <BuilderPage />
     </main>
   );
 }
