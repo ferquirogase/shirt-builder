@@ -1,13 +1,17 @@
 "use client";
-import { Suspense } from "react";
+import { Suspense, forwardRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { JerseyModel } from "./JerseyModel";
 
-export function Viewer3D() {
+export const Viewer3D = forwardRef<HTMLCanvasElement>(function Viewer3D(_props, ref) {
   return (
     <div style={{ width: "100%", height: "600px" }}>
-      <Canvas camera={{ position: [0, 1.5, 3], fov: 45 }}>
+      <Canvas
+        camera={{ position: [0, 1.5, 3], fov: 45 }}
+        gl={{ preserveDrawingBuffer: true }}
+        ref={ref}
+      >
         <ambientLight intensity={0.6} />
         <directionalLight position={[2, 4, 3]} intensity={1} />
         <Suspense fallback={null}>
@@ -17,4 +21,4 @@ export function Viewer3D() {
       </Canvas>
     </div>
   );
-}
+});
