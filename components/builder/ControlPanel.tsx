@@ -63,6 +63,27 @@ export function ControlPanel() {
       </label>
 
       <label className="flex flex-col gap-1">
+        Logo (PNG/JPG, máx. 2MB)
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/svg+xml"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+              alert("El archivo supera los 2MB.");
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+              dispatch({ type: "SET_LOGO", dataUrl: reader.result as string });
+            };
+            reader.readAsDataURL(file);
+          }}
+        />
+      </label>
+
+      <label className="flex flex-col gap-1">
         Nombre
         <input
           type="text"
