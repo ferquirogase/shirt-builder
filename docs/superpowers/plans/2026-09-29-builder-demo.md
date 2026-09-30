@@ -1331,10 +1331,7 @@ export const Viewer3D = forwardRef<HTMLCanvasElement>(function Viewer3D(_props, 
       <Canvas
         camera={{ position: [0, 1.5, 3], fov: 45 }}
         gl={{ preserveDrawingBuffer: true }}
-        ref={(state) => {
-          if (typeof ref === "function") ref(state?.domElement ?? null);
-          else if (ref) ref.current = state?.domElement ?? null;
-        }}
+        ref={ref}
       >
         <ambientLight intensity={0.6} />
         <directionalLight position={[2, 4, 3]} intensity={1} />
