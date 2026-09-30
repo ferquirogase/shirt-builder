@@ -4,13 +4,16 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
     img.src = src;
   });
 }
 
 export async function loadPatternImage(svgPath: string, colors: ColorMap): Promise<HTMLImageElement> {
   const response = await fetch(svgPath);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch pattern: ${svgPath} (${response.status})`);
+  }
   const svgMarkup = await response.text();
   const recolored = recolorSvg(svgMarkup, colors);
   const blob = new Blob([recolored], { type: "image/svg+xml" });
