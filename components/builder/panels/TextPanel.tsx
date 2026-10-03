@@ -3,7 +3,7 @@ import { useDesign } from "@/lib/builder/design-context";
 import { PanelShell } from "./PanelShell";
 
 const INPUT =
-  "rounded-xl border border-line bg-white/80 px-3 py-2 text-base outline-none focus-visible:border-accent";
+  "rounded-xl border border-line bg-white/80 px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-foreground/60";
 
 export function TextPanel() {
   const { state, dispatch } = useDesign();

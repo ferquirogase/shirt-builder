@@ -6,8 +6,11 @@ import { clearPatternMarkupCache } from "@/lib/builder/pattern-thumbnail";
 vi.mock("@/components/builder/Viewer3D", async () => {
   const React = await import("react");
   return {
-    Viewer3D: React.forwardRef<HTMLCanvasElement, { view: string }>(function Viewer3DStub({ view }, ref) {
-      return <canvas ref={ref} data-testid="viewer" data-view={view} />;
+    Viewer3D: React.forwardRef<HTMLCanvasElement, { view: string; resetPose: boolean }>(function Viewer3DStub(
+      { view, resetPose },
+      ref
+    ) {
+      return <canvas ref={ref} data-testid="viewer" data-view={view} data-reset={String(resetPose)} />;
     }),
   };
 });
@@ -42,6 +45,17 @@ describe("BuilderPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Restablecer vista" }));
     expect(screen.getByTestId("viewer")).toHaveAttribute("data-view", "front");
+  });
+
+  it("restores zoom and tilt only for the reset button, not for Frente/Espalda", () => {
+    render(<BuilderPage />);
+    expect(screen.getByTestId("viewer")).toHaveAttribute("data-reset", "false");
+
+    fireEvent.click(screen.getByRole("button", { name: "Restablecer vista" }));
+    expect(screen.getByTestId("viewer")).toHaveAttribute("data-reset", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Espalda" }));
+    expect(screen.getByTestId("viewer")).toHaveAttribute("data-reset", "false");
   });
 
   it("does not offer a saved indicator or the old form controls", () => {

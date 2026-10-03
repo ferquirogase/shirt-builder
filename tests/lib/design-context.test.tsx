@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { renderWithDesign } from "../helpers/render-with-design";
 import { useDesign } from "@/lib/builder/design-context";
@@ -19,6 +19,35 @@ describe("DesignProvider", () => {
 
     act(() => api.current!.dispatch({ type: "REDO" }));
     expect(api.current!.state.bodyPatternId).toBe("plain-body");
+  });
+
+  describe("grouping uses real timestamps from the provider", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(1_000_000);
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it("collapses quick edits of one field into a single undo step", () => {
+      const { api } = renderWithDesign(<div />);
+      act(() => api.current!.dispatch({ type: "SET_PLAYER_NAME", value: "P" }));
+      vi.setSystemTime(1_000_100);
+      act(() => api.current!.dispatch({ type: "SET_PLAYER_NAME", value: "PE" }));
+
+      act(() => api.current!.dispatch({ type: "UNDO" }));
+      expect(api.current!.state.playerName).toBe("");
+      expect(api.current!.canUndo).toBe(false);
+    });
+
+    it("keeps edits made after a pause as separate undo steps", () => {
+      const { api } = renderWithDesign(<div />);
+      act(() => api.current!.dispatch({ type: "SET_PLAYER_NAME", value: "P" }));
+      vi.setSystemTime(1_005_000);
+      act(() => api.current!.dispatch({ type: "SET_PLAYER_NAME", value: "PE" }));
+
+      act(() => api.current!.dispatch({ type: "UNDO" }));
+      expect(api.current!.state.playerName).toBe("P");
+    });
   });
 
   it("throws when used outside a provider", () => {

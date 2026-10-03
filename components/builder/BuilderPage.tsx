@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { DesignProvider } from "@/lib/builder/design-context";
 import { exportStagePng } from "@/lib/builder/export-image";
-import { stageBackgroundCss } from "@/lib/builder/stage-style";
+import { stageBaseCss, stageGlowCss } from "@/lib/builder/stage-style";
 import type { ViewSide } from "@/lib/builder/camera-math";
 import { Header } from "./Header";
 import { SectionNav, type SectionId } from "./SectionNav";
@@ -36,10 +36,12 @@ export function BuilderPage() {
   const [section, setSection] = useState<SectionId>("diseno");
   const [view, setView] = useState<ViewSide>("front");
   const [viewToken, setViewToken] = useState(0);
+  const [resetPose, setResetPose] = useState(false);
   const [interacted, setInteracted] = useState(false);
 
-  function requestView(side: ViewSide) {
+  function requestView(side: ViewSide, reset = false) {
     setView(side);
+    setResetPose(reset);
     setViewToken((token) => token + 1);
   }
 
@@ -59,18 +61,19 @@ export function BuilderPage() {
       <div className="min-h-dvh md:p-6">
         <main
           className="mx-auto flex h-dvh max-w-[1680px] flex-col overflow-hidden border-line md:h-[calc(100dvh-3rem)] md:rounded-[28px] md:border md:shadow-2xl"
-          style={{ background: stageBackgroundCss() }}
+          style={{ background: stageBaseCss() }}
         >
           <Header />
           <div className="flex min-h-0 flex-1 flex-col md:flex-row">
             {/* Stage: first on mobile, last on desktop. */}
-            <div className="relative order-1 min-h-[16rem] flex-1 md:order-3">
+            <div className="relative order-1 min-h-[16rem] flex-1 md:order-3" style={{ background: stageGlowCss() }}>
               {/* On mobile the canvas sits between the toolbar and the Frente/Espalda controls so neither covers the jersey. */}
               <div className="absolute inset-x-0 bottom-24 top-14 md:bottom-0 md:top-0">
                 <Viewer3D
                   ref={canvasRef}
                   view={view}
                   viewToken={viewToken}
+                  resetPose={resetPose}
                   onInteract={() => setInteracted(true)}
                 />
               </div>
@@ -78,7 +81,7 @@ export function BuilderPage() {
               <ViewerControls
                 view={view}
                 onViewChange={requestView}
-                onReset={() => requestView("front")}
+                onReset={() => requestView("front", true)}
                 showHint={!interacted}
               />
             </div>

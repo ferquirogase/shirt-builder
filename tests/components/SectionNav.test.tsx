@@ -12,6 +12,16 @@ describe("SectionNav", () => {
     expect(screen.getByRole("button", { name: "Diseño" })).not.toHaveAttribute("aria-current");
   });
 
+  it("marks the active section with more than a text color change (also on mobile)", () => {
+    render(<SectionNav active="colores" onChange={() => {}} />);
+    const active = screen.getByRole("button", { name: "Colores" });
+    // A filled background applies at every breakpoint, and the low-contrast
+    // accent color is not used for text.
+    expect(active.className).toContain("bg-accent-soft");
+    expect(active.className).not.toContain("md:bg-accent-soft");
+    expect(active.className).not.toContain("text-accent-strong");
+  });
+
   it("reports the clicked section", () => {
     const onChange = vi.fn();
     render(<SectionNav active="diseno" onChange={onChange} />);

@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
+  DEFAULT_CAMERA_HEIGHT,
+  DEFAULT_CAMERA_RADIUS,
+  stepToward,
   VIEW_AZIMUTH,
   azimuthOf,
   normalizeAngle,
@@ -43,6 +46,19 @@ describe("camera math", () => {
     // Camera dragged to azimuth -3.0, which is already almost at the back (-PI == PI).
     const next = stepAzimuth(-3.0, VIEW_AZIMUTH.back, 0.5);
     expect(next).toBeLessThan(-3.0); // moves further negative toward -PI, not the long way through 0
+  });
+
+  it("eases a scalar toward its target and snaps when close", () => {
+    expect(stepToward(1, 3, 0.5)).toBeCloseTo(2);
+    expect(stepToward(3.001, 3, 0.5, 0.002)).toBe(3);
+    let v = 6;
+    for (let i = 0; i < 200; i++) v = stepToward(v, DEFAULT_CAMERA_RADIUS, 0.12);
+    expect(v).toBe(DEFAULT_CAMERA_RADIUS);
+  });
+
+  it("exposes the default camera pose used by the viewer", () => {
+    expect(DEFAULT_CAMERA_HEIGHT).toBe(1.0);
+    expect(DEFAULT_CAMERA_RADIUS).toBe(2.6);
   });
 
   it("round-trips an offset through azimuthOf", () => {

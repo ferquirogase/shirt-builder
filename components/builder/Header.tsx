@@ -36,7 +36,7 @@ export function Header() {
           onKeyDown={(e) => {
             if (e.key === "Enter") e.currentTarget.blur();
           }}
-          className="min-w-0 bg-transparent text-base font-semibold outline-none focus-visible:underline md:w-56"
+          className="min-w-0 bg-transparent text-base font-semibold rounded outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 md:w-56"
         />
         <PencilIcon className="h-4 w-4 shrink-0 text-muted" />
       </label>

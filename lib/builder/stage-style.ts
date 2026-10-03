@@ -8,7 +8,14 @@ export const STAGE_STOPS: ReadonlyArray<readonly [number, string]> = [
 
 export const STAGE_GLOW = "rgba(255,255,255,0.85)";
 
-export function stageBackgroundCss(): string {
+// Card-wide background: the warm diagonal gradient.
+export function stageBaseCss(): string {
   const stops = STAGE_STOPS.map(([offset, color]) => `${color} ${Math.round(offset * 100)}%`).join(", ");
-  return `radial-gradient(55% 55% at 50% 48%, ${STAGE_GLOW} 0%, rgba(255,255,255,0) 70%), linear-gradient(to bottom right, ${stops})`;
+  return `linear-gradient(to bottom right, ${stops})`;
+}
+
+// Soft light behind the jersey. Applied to the stage container only, so it is
+// centered on the jersey (and matches the exported PNG, which is stage-sized).
+export function stageGlowCss(): string {
+  return `radial-gradient(55% 55% at 50% 48%, ${STAGE_GLOW} 0%, rgba(255,255,255,0) 70%)`;
 }

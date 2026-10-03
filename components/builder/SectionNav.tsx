@@ -36,7 +36,7 @@ export function SectionNav({ active, onChange }: Props) {
               "flex flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-colors",
               "md:flex-none md:flex-row md:gap-3 md:rounded-2xl md:px-4 md:py-3 md:text-sm",
               isActive
-                ? "text-accent-strong md:bg-accent-soft md:font-semibold md:text-foreground"
+                ? "bg-accent-soft font-semibold text-foreground"
                 : "text-muted hover:text-foreground md:hover:bg-black/5",
             ].join(" ")}
           >

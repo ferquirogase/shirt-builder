@@ -12,7 +12,7 @@ export function SponsorPanel() {
           type="text"
           value={state.sponsorText}
           onChange={(e) => dispatch({ type: "SET_SPONSOR_TEXT", value: e.target.value })}
-          className="rounded-xl border border-line bg-white/80 px-3 py-2 text-base outline-none focus-visible:border-accent"
+          className="rounded-xl border border-line bg-white/80 px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-foreground/60"
         />
       </label>
     </PanelShell>

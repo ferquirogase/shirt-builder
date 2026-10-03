@@ -2,11 +2,11 @@
 import { Suspense, forwardRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
-import type { ViewSide } from "@/lib/builder/camera-math";
+import { DEFAULT_CAMERA_HEIGHT, DEFAULT_CAMERA_RADIUS, type ViewSide } from "@/lib/builder/camera-math";
 import { CameraRig } from "./CameraRig";
 import { JerseyModel } from "./JerseyModel";
 
-type Props = { view: ViewSide; viewToken: number; onInteract: () => void };
+type Props = { view: ViewSide; viewToken: number; resetPose: boolean; onInteract: () => void };
 
 // The jersey mesh spans y in about [-0.68, 0.68] (see JerseyModel), so the
 // "floor" shadow sits just under it. The canvas is transparent: the stage
@@ -14,12 +14,12 @@ type Props = { view: ViewSide; viewToken: number; onInteract: () => void };
 const FLOOR_Y = -0.69;
 
 export const Viewer3D = forwardRef<HTMLCanvasElement, Props>(function Viewer3D(
-  { view, viewToken, onInteract },
+  { view, viewToken, resetPose, onInteract },
   ref
 ) {
   return (
     <Canvas
-      camera={{ position: [0, 1.0, 2.6], fov: 45 }}
+      camera={{ position: [0, DEFAULT_CAMERA_HEIGHT, DEFAULT_CAMERA_RADIUS], fov: 45 }}
       gl={{ preserveDrawingBuffer: true, alpha: true }}
       style={{ background: "transparent" }}
       ref={ref}
@@ -38,7 +38,7 @@ export const Viewer3D = forwardRef<HTMLCanvasElement, Props>(function Viewer3D(
         resolution={512}
         color="#6b5a2e"
       />
-      <CameraRig view={view} viewToken={viewToken} onInteract={onInteract} />
+      <CameraRig view={view} viewToken={viewToken} resetPose={resetPose} onInteract={onInteract} />
     </Canvas>
   );
 });

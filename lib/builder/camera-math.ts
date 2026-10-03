@@ -4,6 +4,11 @@ export type ViewSide = "front" | "back";
 // front and PI is the back.
 export const VIEW_AZIMUTH: Record<ViewSide, number> = { front: 0, back: Math.PI };
 
+// Default camera pose (see Viewer3D): height above the jersey center and
+// horizontal distance from it. "Restablecer vista" eases back to these.
+export const DEFAULT_CAMERA_HEIGHT = 1.0;
+export const DEFAULT_CAMERA_RADIUS = 2.6;
+
 const TWO_PI = Math.PI * 2;
 
 // Normalizes into (-PI, PI].
@@ -22,6 +27,13 @@ export function shortestDelta(from: number, to: number): number {
 export function stepAzimuth(current: number, target: number, factor: number, epsilon = 0.002): number {
   const delta = shortestDelta(current, target);
   if (Math.abs(delta) < epsilon) return current + delta;
+  return current + delta * factor;
+}
+
+// One easing step of a plain number toward `target`; snaps when close.
+export function stepToward(current: number, target: number, factor: number, epsilon = 0.002): number {
+  const delta = target - current;
+  if (Math.abs(delta) < epsilon) return target;
   return current + delta * factor;
 }
 

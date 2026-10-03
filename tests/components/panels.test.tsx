@@ -7,10 +7,16 @@ import { CrestPanel } from "@/components/builder/panels/CrestPanel";
 import { SponsorPanel } from "@/components/builder/panels/SponsorPanel";
 import { TextPanel } from "@/components/builder/panels/TextPanel";
 import { clearPatternMarkupCache } from "@/lib/builder/pattern-thumbnail";
+import { loadImage } from "@/lib/builder/image-loader";
+
+// jsdom never decodes images, so the crest's "can this actually be drawn?"
+// check is driven by this mock.
+vi.mock("@/lib/builder/image-loader", () => ({ loadImage: vi.fn() }));
 
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="primary" fill="#000"/></svg>`;
 
 beforeEach(() => {
+  vi.mocked(loadImage).mockResolvedValue({} as HTMLImageElement);
   clearPatternMarkupCache();
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => SVG })));
 });
@@ -68,9 +74,61 @@ describe("CrestPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Quitar escudo" }));
     expect(api.current!.state.logoDataUrl).toBeNull();
   });
+
+  it("reports an image that passes the type check but cannot be decoded, without touching the design", async () => {
+    vi.mocked(loadImage).mockRejectedValue(new Error("decode failed"));
+    const { api } = renderWithDesign(<CrestPanel />);
+    const broken = new File(["not really a png"], "broken.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("Subir escudo"), { target: { files: [broken] } });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo leer la imagen.");
+    expect(api.current!.state.logoDataUrl).toBeNull();
+    expect(api.current!.canUndo).toBe(false);
+  });
+
+  it("keeps the most recent upload when an older one finishes decoding last", async () => {
+    const pending: Array<{ src: string; resolve: () => void }> = [];
+    vi.mocked(loadImage).mockImplementation(
+      (src: string) =>
+        new Promise<HTMLImageElement>((resolve) => {
+          pending.push({ src, resolve: () => resolve({} as HTMLImageElement) });
+        })
+    );
+    const { api } = renderWithDesign(<CrestPanel />);
+    const input = screen.getByLabelText("Subir escudo");
+
+    fireEvent.change(input, { target: { files: [new File(["a"], "a.png", { type: "image/png" })] } });
+    await waitFor(() => expect(pending).toHaveLength(1));
+    fireEvent.change(input, { target: { files: [new File(["b"], "b.png", { type: "image/png" })] } });
+    await waitFor(() => expect(pending).toHaveLength(2));
+
+    pending[1].resolve();
+    await waitFor(() => expect(api.current!.state.logoDataUrl).toBe(pending[1].src));
+    pending[0].resolve();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(api.current!.state.logoDataUrl).toBe(pending[1].src);
+  });
+
+  it("makes keyboard focus visible on the upload control", () => {
+    renderWithDesign(<CrestPanel />);
+    const label = screen.getByLabelText("Subir escudo").closest("label");
+    expect(label?.className).toContain("focus-within:ring-2");
+  });
 });
 
 describe("SponsorPanel and TextPanel", () => {
+  it("makes keyboard focus visible on the text fields", () => {
+    renderWithDesign(
+      <>
+        <SponsorPanel />
+        <TextPanel />
+      </>
+    );
+    for (const name of ["Texto del sponsor", "Nombre", "Número"]) {
+      expect(screen.getByLabelText(name).className).toContain("focus-visible:ring-2");
+    }
+  });
+
   it("sets the sponsor text", () => {
     const { api } = renderWithDesign(<SponsorPanel />);
     fireEvent.change(screen.getByLabelText("Texto del sponsor"), { target: { value: "ACME" } });
