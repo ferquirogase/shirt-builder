@@ -20,7 +20,7 @@ export function BuilderPage() {
     <DesignProvider>
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1">
-          <Viewer3D ref={canvasRef} />
+          <Viewer3D ref={canvasRef} view="front" viewToken={0} onInteract={() => {}} />
           <button onClick={handleExport} className="mt-2 px-4 py-2 bg-green-700 text-white rounded">
             Exportar PNG
           </button>
