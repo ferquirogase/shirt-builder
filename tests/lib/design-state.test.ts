@@ -27,4 +27,10 @@ describe("designReducer", () => {
     });
     expect(next.bodyPatternId).toBe("plain-body");
   });
+
+  it("starts with a default project name and can rename it", () => {
+    expect(initialDesignState.projectName).toBe("Mi diseño");
+    const next = designReducer(initialDesignState, { type: "SET_PROJECT_NAME", value: "Los del viernes" });
+    expect(next.projectName).toBe("Los del viernes");
+  });
 });

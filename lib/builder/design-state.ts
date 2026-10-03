@@ -8,6 +8,7 @@ export type DesignState = {
   sponsorText: string;
   playerName: string;
   playerNumber: string;
+  projectName: string;
 };
 
 export type DesignAction =
@@ -17,7 +18,8 @@ export type DesignAction =
   | { type: "SET_LOGO"; dataUrl: string | null }
   | { type: "SET_SPONSOR_TEXT"; value: string }
   | { type: "SET_PLAYER_NAME"; value: string }
-  | { type: "SET_PLAYER_NUMBER"; value: string };
+  | { type: "SET_PLAYER_NUMBER"; value: string }
+  | { type: "SET_PROJECT_NAME"; value: string };
 
 export const initialDesignState: DesignState = {
   bodyPatternId: "stripes-v1",
@@ -27,6 +29,7 @@ export const initialDesignState: DesignState = {
   sponsorText: "",
   playerName: "",
   playerNumber: "",
+  projectName: "Mi diseño",
 };
 
 export function designReducer(state: DesignState, action: DesignAction): DesignState {
@@ -45,6 +48,8 @@ export function designReducer(state: DesignState, action: DesignAction): DesignS
       return { ...state, playerName: action.value };
     case "SET_PLAYER_NUMBER":
       return { ...state, playerNumber: action.value };
+    case "SET_PROJECT_NAME":
+      return { ...state, projectName: action.value };
     default:
       return state;
   }
