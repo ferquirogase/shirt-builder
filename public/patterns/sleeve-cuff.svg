@@ -1,4 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect data-color-slot="primary" fill="#0a5c36" x="0" y="0" width="512" height="512" />
-  <rect data-color-slot="secondary" fill="#ffffff" x="0" y="400" width="512" height="112" />
+  <rect data-color-slot="secondary" fill="#ffffff" x="400" y="0" width="112" height="512" />
 </svg>

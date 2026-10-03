@@ -41,6 +41,8 @@ export function JerseyModel() {
   const texture = useMemo(() => {
     const tex = new THREE.CanvasTexture(canvas);
     tex.flipY = UV_FLIP_Y;
+    // The canvas holds sRGB hex colors; without this they render washed out.
+    tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
   }, [canvas]);
 

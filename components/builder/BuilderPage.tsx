@@ -65,7 +65,8 @@ export function BuilderPage() {
           <div className="flex min-h-0 flex-1 flex-col md:flex-row">
             {/* Stage: first on mobile, last on desktop. */}
             <div className="relative order-1 min-h-[16rem] flex-1 md:order-3">
-              <div className="absolute inset-0">
+              {/* On mobile the canvas sits between the toolbar and the Frente/Espalda controls so neither covers the jersey. */}
+              <div className="absolute inset-x-0 bottom-24 top-14 md:bottom-0 md:top-0">
                 <Viewer3D
                   ref={canvasRef}
                   view={view}
@@ -83,7 +84,7 @@ export function BuilderPage() {
             </div>
 
             {/* Section panel: bottom sheet on mobile, middle column on desktop. */}
-            <div className="order-2 max-h-[42dvh] overflow-y-auto rounded-t-3xl bg-white shadow-[0_-8px_24px_rgba(0,0,0,0.08)] md:mb-4 md:mr-2 md:max-h-none md:w-[22rem] md:shrink-0 md:rounded-3xl md:bg-white/60 md:shadow-none md:backdrop-blur">
+            <div className="order-2 max-h-[34dvh] overflow-y-auto rounded-t-3xl bg-white shadow-[0_-8px_24px_rgba(0,0,0,0.08)] md:mb-4 md:mr-2 md:max-h-none md:w-[22rem] md:shrink-0 md:rounded-3xl md:bg-white/60 md:shadow-none md:backdrop-blur">
               <SectionPanel section={section} />
             </div>
 

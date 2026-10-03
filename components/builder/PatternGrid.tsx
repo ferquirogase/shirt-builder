@@ -47,7 +47,7 @@ type Props = {
 
 export function PatternGrid({ patterns, selectedId, primary, secondary, onSelect }: Props) {
   return (
-    <div role="radiogroup" className="grid grid-cols-2 gap-3">
+    <div role="radiogroup" className="grid grid-cols-3 gap-2 md:grid-cols-2 md:gap-3">
       {patterns.map((pattern) => {
         const selected = pattern.id === selectedId;
         return (
@@ -58,7 +58,7 @@ export function PatternGrid({ patterns, selectedId, primary, secondary, onSelect
             aria-checked={selected}
             onClick={() => onSelect(pattern.id)}
             className={[
-              "relative flex flex-col items-center gap-2 rounded-2xl border-2 bg-white/70 p-3 text-sm font-medium transition",
+              "relative flex flex-col items-center gap-2 rounded-2xl border-2 bg-white/70 p-2 text-xs font-medium transition md:p-3 md:text-sm",
               selected ? "border-accent shadow-sm" : "border-transparent hover:border-line",
             ].join(" ")}
           >

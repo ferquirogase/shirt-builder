@@ -64,12 +64,14 @@ export function drawDesignToCanvas(
 
   if (images.bodyPatternImage) {
     drawImageInRegion(ctx, images.bodyPatternImage, regions.bodyFront, canvasSize);
-    drawImageInRegion(ctx, images.bodyPatternImage, regions.bodyBack, canvasSize, true);
+    drawImageInRegion(ctx, images.bodyPatternImage, regions.bodyBack, canvasSize, "rotate180");
   }
 
   if (images.sleevePatternImage) {
     drawImageInRegion(ctx, images.sleevePatternImage, regions.sleeveLeft, canvasSize);
-    drawImageInRegion(ctx, images.sleevePatternImage, regions.sleeveRight, canvasSize);
+    // The sleeveRight island is the mirror image of sleeveLeft (see uv-regions.ts),
+    // so direction-sensitive sleeve patterns must be mirrored to match.
+    drawImageInRegion(ctx, images.sleevePatternImage, regions.sleeveRight, canvasSize, "mirrorX");
   }
 
   if (images.logoImage) {
@@ -140,22 +142,25 @@ function fillTextRotated180(ctx: CanvasRenderingContext2D, text: string, x: numb
   ctx.restore();
 }
 
+type RegionOrientation = "plain" | "rotate180" | "mirrorX";
+
 function drawImageInRegion(
   ctx: CanvasRenderingContext2D,
   image: HTMLImageElement,
   region: UVRect,
   canvasSize: number,
-  rotate180 = false
+  orientation: RegionOrientation = "plain"
 ): void {
   const { x, y, width, height } = rectToCanvas(region, canvasSize);
-  if (!rotate180) {
+  if (orientation === "plain") {
     ctx.drawImage(image, x, y, width, height);
     return;
   }
-  // Rotating a rect 180deg about its own center maps it onto itself.
+  // Rotating or mirroring a rect about its own center maps it onto itself.
   ctx.save();
   ctx.translate(x + width / 2, y + height / 2);
-  ctx.rotate(Math.PI);
+  if (orientation === "rotate180") ctx.rotate(Math.PI);
+  else ctx.scale(-1, 1);
   ctx.drawImage(image, -width / 2, -height / 2, width, height);
   ctx.restore();
 }

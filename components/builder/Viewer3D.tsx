@@ -19,13 +19,13 @@ export const Viewer3D = forwardRef<HTMLCanvasElement, Props>(function Viewer3D(
 ) {
   return (
     <Canvas
-      camera={{ position: [0, 1.5, 3], fov: 45 }}
+      camera={{ position: [0, 1.0, 2.6], fov: 45 }}
       gl={{ preserveDrawingBuffer: true, alpha: true }}
       style={{ background: "transparent" }}
       ref={ref}
     >
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[2, 4, 3]} intensity={1} />
+      <ambientLight intensity={1.6} />
+      <directionalLight position={[2, 4, 3]} intensity={2.2} />
       <Suspense fallback={null}>
         <JerseyModel />
       </Suspense>

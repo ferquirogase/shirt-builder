@@ -13,6 +13,7 @@ function createMockCtx() {
     restore: vi.fn(),
     translate: vi.fn(),
     rotate: vi.fn(),
+    scale: vi.fn(),
     fillStyle: "",
     font: "",
     textAlign: "left",
@@ -202,6 +203,50 @@ describe("drawDesignToCanvas", () => {
       expect([Math.round(tx), Math.round(ty)]).toEqual([500, 700]);
       const [, bx, by, bw, bh] = draws[1];
       expect([bx, by, bw, bh].map((n) => Math.round(n))).toEqual([-200, -200, 400, 400]);
+    });
+  });
+
+  // The two sleeve UV islands are mirror images across the island's vertical
+  // axis: the sleeveRight island (-x side of the model) runs cuff-to-shoulder
+  // in the opposite u direction from sleeveLeft, so a directional sleeve
+  // pattern (e.g. a cuff band) must be drawn mirrored there or it lands at
+  // the shoulder instead of the cuff.
+  describe("sleeve orientation", () => {
+    it("draws the left sleeve plainly and mirrors the right sleeve horizontally", () => {
+      const ctx = createMockCtx();
+      const fakeImage = {} as HTMLImageElement;
+      drawDesignToCanvas(
+        ctx,
+        1000,
+        initialDesignState,
+        { bodyPatternImage: null, sleevePatternImage: fakeImage, logoImage: null },
+        regions
+      );
+
+      const draws = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls;
+      expect(draws).toHaveLength(2);
+      // sleeveLeft (u .05..0.25, v .1..0.4 -> x 50, y 600, 200x300): plain.
+      const [, lx, ly, lw, lh] = draws[0];
+      expect([lx, ly, lw, lh].map((n) => Math.round(n))).toEqual([50, 600, 200, 300]);
+      // sleeveRight (u .75..0.95 -> x 750, center 850,750): mirrored about its center.
+      expect(ctx.scale).toHaveBeenCalledTimes(1);
+      expect(ctx.scale).toHaveBeenCalledWith(-1, 1);
+      const [tx, ty] = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect([Math.round(tx), Math.round(ty)]).toEqual([850, 750]);
+      const [, rx, ry, rw, rh] = draws[1];
+      expect([rx, ry, rw, rh].map((n) => Math.round(n))).toEqual([-100, -150, 200, 300]);
+    });
+
+    it("does not mirror anything when no sleeve pattern is set", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(
+        ctx,
+        1000,
+        initialDesignState,
+        { bodyPatternImage: null, sleevePatternImage: null, logoImage: null },
+        regions
+      );
+      expect(ctx.scale).not.toHaveBeenCalled();
     });
   });
 
