@@ -40,8 +40,9 @@ Reescritura por componentes chicos y aislados, solo con Tailwind v4, sin depende
 Todos en `components/builder/`:
 
 - `BuilderPage` — compone el layout, mantiene el `canvasRef` y la sección activa.
-- `Header` — logo GEPE, nombre editable, deshacer/rehacer, Compartir (deshabilitado), Revisar diseño (deshabilitado).
-- `SectionNav` — sidebar en escritorio, barra inferior en móvil. Secciones: Diseño, Colores, Escudo, Sponsor, Nombre y número.
+- `Header` — logo GEPE, nombre editable, Compartir (deshabilitado), Revisar diseño (deshabilitado).
+- `StageToolbar` — deshacer/rehacer arriba al centro del visor (como en el mockup) y "Descargar PNG" arriba a la derecha.
+- `SectionNav` — un único componente responsive: sidebar en escritorio, barra inferior en móvil. Secciones: Diseño, Colores, Escudo, Sponsor, Nombre y número.
 - `SectionPanel` y un panel por sección:
   - Diseño: pestañas Torso/Mangas + `PatternGrid`.
   - Colores: selectores primario y secundario.
