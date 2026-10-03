@@ -9,6 +9,10 @@ function createMockCtx() {
     fillRect: vi.fn(),
     drawImage: vi.fn(),
     fillText: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn(),
     fillStyle: "",
     font: "",
     textAlign: "left",
@@ -143,6 +147,62 @@ describe("drawDesignToCanvas", () => {
       expect(rect.v0).toBeGreaterThanOrEqual(vMin - tolerance);
       expect(rect.v1).toBeLessThanOrEqual(vMax + tolerance);
     }
+  });
+
+  // The OBJ's back UV island is rotated 180deg relative to the front: on the
+  // back, v decreases going up the shirt and u runs right-to-left as seen
+  // from behind. Anything drawn upright into bodyBack therefore shows
+  // upside-down on the model, so back content is drawn rotated by PI.
+  describe("back panel orientation", () => {
+    const blank = { bodyPatternImage: null, sleevePatternImage: null, logoImage: null };
+
+    it("rotates the player name 180deg around its own anchor", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, { ...initialDesignState, playerName: "PEREZ" }, blank, regions);
+
+      const rotate = ctx.rotate as ReturnType<typeof vi.fn>;
+      const fillText = ctx.fillText as ReturnType<typeof vi.fn>;
+      expect(rotate).toHaveBeenCalledWith(Math.PI);
+      expect(rotate.mock.invocationCallOrder[0]).toBeLessThan(fillText.mock.invocationCallOrder[0]);
+      expect(ctx.restore).toHaveBeenCalled();
+    });
+
+    it("rotates the player number 180deg", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, { ...initialDesignState, playerNumber: "10" }, blank, regions);
+      expect(ctx.rotate).toHaveBeenCalledWith(Math.PI);
+    });
+
+    it("does not rotate front-panel sponsor text", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, { ...initialDesignState, sponsorText: "ACME" }, blank, regions);
+      expect(ctx.fillText).toHaveBeenCalledWith("ACME", expect.any(Number), expect.any(Number));
+      expect(ctx.rotate).not.toHaveBeenCalled();
+    });
+
+    it("draws the back body pattern rotated 180deg around the region center, front unrotated", () => {
+      const ctx = createMockCtx();
+      const fakeImage = {} as HTMLImageElement;
+      drawDesignToCanvas(
+        ctx,
+        1000,
+        initialDesignState,
+        { bodyPatternImage: fakeImage, sleevePatternImage: null, logoImage: null },
+        regions
+      );
+
+      // Front: drawn plainly.
+      const draws = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls;
+      const [, fx, fy, fw, fh] = draws[0];
+      expect([fx, fy, fw, fh].map((n) => Math.round(n))).toEqual([300, 100, 400, 400]);
+      // Back (v 0.1..0.5 -> canvas y 500..900, center 500,700): rotated about its center.
+      expect(ctx.rotate).toHaveBeenCalledTimes(1);
+      expect(ctx.rotate).toHaveBeenCalledWith(Math.PI);
+      const [tx, ty] = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect([Math.round(tx), Math.round(ty)]).toEqual([500, 700]);
+      const [, bx, by, bw, bh] = draws[1];
+      expect([bx, by, bw, bh].map((n) => Math.round(n))).toEqual([-200, -200, 400, 400]);
+    });
   });
 
   it("draws a non-square logo preserving its aspect ratio", () => {

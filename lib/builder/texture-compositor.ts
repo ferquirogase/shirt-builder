@@ -64,7 +64,7 @@ export function drawDesignToCanvas(
 
   if (images.bodyPatternImage) {
     drawImageInRegion(ctx, images.bodyPatternImage, regions.bodyFront, canvasSize);
-    drawImageInRegion(ctx, images.bodyPatternImage, regions.bodyBack, canvasSize);
+    drawImageInRegion(ctx, images.bodyPatternImage, regions.bodyBack, canvasSize, true);
   }
 
   if (images.sleevePatternImage) {
@@ -113,7 +113,7 @@ export function drawDesignToCanvas(
     // with bodyFront's top (see logo comment above), i.e. near the collar.
     // A small offset from 0 keeps it just below the collar, above the number.
     const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, 0.15, canvasSize);
-    ctx.fillText(design.playerName, cx, cy);
+    fillTextRotated180(ctx, design.playerName, cx, cy);
   }
 
   if (design.playerNumber) {
@@ -123,16 +123,39 @@ export function drawDesignToCanvas(
     // Below the name (further from the collar edge), larger font, centered
     // in bodyBack.
     const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, 0.55, canvasSize);
-    ctx.fillText(design.playerNumber, cx, cy);
+    fillTextRotated180(ctx, design.playerNumber, cx, cy);
   }
+}
+
+// The OBJ's back UV island is rotated 180deg relative to the front (measured
+// on public/models/jersey_ss.obj: on the front v grows with world-y, on the
+// back it shrinks; and u runs right-to-left as seen from behind). Content
+// drawn upright into bodyBack would show upside-down on the model, so back
+// content is drawn rotated by PI.
+function fillTextRotated180(ctx: CanvasRenderingContext2D, text: string, x: number, y: number): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(Math.PI);
+  ctx.fillText(text, 0, 0);
+  ctx.restore();
 }
 
 function drawImageInRegion(
   ctx: CanvasRenderingContext2D,
   image: HTMLImageElement,
   region: UVRect,
-  canvasSize: number
+  canvasSize: number,
+  rotate180 = false
 ): void {
   const { x, y, width, height } = rectToCanvas(region, canvasSize);
-  ctx.drawImage(image, x, y, width, height);
+  if (!rotate180) {
+    ctx.drawImage(image, x, y, width, height);
+    return;
+  }
+  // Rotating a rect 180deg about its own center maps it onto itself.
+  ctx.save();
+  ctx.translate(x + width / 2, y + height / 2);
+  ctx.rotate(Math.PI);
+  ctx.drawImage(image, -width / 2, -height / 2, width, height);
+  ctx.restore();
 }
