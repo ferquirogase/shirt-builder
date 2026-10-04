@@ -2,11 +2,12 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { PatternGrid } from "@/components/builder/PatternGrid";
 import { clearPatternMarkupCache } from "@/lib/builder/pattern-thumbnail";
+import type { PatternDef } from "@/lib/builder/patterns";
 
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="primary" fill="#000"/></svg>`;
-const patterns = [
-  { id: "a", label: "Liso", svgPath: "/patterns/a.svg" },
-  { id: "b", label: "Franjas", svgPath: "/patterns/b.svg" },
+const patterns: PatternDef[] = [
+  { id: "a", label: "Liso", svgPath: "/patterns/a.svg", colors: [{ role: "primary", label: "Color primario", default: "#000000" }] },
+  { id: "b", label: "Franjas", svgPath: "/patterns/b.svg", colors: [{ role: "primary", label: "Color primario", default: "#000000" }] },
 ];
 
 describe("PatternGrid", () => {
