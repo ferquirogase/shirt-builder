@@ -43,7 +43,15 @@ describe("ColorsPanel", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
     fireEvent.change(screen.getByLabelText("Color primario"), { target: { value: "#ff0000" } });
     fireEvent.change(screen.getByLabelText("Color secundario"), { target: { value: "#00ff00" } });
-    expect(api.current!.state.colors).toEqual({ primary: "#ff0000", secondary: "#00ff00" });
+    expect(api.current!.state.colors.primary).toBe("#ff0000");
+    expect(api.current!.state.colors.secondary).toBe("#00ff00");
+  });
+
+  it("updates the collar color on its own, leaving the pattern colors alone", () => {
+    const { api } = renderWithDesign(<ColorsPanel />);
+    const before = { ...api.current!.state.colors };
+    fireEvent.change(screen.getByLabelText("Color del cuello"), { target: { value: "#0000ff" } });
+    expect(api.current!.state.colors).toEqual({ ...before, collar: "#0000ff" });
   });
 });
 

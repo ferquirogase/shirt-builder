@@ -8,10 +8,11 @@ import { JerseyModel } from "./JerseyModel";
 
 type Props = { view: ViewSide; viewToken: number; resetPose: boolean; onInteract: () => void };
 
-// The jersey mesh spans y in about [-0.68, 0.68] (see JerseyModel), so the
+// The reshaped jersey mesh spans y in about [-0.59, 0.59] (see JerseyModel and
+// garment-shape), so the
 // "floor" shadow sits just under it. The canvas is transparent: the stage
 // gradient is CSS behind it, and the exported PNG paints the same gradient.
-const FLOOR_Y = -0.69;
+const FLOOR_Y = -0.6;
 
 export const Viewer3D = forwardRef<HTMLCanvasElement, Props>(function Viewer3D(
   { view, viewToken, resetPose, onInteract },

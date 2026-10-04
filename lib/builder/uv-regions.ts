@@ -34,4 +34,19 @@ export const UV_REGIONS: UVRegions = {
   sleeveRight: { u0: 0.25, v0: 0.625, u1: 0.375, v1: 1.0 },
 };
 
+// public/models/gepe_shirt.obj (the jersey extracted from gepeshirt.obj). Same
+// layout as the model above (front and back stacked in one island, back
+// rotated 180deg, right sleeve mirrored), but different bounds. Computed from
+// the OBJ's own UVs: connected UV islands, with front/back split by world z.
+//   body island:  u [0.314, 0.686]  v [0.058, 0.942..0.98]
+//   front panel:  u [0.331, 0.668]  v [0.058, ~0.50]
+//   back panel:   u [0.296, 0.704]  v [~0.52, 0.980]
+//   sleeves:      u [0.641, 0.758] and [0.242, 0.360], v [0.668, 0.980]
+export const GEPE_UV_REGIONS: UVRegions = {
+  bodyFront: { u0: 0.331, v0: 0.058, u1: 0.668, v1: 0.51 },
+  bodyBack: { u0: 0.296, v0: 0.51, u1: 0.704, v1: 0.98 },
+  sleeveLeft: { u0: 0.641, v0: 0.668, u1: 0.758, v1: 0.98 },
+  sleeveRight: { u0: 0.242, v0: 0.668, u1: 0.36, v1: 0.98 },
+};
+
 export const UV_FLIP_Y = true;

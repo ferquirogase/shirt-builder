@@ -24,7 +24,7 @@ export type DesignAction =
 export const initialDesignState: DesignState = {
   bodyPatternId: "stripes-v1",
   sleevePatternId: "sleeve-plain",
-  colors: { primary: "#0a5c36", secondary: "#ffffff" },
+  colors: { primary: "#0a5c36", secondary: "#ffffff", collar: "#ffffff" },
   logoDataUrl: null,
   sponsorText: "",
   playerName: "",

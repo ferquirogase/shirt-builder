@@ -27,6 +27,14 @@ describe("historyReducer", () => {
     expect(redone.present.bodyPatternId).toBe("plain-body");
   });
 
+  it("records a collar color change as its own undo step", () => {
+    const changed = run([{ type: "SET_COLOR", slot: "collar", value: "#123456", at: 10_000 }]);
+    expect(changed.present.colors.collar).toBe("#123456");
+    expect(changed.past).toHaveLength(1);
+    const undone = historyReducer(changed, { type: "UNDO" });
+    expect(undone.present.colors.collar).toBe(initialDesignState.colors.collar);
+  });
+
   it("ignores UNDO/REDO when there is nothing to do", () => {
     const fresh = createHistory();
     expect(historyReducer(fresh, { type: "UNDO" })).toBe(fresh);

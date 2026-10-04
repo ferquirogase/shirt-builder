@@ -53,6 +53,35 @@ describe("drawDesignToCanvas", () => {
     expect(ctx.drawImage).toHaveBeenCalledTimes(2);
   });
 
+  it("paints the collar mask over the whole atlas, after the patterns and before text", () => {
+    const ctx = createMockCtx();
+    const pattern = {} as HTMLImageElement;
+    const mask = {} as HTMLCanvasElement;
+    drawDesignToCanvas(
+      ctx,
+      1024,
+      { ...initialDesignState, sponsorText: "ACME" },
+      { bodyPatternImage: pattern, sleevePatternImage: null, logoImage: null, collarMaskImage: mask },
+      regions
+    );
+    const draw = ctx.drawImage as ReturnType<typeof vi.fn>;
+    expect(draw).toHaveBeenLastCalledWith(mask, 0, 0, 1024, 1024);
+    const text = (ctx.fillText as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0];
+    expect(draw.mock.invocationCallOrder.at(-1)!).toBeLessThan(text);
+  });
+
+  it("draws no collar mask when none is given", () => {
+    const ctx = createMockCtx();
+    drawDesignToCanvas(
+      ctx,
+      1024,
+      initialDesignState,
+      { bodyPatternImage: null, sleevePatternImage: null, logoImage: null },
+      regions
+    );
+    expect(ctx.drawImage).not.toHaveBeenCalled();
+  });
+
   it("writes the player number when set", () => {
     const ctx = createMockCtx();
     const design = { ...initialDesignState, playerNumber: "10" };

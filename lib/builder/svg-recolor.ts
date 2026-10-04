@@ -1,4 +1,6 @@
-export type ColorSlot = "primary" | "secondary";
+// "collar" is chosen independently of the patterns, which only reference
+// "primary" and "secondary" in their `data-color-slot` attributes.
+export type ColorSlot = "primary" | "secondary" | "collar";
 export type ColorMap = Partial<Record<ColorSlot, string>>;
 
 export function recolorSvg(svgMarkup: string, colors: ColorMap): string {

@@ -6,12 +6,13 @@ import { PanelShell } from "./PanelShell";
 const SLOTS: { slot: ColorSlot; label: string }[] = [
   { slot: "primary", label: "Color primario" },
   { slot: "secondary", label: "Color secundario" },
+  { slot: "collar", label: "Color del cuello" },
 ];
 
 export function ColorsPanel() {
   const { state, dispatch } = useDesign();
   return (
-    <PanelShell title="Colores" hint="Los colores se aplican a todos los patrones.">
+    <PanelShell title="Colores" hint="El primario y el secundario se aplican a todos los patrones.">
       <div className="flex flex-col gap-3">
         {SLOTS.map(({ slot, label }) => (
           <label key={slot} className="flex items-center justify-between rounded-2xl bg-white/70 p-3 text-sm font-medium">

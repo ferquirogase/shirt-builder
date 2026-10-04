@@ -24,3 +24,19 @@ export async function loadPatternImage(svgPath: string, colors: ColorMap): Promi
     URL.revokeObjectURL(url);
   }
 }
+
+// Loads an atlas-sized mask whose opaque pixels mark an area, and returns a
+// copy of it where those pixels are painted `color` (transparent elsewhere).
+export async function loadTintedMask(src: string, color: string): Promise<HTMLCanvasElement> {
+  const mask = await loadImage(src);
+  const canvas = document.createElement("canvas");
+  canvas.width = mask.naturalWidth;
+  canvas.height = mask.naturalHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error(`No 2d context to tint mask: ${src}`);
+  ctx.drawImage(mask, 0, 0);
+  ctx.globalCompositeOperation = "source-in";
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  return canvas;
+}

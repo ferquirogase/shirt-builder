@@ -5,6 +5,11 @@ export type CompositorImages = {
   bodyPatternImage: HTMLImageElement | null;
   sleevePatternImage: HTMLImageElement | null;
   logoImage: HTMLImageElement | null;
+  /**
+   * Full-atlas image, already tinted, painted over the patterns. Marks the
+   * parts of the atlas that carry the collar colour (see jersey-model.ts).
+   */
+  collarMaskImage?: CanvasImageSource | null;
 };
 
 // UV v -> canvas y fraction. CanvasTexture (and this app's JerseyModel) uses
@@ -72,6 +77,10 @@ export function drawDesignToCanvas(
     // The sleeveRight island is the mirror image of sleeveLeft (see uv-regions.ts),
     // so direction-sensitive sleeve patterns must be mirrored to match.
     drawImageInRegion(ctx, images.sleevePatternImage, regions.sleeveRight, canvasSize, "mirrorX");
+  }
+
+  if (images.collarMaskImage) {
+    ctx.drawImage(images.collarMaskImage, 0, 0, canvasSize, canvasSize);
   }
 
   if (images.logoImage) {
