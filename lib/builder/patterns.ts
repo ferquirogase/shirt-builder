@@ -85,6 +85,7 @@ export const BODY_PATTERNS: PatternDef[] = [
     id: "sash-diagonal",
     label: "Banda diagonal",
     svgPath: "/patterns/sash-diagonal-body.svg",
+    svgPathBack: "/patterns/sash-diagonal-back.svg",
     colors: [primary("Fondo", "#ffffff"), secondary("Banda", "#d0161f")],
   },
   {
@@ -97,6 +98,7 @@ export const BODY_PATTERNS: PatternDef[] = [
     id: "split-center",
     label: "Mitades con franja",
     svgPath: "/patterns/split-center-body.svg",
+    svgPathBack: "/patterns/split-center-back.svg",
     colors: [primary("Mitad izquierda", "#d2171e"), secondary("Mitad derecha", "#0d8a3a"), accent("Franja central", "#ffffff")],
   },
   {
