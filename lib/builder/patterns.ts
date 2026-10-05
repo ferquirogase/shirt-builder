@@ -123,6 +123,24 @@ export const SLEEVE_PATTERNS: PatternDef[] = [
   { id: "sleeve-plain", label: "Color secundario", svgPath: "/patterns/sleeve-plain.svg", colors: [SECONDARY] },
   { id: "sleeve-primary", label: "Color primario", svgPath: "/patterns/sleeve-primary.svg", colors: [PRIMARY] },
   { id: "sleeve-cuff", label: "Con puño", svgPath: "/patterns/sleeve-cuff.svg", colors: [PRIMARY, SECONDARY] },
+  {
+    id: "sleeve-accent",
+    label: "Mangas de otro color",
+    svgPath: "/patterns/sleeve-accent.svg",
+    colors: [accent("Color de las mangas", "#1a2a55")],
+  },
+  {
+    id: "sleeve-cuff-accent",
+    label: "Puño de otro color",
+    svgPath: "/patterns/sleeve-cuff-accent.svg",
+    colors: [primary("Color primario", "#0a5c36"), accent("Color del puño", "#1a2a55")],
+  },
+  {
+    id: "sleeve-cuff-stripes",
+    label: "Puño a rayas",
+    svgPath: "/patterns/sleeve-cuff-stripes.svg",
+    colors: [primary("Color de las mangas", "#ffffff"), accent("Rayas del puño", "#d0161f")],
+  },
 ];
 
 export function findPattern(id: string): PatternDef | undefined {

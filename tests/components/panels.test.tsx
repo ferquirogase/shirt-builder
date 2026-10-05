@@ -36,6 +36,14 @@ describe("DesignPanel", () => {
     expect(api.current!.state.sleevePatternId).toBe("sleeve-cuff");
     await waitFor(() => expect(document.querySelector('[data-thumb="loaded"]')).not.toBeNull());
   });
+
+  it("offers the sleeve designs that use the accent color", async () => {
+    const { api } = renderWithDesign(<DesignPanel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Mangas" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Mangas de otro color" }));
+    expect(api.current!.state.sleevePatternId).toBe("sleeve-accent");
+    await waitFor(() => expect(document.querySelector('[data-thumb="loaded"]')).not.toBeNull());
+  });
 });
 
 describe("ColorsPanel", () => {

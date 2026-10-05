@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect data-color-slot="primary" fill="#0a5c36" x="0" y="0" width="512" height="512" />
+  <rect data-color-slot="accent" fill="#1a2a55" x="400" y="0" width="112" height="512" />
+</svg>
