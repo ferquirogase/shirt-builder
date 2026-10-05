@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithDesign } from "../helpers/render-with-design";
 import { DesignPanel } from "@/components/builder/panels/DesignPanel";
 import { ColorsPanel } from "@/components/builder/panels/ColorsPanel";
@@ -52,6 +52,28 @@ describe("ColorsPanel", () => {
     const before = { ...api.current!.state.colors };
     fireEvent.change(screen.getByLabelText("Color del cuello"), { target: { value: "#0000ff" } });
     expect(api.current!.state.colors).toEqual({ ...before, collar: "#0000ff" });
+  });
+
+  it("shows only the colors the chosen patterns use, plus the collar", () => {
+    const { api } = renderWithDesign(<ColorsPanel />);
+    // initial: stripes-v1 + sleeve-plain -> primary, secondary
+    expect(screen.queryByLabelText("Color primario")).not.toBeNull();
+    expect(screen.queryByLabelText("Color secundario")).not.toBeNull();
+    expect(screen.queryByLabelText("Color del cuello")).not.toBeNull();
+
+    act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "plain-body" }));
+    act(() => api.current!.dispatch({ type: "SET_SLEEVE_PATTERN", id: "sleeve-primary" }));
+    // plain-body + sleeve-primary -> primary only
+    expect(screen.queryByLabelText("Color primario")).not.toBeNull();
+    expect(screen.queryByLabelText("Color secundario")).toBeNull();
+    expect(screen.queryByLabelText("Color del cuello")).not.toBeNull();
+  });
+
+  it("does not duplicate a role used by both the torso and the sleeves (Review Focus 2)", () => {
+    const { api } = renderWithDesign(<ColorsPanel />);
+    act(() => api.current!.dispatch({ type: "SET_SLEEVE_PATTERN", id: "sleeve-cuff" }));
+    expect(screen.getAllByLabelText("Color primario")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Color secundario")).toHaveLength(1);
   });
 });
 

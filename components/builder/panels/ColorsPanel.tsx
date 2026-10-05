@@ -1,20 +1,20 @@
 "use client";
 import { useDesign } from "@/lib/builder/design-context";
+import { visibleColors } from "@/lib/builder/patterns";
 import type { ColorSlot } from "@/lib/builder/svg-recolor";
 import { PanelShell } from "./PanelShell";
 
-const SLOTS: { slot: ColorSlot; label: string }[] = [
-  { slot: "primary", label: "Color primario" },
-  { slot: "secondary", label: "Color secundario" },
-  { slot: "collar", label: "Color del cuello" },
-];
-
 export function ColorsPanel() {
   const { state, dispatch } = useDesign();
+  const rows: { slot: ColorSlot; label: string }[] = [
+    ...visibleColors(state.bodyPatternId, state.sleevePatternId).map((c) => ({ slot: c.role, label: c.label })),
+    { slot: "collar", label: "Color del cuello" },
+  ];
+
   return (
-    <PanelShell title="Colores" hint="El primario y el secundario se aplican a todos los patrones.">
+    <PanelShell title="Colores" hint="Los colores dependen del diseño elegido.">
       <div className="flex flex-col gap-3">
-        {SLOTS.map(({ slot, label }) => (
+        {rows.map(({ slot, label }) => (
           <label key={slot} className="flex items-center justify-between rounded-2xl bg-white/70 p-3 text-sm font-medium">
             <span className="flex flex-col">
               {label}
