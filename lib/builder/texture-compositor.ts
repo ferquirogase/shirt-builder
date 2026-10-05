@@ -3,6 +3,8 @@ import { UV_FLIP_Y, type UVRegions, type UVRect } from "./uv-regions";
 
 export type CompositorImages = {
   bodyPatternImage: HTMLImageElement | null;
+  /** Optional dedicated back panel; the front image is used when this is null/absent. */
+  bodyBackPatternImage?: HTMLImageElement | null;
   sleevePatternImage: HTMLImageElement | null;
   logoImage: HTMLImageElement | null;
   /**
@@ -69,7 +71,13 @@ export function drawDesignToCanvas(
 
   if (images.bodyPatternImage) {
     drawImageInRegion(ctx, images.bodyPatternImage, regions.bodyFront, canvasSize);
-    drawImageInRegion(ctx, images.bodyPatternImage, regions.bodyBack, canvasSize, "rotate180");
+    drawImageInRegion(
+      ctx,
+      images.bodyBackPatternImage ?? images.bodyPatternImage,
+      regions.bodyBack,
+      canvasSize,
+      "rotate180"
+    );
   }
 
   if (images.sleevePatternImage) {

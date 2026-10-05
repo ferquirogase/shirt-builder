@@ -43,6 +43,7 @@ const PATTERN_REDRAW_DEBOUNCE_MS = 80;
 
 type PatternImages = {
   bodyPatternImage: HTMLImageElement | null;
+  bodyBackPatternImage: HTMLImageElement | null;
   sleevePatternImage: HTMLImageElement | null;
   collarMaskImage: HTMLCanvasElement | null;
 };
@@ -62,6 +63,7 @@ export function JerseyModel() {
   const logoUrlRef = useRef<string | null>(null);
   const [patternImages, setPatternImages] = useState<PatternImages>({
     bodyPatternImage: null,
+    bodyBackPatternImage: null,
     sleevePatternImage: null,
     collarMaskImage: null,
   });
@@ -177,8 +179,15 @@ export function JerseyModel() {
         const bodyPattern = BODY_PATTERNS.find((p) => p.id === state.bodyPatternId);
         const sleevePattern = SLEEVE_PATTERNS.find((p) => p.id === state.sleevePatternId);
 
-        const [bodyPatternImage, sleevePatternImage, collarMaskImage] = await Promise.all([
+        const [bodyPatternImage, bodyBackPatternImage, sleevePatternImage, collarMaskImage] = await Promise.all([
           bodyPattern ? loadPatternImage(bodyPattern.svgPath, state.colors) : Promise.resolve(null),
+          // A broken back SVG must not break the shirt: fall back to the front image.
+          bodyPattern?.svgPathBack
+            ? loadPatternImage(bodyPattern.svgPathBack, state.colors).catch((err) => {
+                console.error("Failed to load back pattern image", err);
+                return null;
+              })
+            : Promise.resolve(null),
           sleevePattern ? loadPatternImage(sleevePattern.svgPath, state.colors) : Promise.resolve(null),
           JERSEY_MODEL.collarMaskUrl
             ? loadTintedMask(JERSEY_MODEL.collarMaskUrl, state.colors.collar)
@@ -186,7 +195,7 @@ export function JerseyModel() {
         ]);
 
         if (cancelled) return;
-        setPatternImages({ bodyPatternImage, sleevePatternImage, collarMaskImage });
+        setPatternImages({ bodyPatternImage, bodyBackPatternImage, sleevePatternImage, collarMaskImage });
       }
 
       loadPatterns().catch((err) => {
@@ -238,6 +247,7 @@ export function JerseyModel() {
       state,
       {
         bodyPatternImage: patternImages.bodyPatternImage,
+        bodyBackPatternImage: patternImages.bodyBackPatternImage,
         sleevePatternImage: patternImages.sleevePatternImage,
         collarMaskImage: patternImages.collarMaskImage,
         logoImage,

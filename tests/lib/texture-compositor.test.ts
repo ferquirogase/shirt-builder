@@ -296,4 +296,46 @@ describe("drawDesignToCanvas", () => {
     // 2:1 aspect ratio should be preserved, not squashed into a square.
     expect(width / height).toBeCloseTo(2, 5);
   });
+
+  it("draws the dedicated back image in the back region when one is given", () => {
+    const ctx = createMockCtx();
+    const front = { id: "front" } as unknown as HTMLImageElement;
+    const back = { id: "back" } as unknown as HTMLImageElement;
+    drawDesignToCanvas(
+      ctx,
+      1024,
+      initialDesignState,
+      { bodyPatternImage: front, sleevePatternImage: null, logoImage: null, bodyBackPatternImage: back },
+      regions
+    );
+    const used = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
+    expect(used).toEqual([front, back]);
+  });
+
+  it("falls back to the front image for the back when the back image is missing (Review Focus 4)", () => {
+    const ctx = createMockCtx();
+    const front = { id: "front" } as unknown as HTMLImageElement;
+    drawDesignToCanvas(
+      ctx,
+      1024,
+      initialDesignState,
+      { bodyPatternImage: front, sleevePatternImage: null, logoImage: null, bodyBackPatternImage: null },
+      regions
+    );
+    const used = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
+    expect(used).toEqual([front, front]);
+  });
+
+  it("still rotates the back image 180 degrees", () => {
+    const ctx = createMockCtx();
+    const back = {} as HTMLImageElement;
+    drawDesignToCanvas(
+      ctx,
+      1024,
+      initialDesignState,
+      { bodyPatternImage: {} as HTMLImageElement, sleevePatternImage: null, logoImage: null, bodyBackPatternImage: back },
+      regions
+    );
+    expect(ctx.rotate).toHaveBeenCalledWith(Math.PI);
+  });
 });
