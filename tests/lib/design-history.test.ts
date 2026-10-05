@@ -100,4 +100,33 @@ describe("historyReducer", () => {
     }));
     expect(run(actions).past).toHaveLength(HISTORY_LIMIT);
   });
+  it("records an accent color change as its own undo step", () => {
+    const changed = run([{ type: "SET_COLOR", slot: "accent", value: "#654321", at: 10_000 }]);
+    expect(changed.present.colors.accent).toBe("#654321");
+    expect(changed.past).toHaveLength(1);
+    const undone = historyReducer(changed, { type: "UNDO" });
+    expect(undone.present.colors.accent).toBe(initialDesignState.colors.accent);
+  });
+
+  it("one undo restores the previous pattern and its colors (Review Focus 3)", async () => {
+    const patterns = await import("@/lib/builder/patterns");
+    patterns.BODY_PATTERNS.push({
+      id: "test-accent-body",
+      label: "Test accent",
+      svgPath: "/patterns/plain-body.svg",
+      colors: [
+        { role: "primary", label: "Fondo", default: "#000001" },
+        { role: "accent", label: "Detalle", default: "#000002" },
+      ],
+    });
+    try {
+      const changed = run([{ type: "SET_BODY_PATTERN", id: "test-accent-body" }]);
+      expect(changed.present.colors.accent).toBe("#000002");
+      const undone = historyReducer(changed, { type: "UNDO" });
+      expect(undone.present.bodyPatternId).toBe(initialDesignState.bodyPatternId);
+      expect(undone.present.colors.accent).toBe(initialDesignState.colors.accent);
+    } finally {
+      patterns.BODY_PATTERNS.pop();
+    }
+  });
 });

@@ -1,4 +1,5 @@
 import type { ColorSlot } from "./svg-recolor";
+import { findPattern, visibleColors } from "./patterns";
 
 export type DesignState = {
   bodyPatternId: string;
@@ -32,12 +33,27 @@ export const initialDesignState: DesignState = {
   projectName: "Mi diseño",
 };
 
+// Switching pattern: roles the new pattern uses that were not already visible
+// take the pattern's defaults; roles already visible keep the user's choice.
+function withPatternChange(state: DesignState, kind: "body" | "sleeve", id: string): DesignState {
+  const next = kind === "body" ? { ...state, bodyPatternId: id } : { ...state, sleevePatternId: id };
+  const pattern = findPattern(id);
+  if (!pattern) return next;
+
+  const inUse = new Set(visibleColors(state.bodyPatternId, state.sleevePatternId).map((c) => c.role));
+  const colors = { ...state.colors };
+  for (const color of pattern.colors) {
+    if (!inUse.has(color.role)) colors[color.role] = color.default;
+  }
+  return { ...next, colors };
+}
+
 export function designReducer(state: DesignState, action: DesignAction): DesignState {
   switch (action.type) {
     case "SET_BODY_PATTERN":
-      return { ...state, bodyPatternId: action.id };
+      return withPatternChange(state, "body", action.id);
     case "SET_SLEEVE_PATTERN":
-      return { ...state, sleevePatternId: action.id };
+      return withPatternChange(state, "sleeve", action.id);
     case "SET_COLOR":
       return { ...state, colors: { ...state.colors, [action.slot]: action.value } };
     case "SET_LOGO":

@@ -43,6 +43,7 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
     a.sleevePatternId === b.sleevePatternId &&
     a.colors.primary === b.colors.primary &&
     a.colors.secondary === b.colors.secondary &&
+    a.colors.accent === b.colors.accent &&
     a.colors.collar === b.colors.collar &&
     a.logoDataUrl === b.logoDataUrl &&
     a.sponsorText === b.sponsorText &&
