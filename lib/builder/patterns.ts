@@ -22,6 +22,9 @@ export type PatternDef = {
 
 const PRIMARY: PatternColor = { role: "primary", label: "Color primario", default: "#0a5c36" };
 const SECONDARY: PatternColor = { role: "secondary", label: "Color secundario", default: "#ffffff" };
+const accent = (label: string, def: string): PatternColor => ({ role: "accent", label, default: def });
+const primary = (label: string, def: string): PatternColor => ({ role: "primary", label, default: def });
+const secondary = (label: string, def: string): PatternColor => ({ role: "secondary", label, default: def });
 
 export const BODY_PATTERNS: PatternDef[] = [
   { id: "plain-body", label: "Liso", svgPath: "/patterns/plain-body.svg", colors: [PRIMARY] },
@@ -30,6 +33,48 @@ export const BODY_PATTERNS: PatternDef[] = [
   { id: "gradient", label: "Degradado", svgPath: "/patterns/gradient-body.svg", colors: [PRIMARY, SECONDARY] },
   { id: "geometric", label: "Geométrico", svgPath: "/patterns/geometric-body.svg", colors: [PRIMARY, SECONDARY] },
   { id: "hoops", label: "Rayas", svgPath: "/patterns/hoops-body.svg", colors: [PRIMARY, SECONDARY] },
+  {
+    id: "stripes-wide",
+    label: "Franjas anchas",
+    svgPath: "/patterns/stripes-wide-body.svg",
+    colors: [primary("Fondo", "#d71920"), secondary("Franjas", "#111111")],
+  },
+  {
+    id: "stripes-fine",
+    label: "Franjas finas",
+    svgPath: "/patterns/stripes-fine-body.svg",
+    colors: [primary("Franjas principales", "#e2231a"), secondary("Franjas claras", "#ffffff")],
+  },
+  {
+    id: "pinstripes",
+    label: "Rayas finas",
+    svgPath: "/patterns/pinstripes-body.svg",
+    colors: [primary("Fondo", "#d22a1f"), secondary("Rayas", "#f2b705")],
+  },
+  {
+    id: "five-bands",
+    label: "Cinco bandas",
+    svgPath: "/patterns/five-bands-body.svg",
+    colors: [primary("Bandas exteriores y central", "#e8202a"), secondary("Bandas intermedias", "#1d3fa8")],
+  },
+  {
+    id: "stripes-irregular",
+    label: "Franjas irregulares",
+    svgPath: "/patterns/stripes-irregular-body.svg",
+    colors: [primary("Fondo", "#ffffff"), secondary("Franjas", "#111111")],
+  },
+  {
+    id: "stripes-three",
+    label: "Franjas en tres colores",
+    svgPath: "/patterns/stripes-three-body.svg",
+    colors: [primary("Franja principal", "#1b4f9c"), secondary("Franja alterna", "#a50044"), accent("Línea fina", "#0b1d4a")],
+  },
+  {
+    id: "stripes-three-wide",
+    label: "Tres franjas anchas",
+    svgPath: "/patterns/stripes-three-wide-body.svg",
+    colors: [primary("Fondo", "#ffffff"), secondary("Franjas", "#75aadb")],
+  },
 ];
 
 export const SLEEVE_PATTERNS: PatternDef[] = [

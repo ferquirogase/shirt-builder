@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect data-color-slot="primary" fill="#1b4f9c" x="0" y="0" width="512" height="512" />
+  <rect data-color-slot="secondary" fill="#a50044" x="57" y="0" width="57" height="512" />
+  <rect data-color-slot="secondary" fill="#a50044" x="171" y="0" width="57" height="512" />
+  <rect data-color-slot="secondary" fill="#a50044" x="284" y="0" width="57" height="512" />
+  <rect data-color-slot="secondary" fill="#a50044" x="398" y="0" width="57" height="512" />
+  <rect data-color-slot="accent" fill="#0b1d4a" x="25" y="0" width="6" height="512" />
+  <rect data-color-slot="accent" fill="#0b1d4a" x="139" y="0" width="6" height="512" />
+  <rect data-color-slot="accent" fill="#0b1d4a" x="253" y="0" width="6" height="512" />
+  <rect data-color-slot="accent" fill="#0b1d4a" x="367" y="0" width="6" height="512" />
+  <rect data-color-slot="accent" fill="#0b1d4a" x="481" y="0" width="6" height="512" />
+</svg>

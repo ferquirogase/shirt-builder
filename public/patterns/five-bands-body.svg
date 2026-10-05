@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect data-color-slot="primary" fill="#e8202a" x="0" y="0" width="512" height="512" />
+  <rect data-color-slot="secondary" fill="#1d3fa8" x="70" y="0" width="110" height="512" />
+  <rect data-color-slot="secondary" fill="#1d3fa8" x="332" y="0" width="110" height="512" />
+</svg>
