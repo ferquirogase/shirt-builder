@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { designReducer, initialDesignState } from "@/lib/builder/design-state";
+import { colorsAfterPatternChange, designReducer, initialDesignState } from "@/lib/builder/design-state";
 
 describe("designReducer", () => {
   it("sets a color for the given slot", () => {
@@ -105,5 +105,47 @@ describe("designReducer", () => {
         expect(s.colors.accent).toBe("#000002");
       });
     });
+  });
+});
+
+describe("SET_SLEEVE_PATTERN with a real sleeve pattern", () => {
+  it("applies the pattern's accent default and leaves the other colors alone", () => {
+    const next = designReducer(initialDesignState, { type: "SET_SLEEVE_PATTERN", id: "sleeve-accent" });
+    expect(next.sleevePatternId).toBe("sleeve-accent");
+    expect(next.colors.accent).toBe("#1a2a55");
+    expect(next.colors.primary).toBe(initialDesignState.colors.primary);
+    expect(next.colors.secondary).toBe(initialDesignState.colors.secondary);
+    expect(next.colors.collar).toBe(initialDesignState.colors.collar);
+  });
+});
+
+describe("colorsAfterPatternChange", () => {
+  const state = {
+    ...initialDesignState,
+    colors: { primary: "#111111", secondary: "#222222", accent: "#abcdef", collar: "#123456" },
+  };
+
+  it("keeps roles in use and gives a role not in use the pattern default", () => {
+    const colors = colorsAfterPatternChange(state, "sleeve", "sleeve-accent");
+    expect(colors.accent).toBe("#1a2a55");
+    expect(colors.primary).toBe("#111111");
+    expect(colors.secondary).toBe("#222222");
+  });
+
+  it("keeps an in-use role's color", () => {
+    expect(colorsAfterPatternChange(state, "body", "diagonal").primary).toBe("#111111");
+  });
+
+  it("never touches the collar", () => {
+    expect(colorsAfterPatternChange(state, "body", "stripes-three").collar).toBe("#123456");
+  });
+
+  it("returns the current colors for an unknown id", () => {
+    expect(colorsAfterPatternChange(state, "body", "nope")).toEqual(state.colors);
+  });
+
+  it("matches what the reducer produces", () => {
+    const next = designReducer(state, { type: "SET_BODY_PATTERN", id: "stripes-three" });
+    expect(next.colors).toEqual(colorsAfterPatternChange(state, "body", "stripes-three"));
   });
 });

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useDesign } from "@/lib/builder/design-context";
 import { BODY_PATTERNS, SLEEVE_PATTERNS } from "@/lib/builder/patterns";
+import { colorsAfterPatternChange } from "@/lib/builder/design-state";
 import { PatternGrid } from "../PatternGrid";
 import { PanelShell } from "./PanelShell";
 
@@ -41,7 +42,7 @@ export function DesignPanel() {
       <PatternGrid
         patterns={isTorso ? BODY_PATTERNS : SLEEVE_PATTERNS}
         selectedId={isTorso ? state.bodyPatternId : state.sleevePatternId}
-        colors={state.colors}
+        colorsFor={(p) => colorsAfterPatternChange(state, isTorso ? "body" : "sleeve", p.id)}
         onSelect={(id) =>
           dispatch(isTorso ? { type: "SET_BODY_PATTERN", id } : { type: "SET_SLEEVE_PATTERN", id })
         }

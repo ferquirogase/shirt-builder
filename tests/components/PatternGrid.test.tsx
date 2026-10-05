@@ -24,7 +24,7 @@ describe("PatternGrid", () => {
       <PatternGrid
         patterns={patterns}
         selectedId="b"
-        colors={{ primary: "#111111", secondary: "#eeeeee", accent: "#cccccc", collar: "#ffffff" }}
+        colorsFor={() => ({ primary: "#111111", secondary: "#eeeeee", accent: "#cccccc", collar: "#ffffff" })}
         onSelect={onSelect}
       />
     );
@@ -45,7 +45,7 @@ describe("PatternGrid", () => {
       <PatternGrid
         patterns={patterns}
         selectedId="a"
-        colors={{ primary: "#111111", secondary: "#eeeeee", accent: "#cccccc", collar: "#ffffff" }}
+        colorsFor={() => ({ primary: "#111111", secondary: "#eeeeee", accent: "#cccccc", collar: "#ffffff" })}
         onSelect={() => {}}
       />
     );
@@ -60,7 +60,7 @@ describe("PatternGrid", () => {
       <PatternGrid
         patterns={patterns}
         selectedId="a"
-        colors={{ primary: "#111111", secondary: "#eeeeee", accent: "#ff00aa", collar: "#ffffff" }}
+        colorsFor={() => ({ primary: "#111111", secondary: "#eeeeee", accent: "#ff00aa", collar: "#ffffff" })}
         onSelect={() => {}}
       />
     );

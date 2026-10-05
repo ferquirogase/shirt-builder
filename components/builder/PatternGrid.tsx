@@ -42,11 +42,12 @@ function PatternThumb({ svgPath, colors }: ThumbProps) {
 type Props = {
   patterns: PatternDef[];
   selectedId: string;
-  colors: ColorMap;
+  /** Colors each thumbnail is drawn with (what a click on it would produce). */
+  colorsFor: (pattern: PatternDef) => ColorMap;
   onSelect: (id: string) => void;
 };
 
-export function PatternGrid({ patterns, selectedId, colors, onSelect }: Props) {
+export function PatternGrid({ patterns, selectedId, colorsFor, onSelect }: Props) {
   return (
     <div role="radiogroup" className="grid grid-cols-3 gap-2 md:grid-cols-2 md:gap-3">
       {patterns.map((pattern) => {
@@ -63,7 +64,7 @@ export function PatternGrid({ patterns, selectedId, colors, onSelect }: Props) {
               selected ? "border-accent shadow-sm" : "border-transparent hover:border-line",
             ].join(" ")}
           >
-            <PatternThumb svgPath={pattern.svgPath} colors={colors} />
+            <PatternThumb svgPath={pattern.svgPath} colors={colorsFor(pattern)} />
             <span>{pattern.label}</span>
             {selected && (
               <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-foreground">

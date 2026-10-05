@@ -37,6 +37,19 @@ describe("DesignPanel", () => {
     await waitFor(() => expect(document.querySelector('[data-thumb="loaded"]')).not.toBeNull());
   });
 
+  it("draws an accent design's thumbnail with the design's own accent, not the stale one (Fix 1)", async () => {
+    const accentSvg = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="accent" fill="#000"/></svg>`;
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => accentSvg })));
+    renderWithDesign(<DesignPanel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Mangas" }));
+    const radio = screen.getByRole("radio", { name: "Mangas de otro color" });
+    await waitFor(() => expect(radio.querySelector('[data-thumb="loaded"]')).not.toBeNull());
+    const style = (radio.querySelector('[data-thumb="loaded"]') as HTMLElement).style.backgroundImage;
+    const decoded = decodeURIComponent(style);
+    expect(decoded).toContain("#1a2a55");
+    expect(decoded).not.toContain("#f5b700");
+  });
+
   it("offers the sleeve designs that use the accent color", async () => {
     const { api } = renderWithDesign(<DesignPanel />);
     fireEvent.click(screen.getByRole("tab", { name: "Mangas" }));
@@ -79,9 +92,13 @@ describe("ColorsPanel", () => {
 
   it("does not duplicate a role used by both the torso and the sleeves (Review Focus 2)", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
-    act(() => api.current!.dispatch({ type: "SET_SLEEVE_PATTERN", id: "sleeve-cuff" }));
-    expect(screen.getAllByLabelText("Color primario")).toHaveLength(1);
-    expect(screen.getAllByLabelText("Color secundario")).toHaveLength(1);
+    act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "stripes-three" }));
+    act(() => api.current!.dispatch({ type: "SET_SLEEVE_PATTERN", id: "sleeve-accent" }));
+    // stripes-three and sleeve-accent both use accent, with different labels: the torso's wins
+    expect(screen.getAllByLabelText("Línea fina")).toHaveLength(1);
+    expect(screen.queryByLabelText("Color de las mangas")).toBeNull();
+    expect(screen.getAllByLabelText("Franja principal")).toHaveLength(1);
+    expect(screen.getAllByLabelText("Franja alterna")).toHaveLength(1);
   });
 });
 

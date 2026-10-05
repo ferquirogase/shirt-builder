@@ -35,17 +35,26 @@ export const initialDesignState: DesignState = {
 
 // Switching pattern: roles the new pattern uses that were not already visible
 // take the pattern's defaults; roles already visible keep the user's choice.
-function withPatternChange(state: DesignState, kind: "body" | "sleeve", id: string): DesignState {
-  const next = kind === "body" ? { ...state, bodyPatternId: id } : { ...state, sleevePatternId: id };
+// Pure, so the UI can preview exactly what a click would produce.
+export function colorsAfterPatternChange(
+  state: DesignState,
+  kind: "body" | "sleeve",
+  id: string
+): DesignState["colors"] {
   const pattern = findPattern(id);
-  if (!pattern) return next;
+  if (!pattern) return state.colors;
 
   const inUse = new Set(visibleColors(state.bodyPatternId, state.sleevePatternId).map((c) => c.role));
   const colors = { ...state.colors };
   for (const color of pattern.colors) {
     if (!inUse.has(color.role)) colors[color.role] = color.default;
   }
-  return { ...next, colors };
+  return colors;
+}
+
+function withPatternChange(state: DesignState, kind: "body" | "sleeve", id: string): DesignState {
+  const next = kind === "body" ? { ...state, bodyPatternId: id } : { ...state, sleevePatternId: id };
+  return { ...next, colors: colorsAfterPatternChange(state, kind, id) };
 }
 
 export function designReducer(state: DesignState, action: DesignAction): DesignState {

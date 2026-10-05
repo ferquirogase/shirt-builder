@@ -98,8 +98,10 @@ describe("visibleColors", () => {
   });
 
   it("uses the torso's label when both patterns use the same role", () => {
-    const both = visibleColors("stripes-v1", "sleeve-primary");
-    expect(both.find((c) => c.role === "primary")!.label).toBe(findPattern("stripes-v1")!.colors[0].label);
+    // stripes-three and sleeve-accent both use accent, with different labels
+    const accents = visibleColors("stripes-three", "sleeve-accent").filter((c) => c.role === "accent");
+    expect(accents).toHaveLength(1);
+    expect(accents[0].label).toBe("Línea fina");
   });
 
   it("returns an empty list for unknown ids", () => {
