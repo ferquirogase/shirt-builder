@@ -75,6 +75,30 @@ export const BODY_PATTERNS: PatternDef[] = [
     svgPath: "/patterns/stripes-three-wide-body.svg",
     colors: [primary("Fondo", "#ffffff"), secondary("Franjas", "#75aadb")],
   },
+  {
+    id: "band-horizontal",
+    label: "Banda horizontal",
+    svgPath: "/patterns/band-horizontal-body.svg",
+    colors: [primary("Fondo", "#1d3fa8"), secondary("Banda", "#f6c700"), accent("Bordes de la banda", "#0f2a6b")],
+  },
+  {
+    id: "sash-diagonal",
+    label: "Banda diagonal",
+    svgPath: "/patterns/sash-diagonal-body.svg",
+    colors: [primary("Fondo", "#ffffff"), secondary("Banda", "#d0161f")],
+  },
+  {
+    id: "stripes-crossbar",
+    label: "Franjas con barra",
+    svgPath: "/patterns/stripes-crossbar-body.svg",
+    colors: [primary("Fondo", "#1a2a55"), secondary("Franjas y barra", "#f2c200")],
+  },
+  {
+    id: "split-center",
+    label: "Mitades con franja",
+    svgPath: "/patterns/split-center-body.svg",
+    colors: [primary("Mitad izquierda", "#d2171e"), secondary("Mitad derecha", "#0d8a3a"), accent("Franja central", "#ffffff")],
+  },
 ];
 
 export const SLEEVE_PATTERNS: PatternDef[] = [
