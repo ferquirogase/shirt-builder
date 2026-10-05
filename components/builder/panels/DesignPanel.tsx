@@ -41,8 +41,7 @@ export function DesignPanel() {
       <PatternGrid
         patterns={isTorso ? BODY_PATTERNS : SLEEVE_PATTERNS}
         selectedId={isTorso ? state.bodyPatternId : state.sleevePatternId}
-        primary={state.colors.primary}
-        secondary={state.colors.secondary}
+        colors={state.colors}
         onSelect={(id) =>
           dispatch(isTorso ? { type: "SET_BODY_PATTERN", id } : { type: "SET_SLEEVE_PATTERN", id })
         }

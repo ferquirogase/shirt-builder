@@ -1,18 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { PatternDef } from "@/lib/builder/patterns";
+import type { ColorMap } from "@/lib/builder/svg-recolor";
 import { patternThumbnailUrl } from "@/lib/builder/pattern-thumbnail";
 import { CheckIcon } from "./icons";
 
-type ThumbProps = { svgPath: string; primary: string; secondary: string };
+type ThumbProps = { svgPath: string; colors: ColorMap };
 
-function PatternThumb({ svgPath, primary, secondary }: ThumbProps) {
-  const key = `${svgPath}|${primary}|${secondary}`;
+function PatternThumb({ svgPath, colors }: ThumbProps) {
+  const { primary, secondary, accent } = colors;
+  const key = `${svgPath}|${primary}|${secondary}|${accent}`;
   const [result, setResult] = useState<{ key: string; url: string | null } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    patternThumbnailUrl(svgPath, { primary, secondary })
+    patternThumbnailUrl(svgPath, { primary, secondary, accent })
       .then((url) => {
         if (!cancelled) setResult({ key, url });
       })
@@ -23,7 +25,7 @@ function PatternThumb({ svgPath, primary, secondary }: ThumbProps) {
     return () => {
       cancelled = true;
     };
-  }, [key, svgPath, primary, secondary]);
+  }, [key, svgPath, primary, secondary, accent]);
 
   const current = result && result.key === key ? result : null;
   const status = !current ? "loading" : current.url ? "loaded" : "error";
@@ -40,12 +42,11 @@ function PatternThumb({ svgPath, primary, secondary }: ThumbProps) {
 type Props = {
   patterns: PatternDef[];
   selectedId: string;
-  primary: string;
-  secondary: string;
+  colors: ColorMap;
   onSelect: (id: string) => void;
 };
 
-export function PatternGrid({ patterns, selectedId, primary, secondary, onSelect }: Props) {
+export function PatternGrid({ patterns, selectedId, colors, onSelect }: Props) {
   return (
     <div role="radiogroup" className="grid grid-cols-3 gap-2 md:grid-cols-2 md:gap-3">
       {patterns.map((pattern) => {
@@ -62,7 +63,7 @@ export function PatternGrid({ patterns, selectedId, primary, secondary, onSelect
               selected ? "border-accent shadow-sm" : "border-transparent hover:border-line",
             ].join(" ")}
           >
-            <PatternThumb svgPath={pattern.svgPath} primary={primary} secondary={secondary} />
+            <PatternThumb svgPath={pattern.svgPath} colors={colors} />
             <span>{pattern.label}</span>
             {selected && (
               <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-foreground">
