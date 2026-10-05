@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect data-color-slot="primary" fill="#1b2a8f" x="0" y="0" width="512" height="512" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 150 Q128 128 256 150 T512 150 V156 Q384 178 256 156 T0 156 Z" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 176 Q128 154 256 176 T512 176 V182 Q384 204 256 182 T0 182 Z" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 202 Q128 180 256 202 T512 202 V208 Q384 230 256 208 T0 208 Z" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 228 Q128 206 256 228 T512 228 V234 Q384 256 256 234 T0 234 Z" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 254 Q128 232 256 254 T512 254 V260 Q384 282 256 260 T0 260 Z" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 280 Q128 258 256 280 T512 280 V286 Q384 308 256 286 T0 286 Z" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 306 Q128 284 256 306 T512 306 V312 Q384 334 256 312 T0 312 Z" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 332 Q128 310 256 332 T512 332 V338 Q384 360 256 338 T0 338 Z" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 358 Q128 336 256 358 T512 358 V364 Q384 386 256 364 T0 364 Z" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 384 Q128 362 256 384 T512 384 V390 Q384 412 256 390 T0 390 Z" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 410 Q128 388 256 410 T512 410 V416 Q384 438 256 416 T0 416 Z" />
+  <path data-color-slot="secondary" fill="#9fb4ff" fill-opacity="0.55" d="M0 436 Q128 414 256 436 T512 436 V442 Q384 464 256 442 T0 442 Z" />
+</svg>

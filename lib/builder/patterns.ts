@@ -99,6 +99,24 @@ export const BODY_PATTERNS: PatternDef[] = [
     svgPath: "/patterns/split-center-body.svg",
     colors: [primary("Mitad izquierda", "#d2171e"), secondary("Mitad derecha", "#0d8a3a"), accent("Franja central", "#ffffff")],
   },
+  {
+    id: "yoke",
+    label: "Hombros de color",
+    svgPath: "/patterns/yoke-body.svg",
+    colors: [primary("Cuerpo", "#e8590c"), secondary("Hombros", "#1a3a8f")],
+  },
+  {
+    id: "chevron",
+    label: "Chevrón",
+    svgPath: "/patterns/chevron-body.svg",
+    colors: [primary("Cuerpo", "#c8102e"), secondary("Hombros y líneas", "#1b2a6b"), accent("Chevrón principal", "#ffffff")],
+  },
+  {
+    id: "waves",
+    label: "Líneas onduladas",
+    svgPath: "/patterns/waves-body.svg",
+    colors: [primary("Fondo", "#1b2a8f"), secondary("Líneas", "#9fb4ff")],
+  },
 ];
 
 export const SLEEVE_PATTERNS: PatternDef[] = [
