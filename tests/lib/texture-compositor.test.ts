@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { drawDesignToCanvas } from "@/lib/builder/texture-compositor";
 import { initialDesignState } from "@/lib/builder/design-state";
+import { NAME_V_FRAC, NUMBER_V_FRAC } from "@/lib/builder/back-layout";
 import { OUTLINE_COLOR, OUTLINE_WIDTH } from "@/lib/builder/name-number-presets";
 import { UV_REGIONS, GEPE_UV_REGIONS, UV_FLIP_Y, type UVRegions, type UVRect } from "@/lib/builder/uv-regions";
 
@@ -345,12 +346,11 @@ describe("drawDesignToCanvas", () => {
       expect(textWidthUv).toBeLessThanOrEqual(0.29 * 0.75);
     });
 
-    it("anchors the name a quarter of the way down the back, clear of the collar", () => {
+    it("anchors the name at the shared back-layout position, clear of the collar", () => {
       const ctx = createMockCtx();
       drawDesignToCanvas(ctx, 1000, withStyle({ playerName: "LEO" }), blank, regions);
-      // bodyBack v .1..0.5: a quarter down is v = 0.2 -> canvas y = (1 - 0.2) * 1000.
       const [, ty] = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls[0];
-      expect(ty).toBeCloseTo(800, 5);
+      expect(ty).toBeCloseTo((1 - (0.1 + NAME_V_FRAC * 0.4)) * 1000, 5);
     });
 
     it("does not shrink a short name", () => {
@@ -571,6 +571,179 @@ describe("drawDesignToCanvas", () => {
       const ctx = ctxWithPixels(0, 0, 0);
       drawDesignToCanvas(ctx, 1000, initialDesignState, base, regions);
       expect(ctx.drawImage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("sponsors", () => {
+    const base = { bodyPatternImage: null, sleevePatternImage: null, logoImage: null };
+    const square = (id: string) => ({ id, naturalWidth: 100, naturalHeight: 100 }) as unknown as HTMLImageElement;
+    const designWith = (sponsors: typeof initialDesignState.sponsors) => ({ ...initialDesignState, sponsors });
+    const entry = (scale = 1) => ({ dataUrl: "data:image/png;base64,AAAA", scale });
+
+    // The sponsor is drawn after translate(center)+rotate: its box is centered on (0,0).
+    function drawn(ctx: CanvasRenderingContext2D, image: HTMLImageElement) {
+      const calls = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls;
+      const index = calls.findIndex((c) => c[0] === image);
+      const [, x, y, w, h] = calls[index];
+      const translate = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
+      const rotate = (ctx.rotate as ReturnType<typeof vi.fn>).mock.calls;
+      return { x, y, w, h, translate, rotate };
+    }
+
+    it("draws the abdomen sponsor centered in the lower front at its base size, unrotated", () => {
+      const ctx = createMockCtx();
+      const img = square("abdomen");
+      drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: img } }, regions);
+      const { x, y, w, h, translate, rotate } = drawn(ctx, img);
+      // bodyFront u .3..0.7 -> center u 0.5 -> x 500; v .5..0.9, vFrac 0.3 -> v 0.62 -> y 380.
+      expect(translate[0][0]).toBeCloseTo(500, 5);
+      expect(translate[0][1]).toBeCloseTo(380, 5);
+      expect(rotate).toHaveLength(0);
+      expect(w).toBeCloseTo(120, 5); // baseBox 0.12 of 1000
+      expect(h).toBeCloseTo(120, 5);
+      expect(x).toBeCloseTo(-60, 5); // centered on the translated origin
+      expect(y).toBeCloseTo(-60, 5);
+    });
+
+    it("scales the size with the placement's scale", () => {
+      const ctx = createMockCtx();
+      const img = square("abdomen");
+      drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry(1.5) }), { ...base, sponsorImages: { abdomen: img } }, regions);
+      expect(drawn(ctx, img).w).toBeCloseTo(180, 5);
+    });
+
+    it("limits a scale outside 0.5..1.5 and treats NaN as 1 (Review Focus 1)", () => {
+      const sizeAt = (scale: number) => {
+        const ctx = createMockCtx();
+        const img = square("abdomen");
+        drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry(scale) }), { ...base, sponsorImages: { abdomen: img } }, regions);
+        return drawn(ctx, img).w;
+      };
+      expect(sizeAt(40)).toBeCloseTo(180, 5);
+      expect(sizeAt(0)).toBeCloseTo(60, 5);
+      expect(sizeAt(Number.NaN)).toBeCloseTo(120, 5);
+    });
+
+    it("keeps a wide image's proportions", () => {
+      const ctx = createMockCtx();
+      const wide = { id: "w", naturalWidth: 400, naturalHeight: 100 } as unknown as HTMLImageElement;
+      drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: wide } }, regions);
+      const { w, h } = drawn(ctx, wide);
+      expect(w).toBeCloseTo(120, 5);
+      expect(h).toBeCloseTo(30, 5);
+    });
+
+    it("draws an SVG with no natural size as a square instead of failing (Review Focus 3)", () => {
+      const ctx = createMockCtx();
+      const svg = { id: "svg", naturalWidth: 0, naturalHeight: 0 } as unknown as HTMLImageElement;
+      drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: svg } }, regions);
+      const { w, h } = drawn(ctx, svg);
+      expect(w).toBeCloseTo(120, 5);
+      expect(h).toBeCloseTo(120, 5);
+    });
+
+    it("turns the back sponsors half a turn, like the name and number", () => {
+      const ctx = createMockCtx();
+      const nape = square("nape");
+      const low = square("low");
+      drawDesignToCanvas(
+        ctx,
+        1000,
+        designWith({ nape: entry(), "lower-back": entry() }),
+        { ...base, sponsorImages: { nape, "lower-back": low } },
+        regions
+      );
+      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI], [Math.PI]]);
+      // bodyBack u .3..0.7 -> x 500; vFrac 0.285 -> v 0.1+0.285*0.4=0.214 -> y 786; 0.88 -> v 0.452 -> y 548.
+      const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
+      expect(t[0][0]).toBeCloseTo(500, 5);
+      expect(t[0][1]).toBeCloseTo(786, 5);
+      expect(t[1][1]).toBeCloseTo(548, 5);
+      expect(drawn(ctx, nape).w).toBeCloseTo(30, 5);
+      expect(drawn(ctx, low).w).toBeCloseTo(45, 5);
+    });
+
+    it("turns the sleeves a quarter turn, in opposite directions, and never mirrors them", () => {
+      const ctx = createMockCtx();
+      const left = square("left");
+      const right = square("right");
+      drawDesignToCanvas(
+        ctx,
+        1000,
+        designWith({ "sleeve-left": entry(), "sleeve-right": entry() }),
+        { ...base, sponsorImages: { "sleeve-left": left, "sleeve-right": right } },
+        regions
+      );
+      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[-Math.PI / 2], [Math.PI / 2]]);
+      expect(ctx.scale).not.toHaveBeenCalled();
+      // sleeveLeft u .05..0.25 -> x 150; v .1..0.4, vFrac 0.53 -> v 0.259 -> y 741.
+      const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
+      expect(t[0][0]).toBeCloseTo(150, 5);
+      expect(t[0][1]).toBeCloseTo(741, 5);
+      // sleeveRight u .75..0.95 -> x 850.
+      expect(t[1][0]).toBeCloseTo(850, 5);
+      expect(drawn(ctx, left).w).toBeCloseTo(50, 5);
+    });
+
+    it("draws every placement that has an image, after the crest and the brand logo", () => {
+      const ctx = createMockCtx();
+      const crest = square("crest");
+      const abdomen = square("abdomen");
+      drawDesignToCanvas(
+        ctx,
+        1000,
+        designWith({ abdomen: entry() }),
+        { ...base, logoImage: crest, sponsorImages: { abdomen } },
+        regions
+      );
+      const order = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
+      expect(order).toEqual([crest, abdomen]);
+    });
+
+    it("draws nothing for a placement with no entry, or whose image is not loaded yet (Review Focus 3)", () => {
+      const ctx = createMockCtx();
+      // entry without image (still decoding), image without entry (removed): neither draws.
+      drawDesignToCanvas(
+        ctx,
+        1000,
+        designWith({ abdomen: entry(), nape: entry() }),
+        { ...base, sponsorImages: { nape: null, "lower-back": square("orphan") } },
+        regions
+      );
+      expect(ctx.drawImage).not.toHaveBeenCalled();
+    });
+
+    it("never writes sponsor text", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: square("a") } }, regions);
+      expect(ctx.fillText).not.toHaveBeenCalled();
+    });
+
+    it("leaves the canvas state as it found it after each sponsor", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(
+        ctx,
+        1000,
+        designWith({ nape: entry(), abdomen: entry() }),
+        { ...base, sponsorImages: { nape: square("n"), abdomen: square("a") } },
+        regions
+      );
+      const saves = (ctx.save as ReturnType<typeof vi.fn>).mock.calls.length;
+      const restores = (ctx.restore as ReturnType<typeof vi.fn>).mock.calls.length;
+      expect(saves).toBe(restores);
+    });
+  });
+
+  describe("name and number positions on the back", () => {
+    const blank = { bodyPatternImage: null, sleevePatternImage: null, logoImage: null };
+
+    it("puts the name's baseline at NAME_V_FRAC and the number's at NUMBER_V_FRAC", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, { ...initialDesignState, playerName: "LEO", playerNumber: "10" }, blank, regions);
+      const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
+      // bodyBack v .1..0.5 -> canvas y = (1 - (0.1 + vFrac * 0.4)) * 1000
+      expect(t[0][1]).toBeCloseTo((1 - (0.1 + NAME_V_FRAC * 0.4)) * 1000, 5);
+      expect(t[1][1]).toBeCloseTo((1 - (0.1 + NUMBER_V_FRAC * 0.4)) * 1000, 5);
     });
   });
 

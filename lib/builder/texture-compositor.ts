@@ -1,5 +1,7 @@
 import type { DesignState } from "./design-state";
 import { UV_FLIP_Y, type UVRegions, type UVRect } from "./uv-regions";
+import { NAME_FONT_FRACTION, NAME_V_FRAC, NUMBER_FONT_FRACTION, NUMBER_V_FRAC } from "./back-layout";
+import { SPONSOR_SLOTS, clampSponsorScale, type SponsorSlotId } from "./sponsor-slots";
 import {
   OUTLINE_COLOR,
   OUTLINE_WIDTH,
@@ -22,6 +24,8 @@ export type CompositorImages = {
   /** The brand logo for light backgrounds (dark artwork) and for dark ones (light artwork). */
   brandLogoForLight?: HTMLImageElement | null;
   brandLogoForDark?: HTMLImageElement | null;
+  /** Decoded sponsor images, by placement; a missing or null one is not drawn. */
+  sponsorImages?: Partial<Record<SponsorSlotId, HTMLImageElement | null>>;
 };
 
 // UV v -> canvas y fraction. CanvasTexture (and this app's JerseyModel) uses
@@ -145,6 +149,31 @@ function drawBrandLogo(
   ctx.drawImage(chosen, box.x, box.y, box.width, box.height);
 }
 
+// The sponsors: one image per placement. Each is fitted into its box (placement
+// base size x the user's scale), centered on the placement's point and turned so
+// it reads upright on the model.
+function drawSponsors(
+  ctx: CanvasRenderingContext2D,
+  canvasSize: number,
+  design: DesignState,
+  images: CompositorImages,
+  regions: UVRegions
+): void {
+  for (const slot of SPONSOR_SLOTS) {
+    const entry = design.sponsors[slot.id];
+    const image = images.sponsorImages?.[slot.id];
+    if (!entry || !image) continue;
+
+    const center = pointInRegionToCanvas(regions[slot.region], slot.uFrac, slot.vFrac, canvasSize);
+    const box = fitLogoBox(image, { x: 0, y: 0 }, canvasSize, slot.baseBox * clampSponsorScale(entry.scale));
+    ctx.save();
+    ctx.translate(center.x, center.y);
+    if (slot.rotation !== 0) ctx.rotate(slot.rotation);
+    ctx.drawImage(image, box.x, box.y, box.width, box.height);
+    ctx.restore();
+  }
+}
+
 // Where the crest is centered within bodyFront: the wearer's left chest, the
 // usual crest spot. Front faces +z and the camera is on +z, so u grows toward
 // the viewer's right. Tuned against screenshots of the GEPE shirt: 0.70 of the
@@ -207,6 +236,7 @@ export function drawDesignToCanvas(
   }
 
   drawBrandLogo(ctx, canvasSize, design, images, regions);
+  drawSponsors(ctx, canvasSize, design, images, regions);
 
   const nnStyle = design.nameNumberStyle;
   const nnPreset = getNameNumberPreset(nnStyle.presetId);
@@ -216,7 +246,7 @@ export function drawDesignToCanvas(
   if (design.playerName) {
     // Upper portion of bodyBack: vFrac=0 is bodyBack.v0, the edge shared
     // with bodyFront's top (see logo comment above), i.e. near the collar.
-    // A quarter of the way down keeps it clear of the collar, above the number.
+    // Below the collar band and the nape sponsor, above the number (see back-layout.ts).
     const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, NAME_V_FRAC, canvasSize);
     drawBackText(ctx, design.playerName, cx, cy, {
       basePx: canvasSize * NAME_FONT_FRACTION * nnPreset.nameScale,
@@ -230,7 +260,7 @@ export function drawDesignToCanvas(
   if (design.playerNumber) {
     // Below the name (further from the collar edge), larger font, centered
     // in bodyBack.
-    const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, 0.55, canvasSize);
+    const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, NUMBER_V_FRAC, canvasSize);
     drawBackText(ctx, design.playerNumber, cx, cy, {
       basePx: canvasSize * NUMBER_FONT_FRACTION * nnPreset.numberScale,
       maxWidth: maxTextWidth,
@@ -246,10 +276,6 @@ export function drawDesignToCanvas(
 // back it shrinks; and u runs right-to-left as seen from behind). Content
 // drawn upright into bodyBack would show upside-down on the model, so back
 // content is drawn rotated by PI.
-// Where the name's baseline sits within bodyBack, measured from the collar edge.
-const NAME_V_FRAC = 0.25;
-const NAME_FONT_FRACTION = 0.05;
-const NUMBER_FONT_FRACTION = 0.12;
 // Default share of bodyBack's width the back text may take (see UVRegions.backTextWidthFraction).
 const MAX_BACK_TEXT_WIDTH_FRACTION = 0.8;
 
