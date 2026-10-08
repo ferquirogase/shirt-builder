@@ -155,7 +155,7 @@ const CREST_V_FRAC = 0.71;
 // The longer side of the crest, as a share of the canvas (it was 0.08, which looked too big).
 const CREST_BOX_FRACTION = 0.065;
 // The maker's mark is smaller than the crest, like a brand on a real shirt.
-const BRAND_BOX_FRACTION = 0.038;
+const BRAND_BOX_FRACTION = 0.03;
 // Cloth at least this bright (0..1) gets the logo version meant for light backgrounds.
 const LIGHT_BACKGROUND_LUMA = 0.5;
 
