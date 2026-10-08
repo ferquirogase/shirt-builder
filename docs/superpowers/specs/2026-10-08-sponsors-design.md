@@ -13,19 +13,19 @@ Incluye:
 Fuera de alcance: mover los sponsors a mano, texto como sponsor, cambiar la cámara hacia la espalda al elegir una ubicación trasera, efecto tejido o relieve (se evaluó y se dejó para después).
 
 ## Ubicaciones (`lib/builder/sponsor-slots.ts`)
-Un catálogo `SPONSOR_SLOTS` en este orden. Cada ubicación define: `id`, `label`, la región de la textura (`bodyFront`, `bodyBack`, `sleeveLeft`, `sleeveRight`), el punto central dentro de la región (`uFrac`, `vFrac`), la orientación (giro de 180° en la espalda; giro y espejo en las mangas) y el tamaño base (`baseBox`, lado mayor como fracción del lienzo).
+Un catálogo `SPONSOR_SLOTS` en este orden. Cada ubicación define: `id`, `label`, la región de la textura (`bodyFront`, `bodyBack`, `sleeveLeft`, `sleeveRight`), el punto central dentro de la región (`uFrac`, `vFrac`), la orientación (giro de 180° en la espalda; un cuarto de giro en las mangas, sin espejo) y el tamaño base (`baseBox`, lado mayor como fracción del lienzo).
 
 | id | Etiqueta | Región | Tamaño base | Notas |
 |---|---|---|---|---|
-| `abdomen` | Abdomen | `bodyFront` | 0.16 | el más grande; centro horizontal; unos 30 % de altura desde el borde de abajo |
-| `sleeve-left` | Manga izquierda | `sleeveLeft` | 0.055 | pequeño-normal; cara exterior de la manga |
-| `sleeve-right` | Manga derecha | `sleeveRight` | 0.055 | espejo de la izquierda |
-| `nape` | Nuca | `bodyBack` | 0.05 | pequeño; entre el cuello y el nombre |
-| `lower-back` | Espalda baja | `bodyBack` | 0.06 | pequeño; debajo del número |
+| `abdomen` | Abdomen | `bodyFront` | 0.12 | el más grande; centro horizontal; unos 30 % de altura desde el borde de abajo |
+| `sleeve-left` | Manga izquierda | `sleeveLeft` | 0.05 | pequeño-normal; cara exterior de la manga |
+| `sleeve-right` | Manga derecha | `sleeveRight` | 0.05 | espejo de la izquierda |
+| `nape` | Nuca | `bodyBack` | 0.03 | pequeño; bajo la banda del cuello y sobre el nombre |
+| `lower-back` | Espalda baja | `bodyBack` | 0.045 | pequeño; debajo del número |
 
 Los valores de posición y tamaño son provisionales: se calculan con la geometría de la malla (`public/models/gepe_shirt.obj`) y se afinan con capturas, como se hizo con el escudo. Dos puntos críticos:
-- **Mangas:** en la textura el eje de la manga (del puño al hombro) corre en la dirección `u` y la circunferencia en `v`, así que la imagen necesita giro y espejo para verse derecha con el brazo caído. Se deriva de la malla y se fija con un test. La manga es corta (unos 0.117 de ancho en `u`): el tamaño base y el 150 % deben caber a lo largo de ella.
-- **Nuca:** el nombre está a 25 % de la espalda y el escote entra en la espalda casi hasta ese punto, así que el espacio es mínimo. Si no cabe, se baja un poco el nombre; ese ajuste es parte de este trabajo.
+- **Mangas:** en la textura el eje de la manga (del puño al hombro) corre en la dirección `u` y la circunferencia en `v`, así que la imagen necesita un cuarto de giro para verse derecha con el brazo caído: `-90°` en la manga izquierda y `+90°` en la derecha, sin espejo en ninguna. Se derivó de la malla y lo fija un test. La manga es corta (unos 0.117 de ancho en `u`): el tamaño base y el 150 % deben caber a lo largo de ella.
+- **Nuca:** la malla del cuello ocupa la textura de la espalda hasta el 23 % de su altura, así que la nuca va debajo de esa banda y el nombre tuvo que bajar (ver más abajo).
 
 El tamaño base es el lado mayor de la caja en la que se ajusta la imagen, conservando su proporción, como el escudo.
 
@@ -60,3 +60,6 @@ La validación y la lectura de archivos se extraen de `CrestPanel` a un hook com
 - Catálogo: ids únicos; los 5 esperados en orden; tamaño abdomen > mangas > espalda; todos los puntos dentro de su región; `baseBox × 1.5` cabe en la zona de cada ubicación.
 - Compositor: cada ubicación dibuja su imagen centrada en su punto y con su tamaño; la escala agranda y achica; la espalda se dibuja rotada 180°; las mangas con giro y espejo según la malla; las ubicaciones vacías o sin cargar no dibujan nada; no se llama a `fillText` para sponsors.
 - Panel: subir a una ubicación despacha `SET_SPONSOR` con esa ubicación; un archivo inválido muestra su error solo en esa tarjeta; el control de escala aparece solo con imagen; quitar vacía la tarjeta; una subida lenta no pisa a una posterior de la misma ubicación.
+
+## Reacomodo de la espalda
+Las posiciones verticales viven en `lib/builder/back-layout.ts`, medidas desde el cuello: nuca 0.285, nombre 0.42 (antes 0.25), número 0.66 (antes 0.55), espalda baja 0.88. Un test (`tests/lib/back-layout.test.ts`) verifica que, con todos los sponsors al 150 %, la nuca queda bajo la banda del cuello y que nuca, nombre, número y espalda baja no se solapan.
