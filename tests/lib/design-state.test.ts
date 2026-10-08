@@ -176,3 +176,58 @@ describe("name/number style", () => {
     expect(outline.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, outline: true });
   });
 });
+
+describe("sponsors", () => {
+  const IMG = "data:image/png;base64,AAAA";
+  const IMG2 = "data:image/png;base64,BBBB";
+
+  it("starts with no sponsors and no text sponsor", () => {
+    expect(initialDesignState.sponsors).toEqual({});
+    expect("sponsorText" in initialDesignState).toBe(false);
+  });
+
+  it("stores an image for a placement at scale 1", () => {
+    const next = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG });
+    expect(next.sponsors).toEqual({ abdomen: { dataUrl: IMG, scale: 1 } });
+  });
+
+  it("keeps the placements independent", () => {
+    const a = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG });
+    const b = designReducer(a, { type: "SET_SPONSOR", slot: "nape", dataUrl: IMG2 });
+    expect(b.sponsors).toEqual({ abdomen: { dataUrl: IMG, scale: 1 }, nape: { dataUrl: IMG2, scale: 1 } });
+  });
+
+  it("replacing an image keeps that placement's scale (Review Focus 6)", () => {
+    let s = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG });
+    s = designReducer(s, { type: "SET_SPONSOR_SCALE", slot: "abdomen", value: 1.3 });
+    s = designReducer(s, { type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG2 });
+    expect(s.sponsors.abdomen).toEqual({ dataUrl: IMG2, scale: 1.3 });
+  });
+
+  it("clamps the scale to 0.5..1.5 and treats NaN as 1 (Review Focus 1)", () => {
+    const base = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "nape", dataUrl: IMG });
+    expect(designReducer(base, { type: "SET_SPONSOR_SCALE", slot: "nape", value: 9 }).sponsors.nape!.scale).toBe(1.5);
+    expect(designReducer(base, { type: "SET_SPONSOR_SCALE", slot: "nape", value: 0 }).sponsors.nape!.scale).toBe(0.5);
+    expect(designReducer(base, { type: "SET_SPONSOR_SCALE", slot: "nape", value: Number.NaN }).sponsors.nape!.scale).toBe(1);
+  });
+
+  it("ignores a scale change on an empty placement", () => {
+    const next = designReducer(initialDesignState, { type: "SET_SPONSOR_SCALE", slot: "nape", value: 1.2 });
+    expect(next).toBe(initialDesignState);
+  });
+
+  it("removes a sponsor, leaving the others", () => {
+    let s = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG });
+    s = designReducer(s, { type: "SET_SPONSOR", slot: "nape", dataUrl: IMG2 });
+    s = designReducer(s, { type: "REMOVE_SPONSOR", slot: "abdomen" });
+    expect(s.sponsors).toEqual({ nape: { dataUrl: IMG2, scale: 1 } });
+  });
+
+  it("ignores removing an empty placement and any unknown placement", () => {
+    expect(designReducer(initialDesignState, { type: "REMOVE_SPONSOR", slot: "abdomen" })).toBe(initialDesignState);
+    const bad = "chest" as never;
+    expect(designReducer(initialDesignState, { type: "SET_SPONSOR", slot: bad, dataUrl: IMG })).toBe(initialDesignState);
+    expect(designReducer(initialDesignState, { type: "SET_SPONSOR_SCALE", slot: bad, value: 1 })).toBe(initialDesignState);
+    expect(designReducer(initialDesignState, { type: "REMOVE_SPONSOR", slot: bad })).toBe(initialDesignState);
+  });
+});

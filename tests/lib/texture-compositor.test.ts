@@ -75,7 +75,7 @@ describe("drawDesignToCanvas", () => {
     drawDesignToCanvas(
       ctx,
       1024,
-      { ...initialDesignState, sponsorText: "ACME" },
+      { ...initialDesignState, playerName: "ACME" },
       { bodyPatternImage: pattern, sleevePatternImage: null, logoImage: null, collarMaskImage: mask },
       regions
     );
@@ -217,13 +217,6 @@ describe("drawDesignToCanvas", () => {
       const ctx = createMockCtx();
       drawDesignToCanvas(ctx, 1000, { ...initialDesignState, playerNumber: "10" }, blank, regions);
       expect(ctx.rotate).toHaveBeenCalledWith(Math.PI);
-    });
-
-    it("does not rotate front-panel sponsor text", () => {
-      const ctx = createMockCtx();
-      drawDesignToCanvas(ctx, 1000, { ...initialDesignState, sponsorText: "ACME" }, blank, regions);
-      expect(ctx.fillText).toHaveBeenCalledWith("ACME", expect.any(Number), expect.any(Number));
-      expect(ctx.rotate).not.toHaveBeenCalled();
     });
 
     it("draws the back body pattern rotated 180deg around the region center, front unrotated", () => {

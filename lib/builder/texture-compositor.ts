@@ -208,15 +208,6 @@ export function drawDesignToCanvas(
 
   drawBrandLogo(ctx, canvasSize, design, images, regions);
 
-  if (design.sponsorText) {
-    ctx.fillStyle = "#ffffff";
-    ctx.font = `${canvasSize * 0.03}px sans-serif`;
-    ctx.textAlign = "center";
-    // Near the top of bodyFront, below the logo.
-    const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyFront, 0.5, 0.85, canvasSize);
-    ctx.fillText(design.sponsorText, cx, cy);
-  }
-
   const nnStyle = design.nameNumberStyle;
   const nnPreset = getNameNumberPreset(nnStyle.presetId);
   const backWidth = (regions.bodyBack.u1 - regions.bodyBack.u0) * canvasSize;

@@ -171,15 +171,10 @@ describe("CrestPanel", () => {
   });
 });
 
-describe("SponsorPanel and TextPanel", () => {
+describe("TextPanel", () => {
   it("makes keyboard focus visible on the text fields", () => {
-    renderWithDesign(
-      <>
-        <SponsorPanel />
-        <TextPanel />
-      </>
-    );
-    for (const name of ["Texto del sponsor", "Nombre", "Número"]) {
+    renderWithDesign(<TextPanel />);
+    for (const name of ["Nombre", "Número"]) {
       expect(screen.getByLabelText(name).className).toContain("focus-visible:ring-2");
     }
   });
@@ -214,12 +209,6 @@ describe("SponsorPanel and TextPanel", () => {
     expect(screen.queryByLabelText("Sombra")).toBeNull();
     expect(screen.queryByLabelText("Color del contorno")).toBeNull();
     expect(screen.queryByLabelText("Grosor del contorno")).toBeNull();
-  });
-
-  it("sets the sponsor text", () => {
-    const { api } = renderWithDesign(<SponsorPanel />);
-    fireEvent.change(screen.getByLabelText("Texto del sponsor"), { target: { value: "ACME" } });
-    expect(api.current!.state.sponsorText).toBe("ACME");
   });
 
   it("uppercases the name and keeps only two digits of the number", () => {
