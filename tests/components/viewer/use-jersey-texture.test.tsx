@@ -65,7 +65,7 @@ describe("useJerseyTexture", () => {
     expect(texture.colorSpace).toBe(THREE.SRGBColorSpace);
   });
 
-  it("paints the current design with the model's UV regions and flags the texture for upload", async () => {
+  it("paints the current design with the model's UV regions", async () => {
     const { result } = mount();
     await waitFor(() => expect(draw).toHaveBeenCalled());
     const [ctx, size, design, , regions, family] = lastCall();
@@ -74,7 +74,20 @@ describe("useJerseyTexture", () => {
     expect(design).toEqual(result.current.design.state);
     expect(regions).toBe(JERSEY_MODEL.uvRegions);
     expect(family).toBe("sans-serif"); // no font variable on <html> under jsdom
-    expect(result.current.texture.version).toBeGreaterThan(0);
+  });
+
+  it("flags the texture for upload after every repaint, or the GPU keeps showing the old one", async () => {
+    const { result } = mount();
+    await waitFor(() => expect(lastImages().brandLogoForDark).not.toBeNull());
+    await waitFor(() => expect(lastImages().bodyPatternImage).not.toBeNull());
+    // A CanvasTexture starts at version 1 on its own; only a repaint raises it further.
+    const before = result.current.texture.version;
+    const paintsBefore = draw.mock.calls.length;
+
+    act(() => result.current.design.dispatch({ type: "SET_PLAYER_NAME", value: "LEO" }));
+    await waitFor(() => expect(draw.mock.calls.length).toBeGreaterThan(paintsBefore));
+    expect(lastDesign().playerName).toBe("LEO");
+    expect(result.current.texture.version).toBeGreaterThan(before);
   });
 
   it("loads the body, sleeve and collar-mask images for the chosen design and colors", async () => {
