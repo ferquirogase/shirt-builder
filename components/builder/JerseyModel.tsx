@@ -9,6 +9,7 @@ import { loadImage, loadPatternImage, loadTintedMask } from "@/lib/builder/image
 import { drawDesignToCanvas } from "@/lib/builder/texture-compositor";
 import { UV_FLIP_Y } from "@/lib/builder/uv-regions";
 import { JERSEY_MODEL } from "@/lib/builder/jersey-model";
+import { BRAND_LOGO_URLS } from "@/lib/builder/brand-logo";
 import { getNameNumberPreset } from "@/lib/builder/name-number-presets";
 import { resolveFontFamily } from "@/lib/builder/resolve-font-family";
 import { createBlendedNormalTexture, createFabricNormalTexture } from "@/lib/builder/fabric-texture";
@@ -70,6 +71,10 @@ export function JerseyModel() {
     collarMaskImage: null,
   });
   const [logoImage, setLogoImage] = useState<HTMLImageElement | null>(null);
+  const [brandLogos, setBrandLogos] = useState<{ forLight: HTMLImageElement | null; forDark: HTMLImageElement | null }>({
+    forLight: null,
+    forDark: null,
+  });
   // Bumped when the name/number font finishes loading, to repaint the canvas
   // (the first paint would otherwise keep the fallback font).
   const [fontsVersion, setFontsVersion] = useState(0);
@@ -215,6 +220,23 @@ export function JerseyModel() {
     };
   }, [state.bodyPatternId, state.sleevePatternId, state.colors]);
 
+  // The maker's logo never changes: load both versions once. A broken one must
+  // not break the shirt, so each failure just leaves that version out.
+  useEffect(() => {
+    let cancelled = false;
+    const load = (src: string) =>
+      loadImage(src).catch((err) => {
+        console.error("Failed to load brand logo", err);
+        return null;
+      });
+    Promise.all([load(BRAND_LOGO_URLS.forLight), load(BRAND_LOGO_URLS.forDark)]).then(([forLight, forDark]) => {
+      if (!cancelled) setBrandLogos({ forLight, forDark });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Undebounced: loads the logo image only when its data URL actually
   // changes (a discrete upload, not a continuous input).
   useEffect(() => {
@@ -275,12 +297,14 @@ export function JerseyModel() {
         sleevePatternImage: patternImages.sleevePatternImage,
         collarMaskImage: patternImages.collarMaskImage,
         logoImage,
+        brandLogoForLight: brandLogos.forLight,
+        brandLogoForDark: brandLogos.forDark,
       },
       JERSEY_MODEL.uvRegions,
       resolveFontFamily(nnPreset.cssVar)
     );
     texture.needsUpdate = true;
-  }, [state, canvas, texture, patternImages, logoImage, fontsVersion, nnPreset]);
+  }, [state, canvas, texture, patternImages, logoImage, brandLogos, fontsVersion, nnPreset]);
 
   // The OBJ's vertex coordinates are in the hundreds, so scale=0.01 brings the
   // model to roughly a metre, a reasonable size for the camera/OrbitControls

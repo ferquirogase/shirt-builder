@@ -480,6 +480,106 @@ describe("drawDesignToCanvas", () => {
     expect(y + h / 2).toBeCloseTo(216, 5);
   });
 
+  describe("brand logo", () => {
+    const forLight = { id: "black", naturalWidth: 512, naturalHeight: 381 } as unknown as HTMLImageElement;
+    const forDark = { id: "white", naturalWidth: 512, naturalHeight: 381 } as unknown as HTMLImageElement;
+    const brand = { brandLogoForLight: forLight, brandLogoForDark: forDark };
+    const base = { bodyPatternImage: null, sleevePatternImage: null, logoImage: null };
+
+    // A canvas whose pixels under any requested rect are a single color.
+    function ctxWithPixels(r: number, g: number, b: number) {
+      const ctx = createMockCtx();
+      (ctx as unknown as { getImageData: unknown }).getImageData = vi.fn((_x: number, _y: number, w: number, h: number) => {
+        const data = new Uint8ClampedArray(w * h * 4);
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = r;
+          data[i + 1] = g;
+          data[i + 2] = b;
+          data[i + 3] = 255;
+        }
+        return { data };
+      });
+      return ctx;
+    }
+    const drawnImages = (ctx: CanvasRenderingContext2D) =>
+      (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
+
+    it("is centered on the right chest, mirroring the crest, at the crest's size", () => {
+      const ctx = ctxWithPixels(0, 0, 0);
+      drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions);
+      const [img, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(img).toBe(forDark);
+      // bodyFront u .3..0.7, v .5..0.9: 0.30 across -> u 0.42 -> x 420; same height as the crest, y 216.
+      expect(w).toBeCloseTo(65, 5);
+      expect(h).toBeCloseTo(65 * (381 / 512), 5);
+      expect(x + w / 2).toBeCloseTo(420, 5);
+      expect(y + h / 2).toBeCloseTo(216, 5);
+    });
+
+    it("is always drawn, with or without a crest, and does not move when a crest is set", () => {
+      const ctx = ctxWithPixels(0, 0, 0);
+      const crest = { naturalWidth: 100, naturalHeight: 100 } as HTMLImageElement;
+      drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand, logoImage: crest }, regions);
+      expect(drawnImages(ctx)).toEqual([crest, forDark]);
+      const [, x, , w] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[1];
+      expect(x + w / 2).toBeCloseTo(420, 5);
+    });
+
+    it("uses the version for dark backgrounds over dark pixels", () => {
+      const ctx = ctxWithPixels(10, 90, 50);
+      drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions);
+      expect(drawnImages(ctx)).toEqual([forDark]);
+    });
+
+    it("uses the version for light backgrounds over light pixels", () => {
+      const ctx = ctxWithPixels(250, 250, 250);
+      drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions);
+      expect(drawnImages(ctx)).toEqual([forLight]);
+    });
+
+    it("samples the pixels under the logo, after the patterns are painted", () => {
+      const ctx = ctxWithPixels(0, 0, 0);
+      drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, bodyPatternImage: {} as HTMLImageElement, ...brand }, regions);
+      const sample = (ctx as unknown as { getImageData: ReturnType<typeof vi.fn> }).getImageData;
+      const patternDraws = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.invocationCallOrder;
+      expect(sample).toHaveBeenCalledTimes(1);
+      expect(sample.mock.invocationCallOrder[0]).toBeGreaterThan(patternDraws[1]);
+      expect(sample.mock.invocationCallOrder[0]).toBeLessThan(patternDraws[2]);
+    });
+
+    it("falls back to the primary color when pixels can't be read (no getImageData)", () => {
+      const dark = createMockCtx();
+      drawDesignToCanvas(dark, 1000, initialDesignState, { ...base, ...brand }, regions); // primary #0a5c36 is dark
+      expect(drawnImages(dark)).toEqual([forDark]);
+
+      const light = createMockCtx();
+      const pale = { ...initialDesignState, colors: { ...initialDesignState.colors, primary: "#f5f0e0" } };
+      drawDesignToCanvas(light, 1000, pale, { ...base, ...brand }, regions);
+      expect(drawnImages(light)).toEqual([forLight]);
+    });
+
+    it("falls back to the primary color when reading pixels throws (tainted canvas)", () => {
+      const ctx = createMockCtx();
+      (ctx as unknown as { getImageData: unknown }).getImageData = vi.fn(() => {
+        throw new Error("SecurityError");
+      });
+      expect(() => drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions)).not.toThrow();
+      expect(drawnImages(ctx)).toEqual([forDark]);
+    });
+
+    it("uses the other version when the preferred one is missing", () => {
+      const ctx = ctxWithPixels(0, 0, 0); // dark -> prefers forDark, which is missing
+      drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, brandLogoForLight: forLight, brandLogoForDark: null }, regions);
+      expect(drawnImages(ctx)).toEqual([forLight]);
+    });
+
+    it("draws nothing when no brand logo has loaded yet", () => {
+      const ctx = ctxWithPixels(0, 0, 0);
+      drawDesignToCanvas(ctx, 1000, initialDesignState, base, regions);
+      expect(ctx.drawImage).not.toHaveBeenCalled();
+    });
+  });
+
   it("draws the dedicated back image in the back region when one is given", () => {
     const ctx = createMockCtx();
     const front = { id: "front" } as unknown as HTMLImageElement;

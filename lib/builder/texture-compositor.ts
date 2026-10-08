@@ -19,6 +19,9 @@ export type CompositorImages = {
    * parts of the atlas that carry the collar colour (see jersey-model.ts).
    */
   collarMaskImage?: CanvasImageSource | null;
+  /** The brand logo for light backgrounds (dark artwork) and for dark ones (light artwork). */
+  brandLogoForLight?: HTMLImageElement | null;
+  brandLogoForDark?: HTMLImageElement | null;
 };
 
 // UV v -> canvas y fraction. CanvasTexture (and this app's JerseyModel) uses
@@ -64,6 +67,79 @@ function pointInRegionToCanvas(
   return { x: u * canvasSize, y: vToY(v) * canvasSize };
 }
 
+type LogoBox = { x: number; y: number; width: number; height: number };
+
+// Fits a logo inside a square box of CREST_BOX_FRACTION of the canvas, keeping
+// its aspect ratio, centered on `center`.
+function fitLogoBox(image: HTMLImageElement, center: { x: number; y: number }, canvasSize: number): LogoBox {
+  const boxSize = canvasSize * CREST_BOX_FRACTION;
+  const { naturalWidth, naturalHeight } = image;
+  const [width, height] =
+    naturalWidth > 0 && naturalHeight > 0
+      ? naturalWidth >= naturalHeight
+        ? [boxSize, boxSize * (naturalHeight / naturalWidth)]
+        : [boxSize * (naturalWidth / naturalHeight), boxSize]
+      : [boxSize, boxSize];
+  return { x: center.x - width / 2, y: center.y - height / 2, width, height };
+}
+
+// Perceived brightness, 0 (black) to 1 (white).
+function luma(r: number, g: number, b: number): number {
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
+function hexLuma(hex: string): number {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim());
+  if (!m) return 0;
+  return luma(parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16));
+}
+
+// Is the cloth under `box` light? Reads the pixels already painted there, so a
+// pattern (e.g. a white stripe on a green shirt) is judged where the logo
+// really sits. If the pixels can't be read, the primary color stands in.
+function isLightUnder(ctx: CanvasRenderingContext2D, box: LogoBox, canvasSize: number, fallbackHex: string): boolean {
+  if (typeof ctx.getImageData === "function") {
+    try {
+      const x = Math.max(0, Math.floor(box.x));
+      const y = Math.max(0, Math.floor(box.y));
+      const w = Math.max(1, Math.min(canvasSize - x, Math.ceil(box.width)));
+      const h = Math.max(1, Math.min(canvasSize - y, Math.ceil(box.height)));
+      const { data } = ctx.getImageData(x, y, w, h);
+      let sum = 0;
+      let count = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        sum += luma(data[i], data[i + 1], data[i + 2]);
+        count++;
+      }
+      if (count > 0) return sum / count >= LIGHT_BACKGROUND_LUMA;
+    } catch {
+      // A tainted canvas refuses to be read: use the primary color below.
+    }
+  }
+  return hexLuma(fallbackHex) >= LIGHT_BACKGROUND_LUMA;
+}
+
+// The maker's logo: fixed, on the wearer's right chest (mirroring the crest).
+// It comes in two versions and the one that contrasts with the cloth is used.
+function drawBrandLogo(
+  ctx: CanvasRenderingContext2D,
+  canvasSize: number,
+  design: DesignState,
+  images: CompositorImages,
+  regions: UVRegions
+): void {
+  const forLight = images.brandLogoForLight ?? null;
+  const forDark = images.brandLogoForDark ?? null;
+  const reference = forDark ?? forLight;
+  if (!reference) return;
+
+  const center = pointInRegionToCanvas(regions.bodyFront, 1 - CREST_U_FRAC, CREST_V_FRAC, canvasSize);
+  const box = fitLogoBox(reference, center, canvasSize);
+  const lightCloth = isLightUnder(ctx, box, canvasSize, design.colors.primary);
+  const chosen = (lightCloth ? forLight ?? forDark : forDark ?? forLight)!;
+  ctx.drawImage(chosen, box.x, box.y, box.width, box.height);
+}
+
 // Where the crest is centered within bodyFront: the wearer's left chest, the
 // usual crest spot. Front faces +z and the camera is on +z, so u grows toward
 // the viewer's right. Tuned against screenshots of the GEPE shirt: 0.70 of the
@@ -73,6 +149,8 @@ const CREST_U_FRAC = 0.7;
 const CREST_V_FRAC = 0.71;
 // The longer side of the crest, as a share of the canvas (it was 0.08, which looked too big).
 const CREST_BOX_FRACTION = 0.065;
+// Cloth at least this bright (0..1) gets the logo version meant for light backgrounds.
+const LIGHT_BACKGROUND_LUMA = 0.5;
 
 export function drawDesignToCanvas(
   ctx: CanvasRenderingContext2D,
@@ -116,20 +194,12 @@ export function drawDesignToCanvas(
     // Moving away from that shared line (toward bodyFront.v0 / bodyBack.v1)
     // goes down the torso toward the hem. So "top of bodyFront" in UV space
     // is vFrac=1 (its v1 edge, the one shared with bodyBack).
-    // Preserve the source image's aspect ratio by fitting within a
-    // bounding box rather than forcing a square.
-    const boxSize = canvasSize * CREST_BOX_FRACTION;
-    const { naturalWidth, naturalHeight } = images.logoImage;
-    const [logoWidth, logoHeight] =
-      naturalWidth > 0 && naturalHeight > 0
-        ? naturalWidth >= naturalHeight
-          ? [boxSize, boxSize * (naturalHeight / naturalWidth)]
-          : [boxSize * (naturalWidth / naturalHeight), boxSize]
-        : [boxSize, boxSize];
-
     const center = pointInRegionToCanvas(regions.bodyFront, CREST_U_FRAC, CREST_V_FRAC, canvasSize);
-    ctx.drawImage(images.logoImage, center.x - logoWidth / 2, center.y - logoHeight / 2, logoWidth, logoHeight);
+    const box = fitLogoBox(images.logoImage, center, canvasSize);
+    ctx.drawImage(images.logoImage, box.x, box.y, box.width, box.height);
   }
+
+  drawBrandLogo(ctx, canvasSize, design, images, regions);
 
   if (design.sponsorText) {
     ctx.fillStyle = "#ffffff";
