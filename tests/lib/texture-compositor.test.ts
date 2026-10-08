@@ -1,23 +1,38 @@
 import { describe, it, expect, vi } from "vitest";
 import { drawDesignToCanvas } from "@/lib/builder/texture-compositor";
 import { initialDesignState } from "@/lib/builder/design-state";
+import { styleFromPreset } from "@/lib/builder/name-number-presets";
 import { UV_REGIONS, UV_FLIP_Y, type UVRegions, type UVRect } from "@/lib/builder/uv-regions";
 
 function createMockCtx() {
-  return {
+  const ctx = {
     clearRect: vi.fn(),
     fillRect: vi.fn(),
     drawImage: vi.fn(),
     fillText: vi.fn(),
+    strokeText: vi.fn(),
+    // Width grows with the font size, like a real font: 0.6 px per character per px of size.
+    measureText: vi.fn((text: string) => {
+      const px = parseFloat(/([\d.]+)px/.exec(ctx.font)?.[1] ?? "10");
+      return { width: text.length * px * 0.6 };
+    }),
     save: vi.fn(),
     restore: vi.fn(),
     translate: vi.fn(),
     rotate: vi.fn(),
     scale: vi.fn(),
     fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 0,
+    lineJoin: "miter",
     font: "",
     textAlign: "left",
-  } as unknown as CanvasRenderingContext2D;
+    shadowColor: "transparent",
+    shadowBlur: 0,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+  };
+  return ctx as unknown as CanvasRenderingContext2D;
 }
 
 const regions: UVRegions = {
@@ -232,6 +247,125 @@ describe("drawDesignToCanvas", () => {
       expect([Math.round(tx), Math.round(ty)]).toEqual([500, 700]);
       const [, bx, by, bw, bh] = draws[1];
       expect([bx, by, bw, bh].map((n) => Math.round(n))).toEqual([-200, -200, 400, 400]);
+    });
+  });
+
+  describe("name and number style", () => {
+    const blank = { bodyPatternImage: null, sleevePatternImage: null, logoImage: null };
+    const withStyle = (patch: Partial<typeof initialDesignState>) => ({ ...initialDesignState, ...patch });
+
+    it("uses the preset's weight and the given font family, scaled by the base size", () => {
+      const ctx = createMockCtx();
+      const fonts: string[] = [];
+      (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
+      drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10" }), blank, regions, "'Oswald', sans-serif");
+      // classic: weight 700, number base 0.12 * 1000 = 120px, scale 1
+      expect(fonts[0]).toBe("700 120px 'Oswald', sans-serif");
+    });
+
+    it("fills with the style's fill color", () => {
+      const ctx = createMockCtx();
+      let fill = "";
+      (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => (fill = ctx.fillStyle as string));
+      const design = withStyle({
+        playerNumber: "7",
+        nameNumberStyle: { ...initialDesignState.nameNumberStyle, fill: "#f5d77a" },
+      });
+      drawDesignToCanvas(ctx, 1000, design, blank, regions);
+      expect(fill).toBe("#f5d77a");
+    });
+
+    it("does not stroke when the outline width is 0 (Review Focus 5)", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10", playerName: "PEREZ" }), blank, regions);
+      expect(ctx.strokeText).not.toHaveBeenCalled();
+    });
+
+    it("strokes before filling, with a round join and the outline color and width", () => {
+      const ctx = createMockCtx();
+      const seen: Record<string, unknown> = {};
+      (ctx.strokeText as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        seen.strokeStyle = ctx.strokeStyle;
+        seen.lineWidth = ctx.lineWidth;
+        seen.lineJoin = ctx.lineJoin;
+      });
+      const design = withStyle({
+        playerNumber: "10",
+        nameNumberStyle: { ...styleFromPreset("outline")!, outlineColor: "#112233", outlineWidth: 0.05 },
+      });
+      drawDesignToCanvas(ctx, 1000, design, blank, regions);
+      const stroke = (ctx.strokeText as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0];
+      const fill = (ctx.fillText as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0];
+      expect(stroke).toBeLessThan(fill);
+      expect(seen.strokeStyle).toBe("#112233");
+      expect(seen.lineJoin).toBe("round");
+      // visible outline = 0.05 of the font size; strokes are centered, so the line is twice that.
+      // outline preset number size: 0.12 * 1000 * 1 = 120px -> 0.05 * 120 * 2 = 12
+      expect(seen.lineWidth).toBeCloseTo(12, 5);
+    });
+
+    it("casts the shadow downward on the model despite the 180deg rotation (Review Focus 3)", () => {
+      const ctx = createMockCtx();
+      const design = withStyle({
+        playerNumber: "10",
+        nameNumberStyle: { ...initialDesignState.nameNumberStyle, shadow: true },
+      });
+      drawDesignToCanvas(ctx, 1000, design, blank, regions);
+      // Canvas shadow offsets ignore the transform; the content is rotated by PI,
+      // so a downward shadow on the model is an upward (negative y) offset here.
+      expect(ctx.shadowOffsetY).toBeLessThan(0);
+      expect(ctx.shadowColor).not.toBe("transparent");
+    });
+
+    it("draws no shadow when the style has none", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10" }), blank, regions);
+      expect(ctx.shadowColor).toBe("transparent");
+    });
+
+    it("keeps the shadow on the outline only, not on the fill, when both exist", () => {
+      const ctx = createMockCtx();
+      const shadowAtStroke: string[] = [];
+      const shadowAtFill: string[] = [];
+      (ctx.strokeText as ReturnType<typeof vi.fn>).mockImplementation(() => shadowAtStroke.push(ctx.shadowColor));
+      (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => shadowAtFill.push(ctx.shadowColor));
+      drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10", nameNumberStyle: styleFromPreset("retro")! }), blank, regions);
+      expect(shadowAtStroke[0]).not.toBe("transparent");
+      expect(shadowAtFill[0]).toBe("transparent");
+    });
+
+    it("shrinks a very long name to fit 80% of the back panel width (Review Focus 1)", () => {
+      const ctx = createMockCtx();
+      let widthAtDraw = 0;
+      (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation((text: string) => {
+        widthAtDraw = (ctx.measureText as ReturnType<typeof vi.fn>)(text).width;
+      });
+      const longName = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      drawDesignToCanvas(ctx, 1000, withStyle({ playerName: longName }), blank, regions);
+      // bodyBack is 0.4 wide -> 400px; 80% -> 320px.
+      expect(widthAtDraw).toBeLessThanOrEqual(320.01);
+      expect(widthAtDraw).toBeGreaterThan(300);
+    });
+
+    it("does not shrink a short name", () => {
+      const ctx = createMockCtx();
+      const fonts: string[] = [];
+      (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
+      drawDesignToCanvas(ctx, 1000, withStyle({ playerName: "LEO" }), blank, regions);
+      // classic: name base 0.05 * 1000 = 50px, scale 1
+      expect(fonts[0]).toMatch(/^700 50px /);
+    });
+
+    it("falls back to the classic preset for an unknown preset id (Review Focus 2)", () => {
+      const ctx = createMockCtx();
+      const fonts: string[] = [];
+      (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
+      const design = withStyle({
+        playerNumber: "10",
+        nameNumberStyle: { ...initialDesignState.nameNumberStyle, presetId: "gone" },
+      });
+      expect(() => drawDesignToCanvas(ctx, 1000, design, blank, regions)).not.toThrow();
+      expect(fonts[0]).toMatch(/^700 120px /);
     });
   });
 

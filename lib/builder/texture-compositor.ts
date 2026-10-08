@@ -1,5 +1,6 @@
 import type { DesignState } from "./design-state";
 import { UV_FLIP_Y, type UVRegions, type UVRect } from "./uv-regions";
+import { getNameNumberPreset, type NameNumberPreset, type NameNumberStyle } from "./name-number-presets";
 
 export type CompositorImages = {
   bodyPatternImage: HTMLImageElement | null;
@@ -62,7 +63,8 @@ export function drawDesignToCanvas(
   canvasSize: number,
   design: DesignState,
   images: CompositorImages,
-  regions: UVRegions
+  regions: UVRegions,
+  nameNumberFontFamily = "sans-serif"
 ): void {
   ctx.clearRect(0, 0, canvasSize, canvasSize);
 
@@ -124,25 +126,36 @@ export function drawDesignToCanvas(
     ctx.fillText(design.sponsorText, cx, cy);
   }
 
+  const nnStyle = design.nameNumberStyle;
+  const nnPreset = getNameNumberPreset(nnStyle.presetId);
+  const backWidth = (regions.bodyBack.u1 - regions.bodyBack.u0) * canvasSize;
+  const maxTextWidth = backWidth * MAX_BACK_TEXT_WIDTH_FRACTION;
+
   if (design.playerName) {
-    ctx.fillStyle = "#ffffff";
-    ctx.font = `bold ${canvasSize * 0.05}px sans-serif`;
-    ctx.textAlign = "center";
     // Upper portion of bodyBack: vFrac=0 is bodyBack.v0, the edge shared
     // with bodyFront's top (see logo comment above), i.e. near the collar.
     // A small offset from 0 keeps it just below the collar, above the number.
     const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, 0.15, canvasSize);
-    fillTextRotated180(ctx, design.playerName, cx, cy);
+    drawBackText(ctx, design.playerName, cx, cy, {
+      basePx: canvasSize * NAME_FONT_FRACTION * nnPreset.nameScale,
+      maxWidth: maxTextWidth,
+      style: nnStyle,
+      preset: nnPreset,
+      fontFamily: nameNumberFontFamily,
+    });
   }
 
   if (design.playerNumber) {
-    ctx.fillStyle = "#ffffff";
-    ctx.font = `bold ${canvasSize * 0.12}px sans-serif`;
-    ctx.textAlign = "center";
     // Below the name (further from the collar edge), larger font, centered
     // in bodyBack.
     const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, 0.55, canvasSize);
-    fillTextRotated180(ctx, design.playerNumber, cx, cy);
+    drawBackText(ctx, design.playerNumber, cx, cy, {
+      basePx: canvasSize * NUMBER_FONT_FRACTION * nnPreset.numberScale,
+      maxWidth: maxTextWidth,
+      style: nnStyle,
+      preset: nnPreset,
+      fontFamily: nameNumberFontFamily,
+    });
   }
 }
 
@@ -151,10 +164,60 @@ export function drawDesignToCanvas(
 // back it shrinks; and u runs right-to-left as seen from behind). Content
 // drawn upright into bodyBack would show upside-down on the model, so back
 // content is drawn rotated by PI.
-function fillTextRotated180(ctx: CanvasRenderingContext2D, text: string, x: number, y: number): void {
+const NAME_FONT_FRACTION = 0.05;
+const NUMBER_FONT_FRACTION = 0.12;
+// Back text never takes more than this share of the back panel's width.
+const MAX_BACK_TEXT_WIDTH_FRACTION = 0.8;
+const SHADOW_COLOR = "rgba(0, 0, 0, 0.45)";
+
+type BackTextOptions = {
+  basePx: number;
+  maxWidth: number;
+  style: NameNumberStyle;
+  preset: NameNumberPreset;
+  fontFamily: string;
+};
+
+// Draws shadow -> outline -> fill, centered on (x, y), rotated 180deg.
+function drawBackText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  { basePx, maxWidth, style, preset, fontFamily }: BackTextOptions
+): void {
   ctx.save();
+  const fontFor = (px: number) => `${preset.weight} ${px}px ${fontFamily}`;
+  ctx.font = fontFor(basePx);
+  ctx.textAlign = "center";
+  const measured = ctx.measureText(text).width;
+  const px = measured > maxWidth ? basePx * (maxWidth / measured) : basePx;
+  ctx.font = fontFor(px);
+
   ctx.translate(x, y);
   ctx.rotate(Math.PI);
+  ctx.lineJoin = "round";
+
+  if (style.shadow) {
+    ctx.shadowColor = SHADOW_COLOR;
+    ctx.shadowBlur = px * 0.06;
+    ctx.shadowOffsetX = 0;
+    // Shadow offsets ignore the transform, so against the rotated content a
+    // downward shadow on the model is an upward (negative y) offset here.
+    ctx.shadowOffsetY = -px * 0.05;
+  }
+
+  if (style.outlineWidth > 0) {
+    // A stroke is centered on the glyph edge and the fill covers its inner
+    // half, so the line is twice the visible thickness.
+    ctx.lineWidth = px * style.outlineWidth * 2;
+    ctx.strokeStyle = style.outlineColor;
+    ctx.strokeText(text, 0, 0);
+    // The outline already cast the shadow; the fill must not add a second one.
+    ctx.shadowColor = "transparent";
+  }
+
+  ctx.fillStyle = style.fill;
   ctx.fillText(text, 0, 0);
   ctx.restore();
 }
