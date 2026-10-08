@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { drawDesignToCanvas } from "@/lib/builder/texture-compositor";
 import { initialDesignState } from "@/lib/builder/design-state";
 import { styleFromPreset } from "@/lib/builder/name-number-presets";
-import { UV_REGIONS, UV_FLIP_Y, type UVRegions, type UVRect } from "@/lib/builder/uv-regions";
+import { UV_REGIONS, GEPE_UV_REGIONS, UV_FLIP_Y, type UVRegions, type UVRect } from "@/lib/builder/uv-regions";
 
 function createMockCtx() {
   const ctx = {
@@ -185,7 +185,8 @@ describe("drawDesignToCanvas", () => {
     const vMax = 0.988;
     const tolerance = 0.06;
 
-    const allRects = Object.values(UV_REGIONS);
+    const { bodyFront, bodyBack, sleeveLeft, sleeveRight } = UV_REGIONS;
+    const allRects: UVRect[] = [bodyFront, bodyBack, sleeveLeft, sleeveRight];
     for (const rect of allRects) {
       expect(rect.u0).toBeGreaterThanOrEqual(uMin - tolerance);
       expect(rect.u1).toBeLessThanOrEqual(uMax + tolerance);
@@ -345,6 +346,27 @@ describe("drawDesignToCanvas", () => {
       // bodyBack is 0.4 wide -> 400px; 80% -> 320px.
       expect(widthAtDraw).toBeLessThanOrEqual(320.01);
       expect(widthAtDraw).toBeGreaterThan(300);
+    });
+
+    it("uses the model's own back text width when the regions define one", () => {
+      const ctx = createMockCtx();
+      let widthAtDraw = 0;
+      (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation((text: string) => {
+        widthAtDraw = ctx.measureText(text).width;
+      });
+      // bodyBack is 400px wide here; the garment's real back is only half of that rect.
+      const narrow: UVRegions = { ...regions, backTextWidthFraction: 0.5 };
+      drawDesignToCanvas(ctx, 1000, withStyle({ playerName: "ABCDEFGHIJKLMNOPQRSTUVWXYZ" }), blank, narrow);
+      expect(widthAtDraw).toBeLessThanOrEqual(200.01);
+      expect(widthAtDraw).toBeGreaterThan(190);
+    });
+
+    it("keeps the real GEPE jersey's back text inside the measured back panel", () => {
+      // Measured on public/models/gepe_shirt.obj: the back panel spans u 0.355..0.645
+      // (0.29 wide) at the name and number rows, much narrower than the 0.408 bodyBack rect.
+      const { bodyBack, backTextWidthFraction } = GEPE_UV_REGIONS;
+      const textWidthUv = (bodyBack.u1 - bodyBack.u0) * (backTextWidthFraction ?? 0.8);
+      expect(textWidthUv).toBeLessThanOrEqual(0.29 * 0.75);
     });
 
     it("does not shrink a short name", () => {

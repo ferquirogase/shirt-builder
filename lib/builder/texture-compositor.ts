@@ -129,7 +129,7 @@ export function drawDesignToCanvas(
   const nnStyle = design.nameNumberStyle;
   const nnPreset = getNameNumberPreset(nnStyle.presetId);
   const backWidth = (regions.bodyBack.u1 - regions.bodyBack.u0) * canvasSize;
-  const maxTextWidth = backWidth * MAX_BACK_TEXT_WIDTH_FRACTION;
+  const maxTextWidth = backWidth * (regions.backTextWidthFraction ?? MAX_BACK_TEXT_WIDTH_FRACTION);
 
   if (design.playerName) {
     // Upper portion of bodyBack: vFrac=0 is bodyBack.v0, the edge shared
@@ -166,7 +166,7 @@ export function drawDesignToCanvas(
 // content is drawn rotated by PI.
 const NAME_FONT_FRACTION = 0.05;
 const NUMBER_FONT_FRACTION = 0.12;
-// Back text never takes more than this share of the back panel's width.
+// Default share of bodyBack's width the back text may take (see UVRegions.backTextWidthFraction).
 const MAX_BACK_TEXT_WIDTH_FRACTION = 0.8;
 const SHADOW_COLOR = "rgba(0, 0, 0, 0.45)";
 

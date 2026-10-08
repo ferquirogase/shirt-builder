@@ -5,6 +5,12 @@ export type UVRegions = {
   bodyBack: UVRect;
   sleeveLeft: UVRect;
   sleeveRight: UVRect;
+  /**
+   * Widest the name/number may be, as a fraction of bodyBack's width. Models whose
+   * back panel is narrower than the bodyBack rect (the rest of the rect lies over
+   * the sleeves) set this; the compositor defaults to 0.8.
+   */
+  backTextWidthFraction?: number;
 };
 
 // Measured with an 8x8 UV checker debug texture (see uv-checker-texture.ts)
@@ -47,6 +53,10 @@ export const GEPE_UV_REGIONS: UVRegions = {
   bodyBack: { u0: 0.296, v0: 0.51, u1: 0.704, v1: 0.98 },
   sleeveLeft: { u0: 0.641, v0: 0.668, u1: 0.758, v1: 0.98 },
   sleeveRight: { u0: 0.242, v0: 0.668, u1: 0.36, v1: 0.98 },
+  // The rect above spans the sleeves too: the back panel itself is only u 0.355..0.645
+  // (0.29 wide, measured from the OBJ's UV triangles). 0.5 of the rect is 0.204, about
+  // 70% of that panel, which leaves room for the shirt curving away at the sides.
+  backTextWidthFraction: 0.5,
 };
 
 export const UV_FLIP_Y = true;
