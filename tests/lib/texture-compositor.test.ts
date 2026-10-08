@@ -444,6 +444,42 @@ describe("drawDesignToCanvas", () => {
     expect(width / height).toBeCloseTo(2, 5);
   });
 
+  it("centers the crest on the wearer's left chest, not on a shoulder", () => {
+    const ctx = createMockCtx();
+    const logo = { naturalWidth: 100, naturalHeight: 100 } as HTMLImageElement;
+    drawDesignToCanvas(
+      ctx,
+      1000,
+      initialDesignState,
+      { bodyPatternImage: null, sleevePatternImage: null, logoImage: logo },
+      regions
+    );
+    // bodyFront u .3..0.7, v .5..0.9. Chest point: 0.78 across (toward the viewer's right,
+    // since u grows with model x) and 0.635 up from the hem:
+    //   u = 0.3 + 0.78 * 0.4 = 0.612 -> x 612;  v = 0.5 + 0.635 * 0.4 = 0.754 -> y 246.
+    // The crest box is 80px, centered there.
+    const [, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(w).toBeCloseTo(80, 5);
+    expect(h).toBeCloseTo(80, 5);
+    expect(x + w / 2).toBeCloseTo(612, 5);
+    expect(y + h / 2).toBeCloseTo(246, 5);
+  });
+
+  it("centers a wide crest on the same point", () => {
+    const ctx = createMockCtx();
+    const wide = { naturalWidth: 200, naturalHeight: 100 } as HTMLImageElement;
+    drawDesignToCanvas(
+      ctx,
+      1000,
+      initialDesignState,
+      { bodyPatternImage: null, sleevePatternImage: null, logoImage: wide },
+      regions
+    );
+    const [, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(x + w / 2).toBeCloseTo(612, 5);
+    expect(y + h / 2).toBeCloseTo(246, 5);
+  });
+
   it("draws the dedicated back image in the back region when one is given", () => {
     const ctx = createMockCtx();
     const front = { id: "front" } as unknown as HTMLImageElement;

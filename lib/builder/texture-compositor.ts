@@ -64,6 +64,13 @@ function pointInRegionToCanvas(
   return { x: u * canvasSize, y: vToY(v) * canvasSize };
 }
 
+// Where the crest is centered within bodyFront: the wearer's left chest, the
+// usual crest spot. Found by mapping a screenshot point through the GEPE mesh
+// (front faces +z, camera on +z, so u grows toward the viewer's right):
+// 0.78 of the way across and 0.635 of the way up from the hem.
+const CREST_U_FRAC = 0.78;
+const CREST_V_FRAC = 0.635;
+
 export function drawDesignToCanvas(
   ctx: CanvasRenderingContext2D,
   canvasSize: number,
@@ -117,10 +124,8 @@ export function drawDesignToCanvas(
           : [boxSize * (naturalWidth / naturalHeight), boxSize]
         : [boxSize, boxSize];
 
-    const anchor = pointInRegionToCanvas(regions.bodyFront, 0, 1, canvasSize);
-    const logoX = anchor.x + canvasSize * 0.02;
-    const logoY = anchor.y + canvasSize * 0.02;
-    ctx.drawImage(images.logoImage, logoX, logoY, logoWidth, logoHeight);
+    const center = pointInRegionToCanvas(regions.bodyFront, CREST_U_FRAC, CREST_V_FRAC, canvasSize);
+    ctx.drawImage(images.logoImage, center.x - logoWidth / 2, center.y - logoHeight / 2, logoWidth, logoHeight);
   }
 
   if (design.sponsorText) {
