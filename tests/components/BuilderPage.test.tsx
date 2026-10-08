@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { clearPatternMarkupCache } from "@/lib/builder/pattern-thumbnail";
+import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
 
 // jsdom has no WebGL: replace the 3D stage with a stub that exposes its props.
-vi.mock("@/components/builder/Viewer3D", async () => {
+vi.mock("@/components/builder/viewer/Viewer3D", async () => {
   const React = await import("react");
   return {
     Viewer3D: React.forwardRef<HTMLCanvasElement, { view: string; resetPose: boolean }>(function Viewer3DStub(

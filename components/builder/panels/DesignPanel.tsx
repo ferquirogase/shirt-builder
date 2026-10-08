@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
-import { useDesign } from "@/lib/builder/design-context";
-import { BODY_PATTERNS, SLEEVE_PATTERNS } from "@/lib/builder/patterns";
-import { colorsAfterPatternChange } from "@/lib/builder/design-state";
+import { useDesign } from "@/lib/builder/state/design-context";
+import { BODY_PATTERNS, SLEEVE_PATTERNS } from "@/lib/builder/catalog/patterns";
+import { colorsAfterPatternChange } from "@/lib/builder/state/design-state";
 import { PatternGrid } from "../PatternGrid";
 import { PanelShell } from "./PanelShell";
 

@@ -1,7 +1,7 @@
 "use client";
-import { useDesign } from "@/lib/builder/design-context";
-import { visibleColors } from "@/lib/builder/patterns";
-import type { ColorSlot } from "@/lib/builder/svg-recolor";
+import { useDesign } from "@/lib/builder/state/design-context";
+import { visibleColors } from "@/lib/builder/catalog/patterns";
+import type { ColorSlot } from "@/lib/builder/texture/svg-recolor";
 import { PanelShell } from "./PanelShell";
 
 export function ColorsPanel() {
