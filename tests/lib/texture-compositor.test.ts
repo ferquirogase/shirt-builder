@@ -654,11 +654,11 @@ describe("drawDesignToCanvas", () => {
         regions
       );
       expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI], [Math.PI]]);
-      // bodyBack u .3..0.7 -> x 500; vFrac 0.31 -> v 0.1+0.31*0.4=0.224 -> y 776; 0.88 -> v 0.452 -> y 548.
+      // bodyBack u .3..0.7 -> x 500; vFrac 0.12 -> v 0.1+0.12*0.4=0.148 -> y 852; 0.75 -> v 0.4 -> y 600.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       expect(t[0][0]).toBeCloseTo(500, 5);
-      expect(t[0][1]).toBeCloseTo(776, 5);
-      expect(t[1][1]).toBeCloseTo(548, 5);
+      expect(t[0][1]).toBeCloseTo(852, 5);
+      expect(t[1][1]).toBeCloseTo(600, 5);
       expect(drawn(ctx, nape).w).toBeCloseTo(30, 5);
       expect(drawn(ctx, low).w).toBeCloseTo(45, 5);
     });

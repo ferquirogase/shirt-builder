@@ -23,13 +23,14 @@ const nameTop = NAME_V_FRAC - toV(NAME_FONT_FRACTION * CAP_HEIGHT);
 const numberTop = NUMBER_V_FRAC - toV(NUMBER_FONT_FRACTION * CAP_HEIGHT);
 
 describe("back layout (GEPE model, sponsors at max scale)", () => {
-  it("keeps the nape sponsor out of the collar band", () => {
-    expect(NAPE_V_FRAC - halfBox("nape")).toBeGreaterThanOrEqual(COLLAR_BAND_END_V_FRAC);
+  it("keeps the name and number where they were before the sponsors (25% and 55%)", () => {
+    expect(NAME_V_FRAC).toBe(0.25);
+    expect(NUMBER_V_FRAC).toBe(0.55);
   });
 
-  it("puts the nape sponsor between the name and the number without touching either", () => {
-    expect(NAPE_V_FRAC - halfBox("nape")).toBeGreaterThanOrEqual(NAME_V_FRAC);
-    expect(NAPE_V_FRAC + halfBox("nape")).toBeLessThanOrEqual(numberTop);
+  it("puts the nape sponsor between the collar and the name without touching either", () => {
+    expect(NAPE_V_FRAC - halfBox("nape")).toBeGreaterThanOrEqual(COLLAR_BAND_END_V_FRAC);
+    expect(NAPE_V_FRAC + halfBox("nape")).toBeLessThanOrEqual(nameTop);
   });
 
   it("puts the number below the name", () => {
@@ -37,19 +38,14 @@ describe("back layout (GEPE model, sponsors at max scale)", () => {
     expect(nameTop).toBeLessThan(NAME_V_FRAC);
   });
 
-  it("keeps the lower-back sponsor below the number and above the hem", () => {
+  it("puts the lower-back sponsor at waist height: below the number, well above the hem", () => {
     expect(LOWER_BACK_V_FRAC - halfBox("lower-back")).toBeGreaterThanOrEqual(NUMBER_V_FRAC);
-    expect(LOWER_BACK_V_FRAC + halfBox("lower-back")).toBeLessThanOrEqual(1);
+    expect(LOWER_BACK_V_FRAC + halfBox("lower-back")).toBeLessThanOrEqual(0.85);
   });
 
   it("is the one source of the back sponsors' vertical positions", () => {
     expect(findSponsorSlot("nape")!.vFrac).toBe(NAPE_V_FRAC);
     expect(findSponsorSlot("lower-back")!.vFrac).toBe(LOWER_BACK_V_FRAC);
     expect(SPONSOR_SLOTS.length).toBe(5);
-  });
-
-  it("keeps the name and number where they were before the sponsors (25% and 55%)", () => {
-    expect(NAME_V_FRAC).toBe(0.25);
-    expect(NUMBER_V_FRAC).toBe(0.55);
   });
 });
