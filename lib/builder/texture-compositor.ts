@@ -65,11 +65,12 @@ function pointInRegionToCanvas(
 }
 
 // Where the crest is centered within bodyFront: the wearer's left chest, the
-// usual crest spot. Found by mapping a screenshot point through the GEPE mesh
-// (front faces +z, camera on +z, so u grows toward the viewer's right):
-// 0.78 of the way across and 0.635 of the way up from the hem.
-const CREST_U_FRAC = 0.78;
-const CREST_V_FRAC = 0.635;
+// usual crest spot. Front faces +z and the camera is on +z, so u grows toward
+// the viewer's right. Tuned against screenshots of the GEPE shirt: 0.70 of the
+// way across and 0.71 of the way up from the hem (an earlier 0.78 / 0.635 sat
+// too close to the armpit).
+const CREST_U_FRAC = 0.7;
+const CREST_V_FRAC = 0.71;
 
 export function drawDesignToCanvas(
   ctx: CanvasRenderingContext2D,

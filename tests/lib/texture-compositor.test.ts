@@ -454,15 +454,15 @@ describe("drawDesignToCanvas", () => {
       { bodyPatternImage: null, sleevePatternImage: null, logoImage: logo },
       regions
     );
-    // bodyFront u .3..0.7, v .5..0.9. Chest point: 0.78 across (toward the viewer's right,
-    // since u grows with model x) and 0.635 up from the hem:
-    //   u = 0.3 + 0.78 * 0.4 = 0.612 -> x 612;  v = 0.5 + 0.635 * 0.4 = 0.754 -> y 246.
+    // bodyFront u .3..0.7, v .5..0.9. Chest point: 0.70 across (toward the viewer's right,
+    // since u grows with model x) and 0.71 up from the hem:
+    //   u = 0.3 + 0.70 * 0.4 = 0.58 -> x 580;  v = 0.5 + 0.71 * 0.4 = 0.784 -> y 216.
     // The crest box is 80px, centered there.
     const [, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(w).toBeCloseTo(80, 5);
     expect(h).toBeCloseTo(80, 5);
-    expect(x + w / 2).toBeCloseTo(612, 5);
-    expect(y + h / 2).toBeCloseTo(246, 5);
+    expect(x + w / 2).toBeCloseTo(580, 5);
+    expect(y + h / 2).toBeCloseTo(216, 5);
   });
 
   it("centers a wide crest on the same point", () => {
@@ -476,8 +476,8 @@ describe("drawDesignToCanvas", () => {
       regions
     );
     const [, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(x + w / 2).toBeCloseTo(612, 5);
-    expect(y + h / 2).toBeCloseTo(246, 5);
+    expect(x + w / 2).toBeCloseTo(580, 5);
+    expect(y + h / 2).toBeCloseTo(216, 5);
   });
 
   it("draws the dedicated back image in the back region when one is given", () => {
