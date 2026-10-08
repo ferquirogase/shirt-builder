@@ -130,3 +130,36 @@ describe("historyReducer", () => {
     }
   });
 });
+
+describe("name/number style history", () => {
+  it("makes a preset change one undoable step", () => {
+    const changed = run([{ type: "SET_NN_PRESET", id: "block" }]);
+    expect(changed.present.nameNumberStyle.presetId).toBe("block");
+    const undone = historyReducer(changed, { type: "UNDO" });
+    expect(undone.present.nameNumberStyle.presetId).toBe("classic");
+  });
+
+  it("collapses a burst of fill-color edits into one undo step (Review Focus 6)", () => {
+    const burst = run([
+      { type: "SET_NN_FILL", value: "#111111", at: 10_000 },
+      { type: "SET_NN_FILL", value: "#222222", at: 10_100 },
+      { type: "SET_NN_FILL", value: "#333333", at: 10_200 },
+    ]);
+    expect(burst.past).toHaveLength(1);
+    expect(burst.present.nameNumberStyle.fill).toBe("#333333");
+  });
+
+  it("collapses a burst of outline-width edits into one undo step", () => {
+    const burst = run([
+      { type: "SET_NN_OUTLINE_WIDTH", value: 0.01, at: 10_000 },
+      { type: "SET_NN_OUTLINE_WIDTH", value: 0.02, at: 10_100 },
+    ]);
+    expect(burst.past).toHaveLength(1);
+  });
+
+  it("ignores a change that leaves the style identical", () => {
+    const base = createHistory();
+    const same = historyReducer(base, { type: "SET_NN_SHADOW", value: false });
+    expect(same).toBe(base);
+  });
+});
