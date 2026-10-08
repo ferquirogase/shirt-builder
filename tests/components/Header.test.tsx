@@ -12,6 +12,17 @@ describe("Header", () => {
     expect(screen.queryByText("Guardado")).toBeNull();
   });
 
+  it("keeps 'Revisar diseño' visible on mobile as an icon, with its text only on wide screens", () => {
+    renderWithDesign(<Header />);
+    const button = screen.getByRole("button", { name: "Revisar diseño" });
+    // Not hidden below md (it used to be `hidden md:inline-flex`), and the label
+    // is screen-reader-only until md.
+    expect(button.className).not.toMatch(/(^|\s)hidden(\s|$)/);
+    const label = screen.getByText("Revisar diseño");
+    expect(label.className).toContain("sr-only");
+    expect(label.className).toContain("md:not-sr-only");
+  });
+
   it("renames the project on blur", () => {
     const { api } = renderWithDesign(<Header />);
     const input = screen.getByRole("textbox", { name: "Nombre del diseño" });

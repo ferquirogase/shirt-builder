@@ -58,6 +58,67 @@ describe("BuilderPage", () => {
     expect(screen.getByTestId("viewer")).toHaveAttribute("data-reset", "false");
   });
 
+  describe("mobile layout", () => {
+    it("lets the 3D canvas fill the whole stage, with the buttons floating over it", () => {
+      render(<BuilderPage />);
+      const wrapper = screen.getByTestId("viewer").parentElement!;
+      expect(wrapper.className).toContain("inset-0");
+      // It used to be inset to leave room for the toolbar and the Frente/Espalda
+      // buttons, which left the shirt about a fifth of the screen tall.
+      expect(wrapper.className).not.toContain("top-14");
+      expect(wrapper.className).not.toContain("bottom-24");
+    });
+
+    it("has a single 'Revisar diseño' button, in the header, and no extra row for it at the bottom", () => {
+      render(<BuilderPage />);
+      const buttons = screen.getAllByRole("button", { name: "Revisar diseño" });
+      expect(buttons).toHaveLength(1);
+      expect(screen.getByRole("banner")).toContainElement(buttons[0]);
+    });
+
+    it("starts with the panel open and a handle to fold it", () => {
+      render(<BuilderPage />);
+      const handle = screen.getByRole("button", { name: "Plegar panel" });
+      expect(handle).toHaveAttribute("aria-expanded", "true");
+      expect(handle).toHaveAttribute("aria-controls", "section-panel");
+      expect(handle.className).toContain("md:hidden"); // the desktop column is never folded
+      expect(document.getElementById("section-panel")!.className).toContain("max-md:max-h-[28dvh]");
+    });
+
+    it("folds and unfolds the panel with the handle, keeping its content mounted", () => {
+      render(<BuilderPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Plegar panel" }));
+      const handle = screen.getByRole("button", { name: "Desplegar panel" });
+      expect(handle).toHaveAttribute("aria-expanded", "false");
+      const panel = document.getElementById("section-panel")!;
+      // Hidden from sight, tab order and screen readers on mobile only.
+      expect(panel.className).toContain("max-md:invisible");
+      expect(panel.className).toContain("max-md:max-h-0");
+      // Still mounted, so what the user typed is not lost.
+      expect(screen.getByRole("heading", { name: "Diseño" })).toBeInTheDocument();
+
+      fireEvent.click(handle);
+      expect(screen.getByRole("button", { name: "Plegar panel" })).toHaveAttribute("aria-expanded", "true");
+      expect(document.getElementById("section-panel")!.className).not.toContain("max-md:invisible");
+    });
+
+    it("tapping the active tab folds the panel, and tapping another tab opens it on that section", () => {
+      render(<BuilderPage />);
+      const panelOpen = () => screen.getByRole("button", { name: /(Plegar|Desplegar) panel/ }).getAttribute("aria-expanded");
+
+      fireEvent.click(screen.getByRole("button", { name: "Diseño" })); // the active one
+      expect(panelOpen()).toBe("false");
+
+      fireEvent.click(screen.getByRole("button", { name: "Colores" })); // another one
+      expect(panelOpen()).toBe("true");
+      expect(screen.getByRole("heading", { name: "Colores" })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Colores" })); // now the active one
+      expect(panelOpen()).toBe("false");
+      expect(screen.getByRole("heading", { name: "Colores" })).toBeInTheDocument();
+    });
+  });
+
   it("does not offer a saved indicator or the old form controls", () => {
     render(<BuilderPage />);
     expect(screen.queryByText("Guardado")).toBeNull();

@@ -20,7 +20,7 @@ export function Header() {
   }
 
   return (
-    <header className="flex items-center gap-3 px-4 py-3 md:px-6 md:py-4">
+    <header className="flex items-center gap-3 px-4 py-2 md:px-6 md:py-4">
       <span className="text-2xl font-black tracking-tight md:text-3xl">
         GEPE<sup className="ml-0.5 align-super text-[0.4em] font-bold">®</sup>
       </span>
@@ -56,9 +56,9 @@ export function Header() {
           type="button"
           disabled
           title="Próximamente"
-          className="hidden h-10 items-center gap-2 rounded-full bg-accent px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"
+          className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:px-5"
         >
-          Revisar diseño
+          <span className="sr-only md:not-sr-only">Revisar diseño</span>
           <ArrowRightIcon className="h-5 w-5" />
         </button>
       </div>
