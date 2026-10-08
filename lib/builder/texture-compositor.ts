@@ -140,8 +140,8 @@ export function drawDesignToCanvas(
   if (design.playerName) {
     // Upper portion of bodyBack: vFrac=0 is bodyBack.v0, the edge shared
     // with bodyFront's top (see logo comment above), i.e. near the collar.
-    // A small offset from 0 keeps it just below the collar, above the number.
-    const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, 0.15, canvasSize);
+    // A quarter of the way down keeps it clear of the collar, above the number.
+    const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, NAME_V_FRAC, canvasSize);
     drawBackText(ctx, design.playerName, cx, cy, {
       basePx: canvasSize * NAME_FONT_FRACTION * nnPreset.nameScale,
       maxWidth: maxTextWidth,
@@ -170,6 +170,8 @@ export function drawDesignToCanvas(
 // back it shrinks; and u runs right-to-left as seen from behind). Content
 // drawn upright into bodyBack would show upside-down on the model, so back
 // content is drawn rotated by PI.
+// Where the name's baseline sits within bodyBack, measured from the collar edge.
+const NAME_V_FRAC = 0.25;
 const NAME_FONT_FRACTION = 0.05;
 const NUMBER_FONT_FRACTION = 0.12;
 // Default share of bodyBack's width the back text may take (see UVRegions.backTextWidthFraction).

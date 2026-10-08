@@ -352,6 +352,14 @@ describe("drawDesignToCanvas", () => {
       expect(textWidthUv).toBeLessThanOrEqual(0.29 * 0.75);
     });
 
+    it("anchors the name a quarter of the way down the back, clear of the collar", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, withStyle({ playerName: "LEO" }), blank, regions);
+      // bodyBack v .1..0.5: a quarter down is v = 0.2 -> canvas y = (1 - 0.2) * 1000.
+      const [, ty] = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(ty).toBeCloseTo(800, 5);
+    });
+
     it("does not shrink a short name", () => {
       const ctx = createMockCtx();
       const fonts: string[] = [];
