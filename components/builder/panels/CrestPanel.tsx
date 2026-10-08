@@ -1,39 +1,12 @@
 "use client";
-import { useRef, useState } from "react";
 import { useDesign } from "@/lib/builder/design-context";
-import { loadImage } from "@/lib/builder/image-loader";
-import { readAsDataUrl, validateLogoFile } from "@/lib/builder/logo-upload";
+import { useImageUpload } from "@/lib/builder/use-image-upload";
 import { UploadIcon } from "../icons";
 import { PanelShell } from "./PanelShell";
 
 export function CrestPanel() {
   const { state, dispatch } = useDesign();
-  const [error, setError] = useState<string | null>(null);
-  // Only the latest upload may update the design, even if an older one
-  // finishes reading/decoding later.
-  const latestRequest = useRef(0);
-
-  async function handleFile(file: File | undefined) {
-    if (!file) return;
-    const problem = validateLogoFile(file);
-    if (problem) {
-      setError(problem);
-      return;
-    }
-    setError(null);
-    const request = ++latestRequest.current;
-    try {
-      const dataUrl = await readAsDataUrl(file);
-      // The type check can pass for a renamed/corrupt file: make sure the
-      // browser can actually draw it before it enters the design (and history).
-      await loadImage(dataUrl);
-      if (request !== latestRequest.current) return;
-      dispatch({ type: "SET_LOGO", dataUrl });
-    } catch (err) {
-      console.error("Failed to load crest image", err);
-      if (request === latestRequest.current) setError("No se pudo leer la imagen.");
-    }
-  }
+  const { error, handleFile, cancelPending } = useImageUpload((dataUrl) => dispatch({ type: "SET_LOGO", dataUrl }));
 
   return (
     <PanelShell title="Escudo" hint="PNG, JPG o SVG. Máximo 2 MB.">
@@ -60,7 +33,7 @@ export function CrestPanel() {
         <button
           type="button"
           onClick={() => {
-            latestRequest.current++;
+            cancelPending();
             dispatch({ type: "SET_LOGO", dataUrl: null });
           }}
           className="mt-3 self-start rounded-xl border border-line px-3 py-2 text-sm font-medium hover:bg-black/5"
