@@ -26,6 +26,14 @@ type PatternImages = {
   collarMaskImage: HTMLCanvasElement | null;
 };
 
+// three.js only re-uploads a canvas texture to the GPU after being told to. This
+// is a write to a three.js object, which is what effects are for; it lives in a
+// function because `react-hooks/immutability` treats a memoized value that is
+// also a hook dependency as frozen and rejects a direct property write.
+function flagForUpload(texture: THREE.Texture): void {
+  texture.needsUpdate = true;
+}
+
 // Owns the jersey's texture: a canvas that the design is painted on, with every
 // image that goes on it (patterns, crest, maker's logo, sponsors) and the
 // name/number font loaded here. It repaints whenever the design or one of those
@@ -204,7 +212,7 @@ export function useJerseyTexture(): THREE.CanvasTexture {
       JERSEY_MODEL.uvRegions,
       resolveFontFamily(nnPreset.cssVar)
     );
-    texture.needsUpdate = true;
+    flagForUpload(texture);
   }, [state, canvas, texture, patternImages, logoImage, brandLogos, sponsorImages, fontsVersion, nnPreset]);
 
   return texture;
