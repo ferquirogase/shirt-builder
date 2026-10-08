@@ -25,7 +25,7 @@ Un catálogo `SPONSOR_SLOTS` en este orden. Cada ubicación define: `id`, `label
 
 Los valores de posición y tamaño son provisionales: se calculan con la geometría de la malla (`public/models/gepe_shirt.obj`) y se afinan con capturas, como se hizo con el escudo. Dos puntos críticos:
 - **Mangas:** en la textura el eje de la manga (del puño al hombro) corre en la dirección `u` y la circunferencia en `v`, así que la imagen necesita un cuarto de giro para verse derecha con el brazo caído: `-90°` en la manga izquierda y `+90°` en la derecha, sin espejo en ninguna. Se derivó de la malla y lo fija un test. La manga es corta (unos 0.117 de ancho en `u`): el tamaño base y el 150 % deben caber a lo largo de ella.
-- **Nuca:** la malla del cuello ocupa la textura de la espalda hasta el 23 % de su altura, así que la nuca va debajo de esa banda y el nombre tuvo que bajar (ver más abajo).
+- **Nuca:** la malla del cuello ocupa la textura de la espalda hasta el 23 % de su altura, así que la nuca no puede ir arriba del nombre (ver más abajo).
 
 El tamaño base es el lado mayor de la caja en la que se ajusta la imagen, conservando su proporción, como el escudo.
 
@@ -61,5 +61,5 @@ La validación y la lectura de archivos se extraen de `CrestPanel` a un hook com
 - Compositor: cada ubicación dibuja su imagen centrada en su punto y con su tamaño; la escala agranda y achica; la espalda se dibuja rotada 180°; las mangas con giro y espejo según la malla; las ubicaciones vacías o sin cargar no dibujan nada; no se llama a `fillText` para sponsors.
 - Panel: subir a una ubicación despacha `SET_SPONSOR` con esa ubicación; un archivo inválido muestra su error solo en esa tarjeta; el control de escala aparece solo con imagen; quitar vacía la tarjeta; una subida lenta no pisa a una posterior de la misma ubicación.
 
-## Reacomodo de la espalda
-Las posiciones verticales viven en `lib/builder/back-layout.ts`, medidas desde el cuello: nuca 0.285, nombre 0.42 (antes 0.25), número 0.66 (antes 0.55), espalda baja 0.88. Un test (`tests/lib/back-layout.test.ts`) verifica que, con todos los sponsors al 150 %, la nuca queda bajo la banda del cuello y que nuca, nombre, número y espalda baja no se solapan.
+## Diseño de la espalda
+Las posiciones verticales viven en `lib/builder/back-layout.ts`, medidas desde el cuello: nombre 0.25 y número 0.55 (las de siempre), nuca 0.31 y espalda baja 0.88. El nombre llega hasta el cuello, así que arriba de él no hay lugar para la nuca: el sponsor de la nuca queda entre el nombre y el número. Un test (`tests/lib/back-layout.test.ts`) verifica que, con los sponsors al 150 %, la nuca no toca ni el nombre ni el número, y que la espalda baja queda bajo el número y sobre el dobladillo.
