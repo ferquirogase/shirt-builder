@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Shirt Builder
 
-## Getting Started
+Configurador 3D de camisetas de fútbol. Permite personalizar en tiempo real el diseño de una camiseta sobre un modelo 3D interactivo (rotar y hacer zoom): patrón del cuerpo y de las mangas, colores, escudo/logo propio y exportar el resultado como imagen.
 
-First, run the development server:
+## Requisitos
+
+- Node.js 20 o superior
+- npm
+
+## Cómo probarlo
 
 ```bash
+git clone git@github.com:ferquirogase/shirt-builder.git
+cd shirt-builder
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrí [http://localhost:3000](http://localhost:3000) en el navegador.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Comando         | Descripción                          |
+| --------------- | ------------------------------------ |
+| `npm run dev`   | Servidor de desarrollo               |
+| `npm run build` | Build de producción                  |
+| `npm start`     | Sirve el build de producción         |
+| `npm test`      | Corre los tests (Vitest)             |
+| `npm run lint`  | Linter (ESLint)                      |
 
-## Learn More
+## Stack
 
-To learn more about Next.js, take a look at the following resources:
+Next.js (App Router) · React · TypeScript · Tailwind CSS · Three.js con react-three-fiber.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Estructura
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `app/` – rutas y layout de Next.js
+- `components/builder/` – UI del configurador y visor 3D
+- `lib/builder/` – estado del diseño, patrones, texturas y exportación
+- `public/` – modelos 3D, patrones SVG y texturas
+- `tests/` – tests
+- `docs/` – specs y planes de diseño
 
-## Deploy on Vercel
+## Licencia
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[MIT](LICENSE)
