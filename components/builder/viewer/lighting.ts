@@ -15,3 +15,16 @@ export const KEY_LIGHT_POSITION: [number, number, number] = [2, 4, 3];
 export function peakDiffuseGain(): number {
   return (AMBIENT_INTENSITY + KEY_LIGHT_INTENSITY) / Math.PI;
 }
+
+// Where the key light goes for a camera at (cameraX, cameraZ) around the shirt:
+// KEY_LIGHT_POSITION turned about the vertical axis by the camera's azimuth, so
+// the light keeps the same place relative to the view. With the camera at the
+// front it is KEY_LIGHT_POSITION itself; at the back it is on the back side, so
+// the back is lit like the front.
+export function keyLightPositionFor(cameraX: number, cameraZ: number): [number, number, number] {
+  const [ox, oy, oz] = KEY_LIGHT_POSITION;
+  const azimuth = Math.atan2(cameraX, cameraZ); // 0 = front, PI = back
+  const cos = Math.cos(azimuth);
+  const sin = Math.sin(azimuth);
+  return [ox * cos + oz * sin, oy, -ox * sin + oz * cos];
+}

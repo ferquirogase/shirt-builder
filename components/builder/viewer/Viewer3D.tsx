@@ -3,11 +3,10 @@ import { Suspense, forwardRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
 import { DEFAULT_CAMERA_HEIGHT, DEFAULT_CAMERA_RADIUS, type ViewSide } from "@/lib/builder/geometry/camera-math";
+import { CameraKeyLight } from "./CameraKeyLight";
 import { CameraRig } from "./CameraRig";
 import {
   AMBIENT_INTENSITY,
-  KEY_LIGHT_INTENSITY,
-  KEY_LIGHT_POSITION,
   TONE_MAPPING,
   TONE_MAPPING_EXPOSURE,
 } from "./lighting";
@@ -37,7 +36,7 @@ export const Viewer3D = forwardRef<HTMLCanvasElement, Props>(function Viewer3D(
       ref={ref}
     >
       <ambientLight intensity={AMBIENT_INTENSITY} />
-      <directionalLight position={KEY_LIGHT_POSITION} intensity={KEY_LIGHT_INTENSITY} />
+      <CameraKeyLight />
       <Suspense fallback={null}>
         <JerseyModel />
       </Suspense>
