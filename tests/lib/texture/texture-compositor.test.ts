@@ -3,7 +3,7 @@ import { drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import { NAME_V_FRAC, NUMBER_V_FRAC } from "@/lib/builder/texture/back-layout";
 import { OUTLINE_COLOR, OUTLINE_WIDTH } from "@/lib/builder/catalog/name-number-presets";
-import { UV_REGIONS, GEPE_UV_REGIONS, UV_FLIP_Y, type UVRegions, type UVRect } from "@/lib/builder/geometry/uv-regions";
+import { GEPE_UV_REGIONS, UV_FLIP_Y, type UVRegions, type UVRect } from "@/lib/builder/geometry/uv-regions";
 
 function createMockCtx() {
   const ctx = {
@@ -175,18 +175,16 @@ describe("drawDesignToCanvas", () => {
     );
   });
 
-  it("keeps every real UV_REGIONS rect within the measured UV island", () => {
-    // Measured OBJ UV island bounds (see uv-regions.ts): u in [0.226, 0.774],
-    // v in [0.058, 0.988]. bodyFront.v0 = 0 sits slightly outside the v
-    // lower bound due to 8-cell quantization when the regions were measured
-    // (see the comment above UV_REGIONS), so a small tolerance is applied.
-    const uMin = 0.226;
-    const uMax = 0.774;
+  it("keeps every real GEPE_UV_REGIONS rect within the measured UV island", () => {
+    // Measured from public/models/gepe_shirt.obj (see uv-regions.ts): body and
+    // sleeves together span u in [0.242, 0.758], v in [0.058, 0.98].
+    const uMin = 0.242;
+    const uMax = 0.758;
     const vMin = 0.058;
-    const vMax = 0.988;
-    const tolerance = 0.06;
+    const vMax = 0.98;
+    const tolerance = 0.005;
 
-    const { bodyFront, bodyBack, sleeveLeft, sleeveRight } = UV_REGIONS;
+    const { bodyFront, bodyBack, sleeveLeft, sleeveRight } = GEPE_UV_REGIONS;
     const allRects: UVRect[] = [bodyFront, bodyBack, sleeveLeft, sleeveRight];
     for (const rect of allRects) {
       expect(rect.u0).toBeGreaterThanOrEqual(uMin - tolerance);

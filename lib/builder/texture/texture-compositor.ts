@@ -272,7 +272,7 @@ export function drawDesignToCanvas(
 }
 
 // The OBJ's back UV island is rotated 180deg relative to the front (measured
-// on public/models/jersey_ss.obj: on the front v grows with world-y, on the
+// on public/models/gepe_shirt.obj: on the front v grows with world-y, on the
 // back it shrinks; and u runs right-to-left as seen from behind). Content
 // drawn upright into bodyBack would show upside-down on the model, so back
 // content is drawn rotated by PI.
