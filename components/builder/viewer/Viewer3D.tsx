@@ -4,6 +4,13 @@ import { Canvas } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
 import { DEFAULT_CAMERA_HEIGHT, DEFAULT_CAMERA_RADIUS, type ViewSide } from "@/lib/builder/geometry/camera-math";
 import { CameraRig } from "./CameraRig";
+import {
+  AMBIENT_INTENSITY,
+  KEY_LIGHT_INTENSITY,
+  KEY_LIGHT_POSITION,
+  TONE_MAPPING,
+  TONE_MAPPING_EXPOSURE,
+} from "./lighting";
 import { JerseyModel } from "./JerseyModel";
 
 type Props = { view: ViewSide; viewToken: number; resetPose: boolean; onInteract: () => void };
@@ -20,12 +27,17 @@ export const Viewer3D = forwardRef<HTMLCanvasElement, Props>(function Viewer3D(
   return (
     <Canvas
       camera={{ position: [0, DEFAULT_CAMERA_HEIGHT, DEFAULT_CAMERA_RADIUS], fov: 45 }}
-      gl={{ preserveDrawingBuffer: true, alpha: true }}
+      gl={{
+        preserveDrawingBuffer: true,
+        alpha: true,
+        toneMapping: TONE_MAPPING,
+        toneMappingExposure: TONE_MAPPING_EXPOSURE,
+      }}
       style={{ background: "transparent" }}
       ref={ref}
     >
-      <ambientLight intensity={1.6} />
-      <directionalLight position={[2, 4, 3]} intensity={2.2} />
+      <ambientLight intensity={AMBIENT_INTENSITY} />
+      <directionalLight position={KEY_LIGHT_POSITION} intensity={KEY_LIGHT_INTENSITY} />
       <Suspense fallback={null}>
         <JerseyModel />
       </Suspense>
