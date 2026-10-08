@@ -14,6 +14,7 @@ import { loadSponsorImages, type SponsorImageCache, type SponsorImages } from "@
 import { getNameNumberPreset } from "@/lib/builder/catalog/name-number-presets";
 import { resolveFontFamily } from "@/lib/builder/texture/resolve-font-family";
 import { createBlendedNormalTexture, createFabricNormalTexture } from "@/lib/builder/texture/fabric-texture";
+import { prepareJerseyGeometry } from "@/lib/builder/geometry/jersey-geometry";
 
 const CANVAS_SIZE = 2048;
 // The weave has to be coarse enough to survive at the on-screen size of the shirt.
@@ -113,25 +114,13 @@ export function JerseyModel() {
     return m;
   }, [material]);
 
-  // A copy of the body geometry: the cached OBJ itself is never touched, and the
-  // body is rendered as our own mesh below so it can't fall back to the loader's
-  // default grey material.
-  const bodyGeometry = useMemo(() => {
-    let source: THREE.BufferGeometry | null = null;
-    obj.traverse((child) => {
-      if (!source && child instanceof THREE.Mesh) source = child.geometry;
-    });
-    return source ? (source as THREE.BufferGeometry).clone() : null;
-  }, [obj]);
-
-  // The collar mesh that ships with the model, in the same coordinates as the body.
-  const modelCollarGeometry = useMemo(() => {
-    let found: THREE.BufferGeometry | null = null;
-    collarObj?.traverse((child) => {
-      if (!found && child instanceof THREE.Mesh) found = child.geometry;
-    });
-    return found as THREE.BufferGeometry | null;
-  }, [collarObj]);
+  // The body is rendered as our own mesh below so it can't fall back to the
+  // loader's default grey material.
+  const {
+    body: bodyGeometry,
+    collar: modelCollarGeometry,
+    centerY,
+  } = useMemo(() => prepareJerseyGeometry(obj, collarObj), [obj, collarObj]);
 
   // Debounced: loads/caches the pattern SVGs. Keyed only on what can change
   // the rasterized pattern images, not the full design state, so typing in
@@ -276,15 +265,8 @@ export function JerseyModel() {
 
   // The OBJ's vertex coordinates are in the hundreds, so scale=0.01 brings the
   // model to roughly a metre, a reasonable size for the camera/OrbitControls
-  // setup in Viewer3D. The mesh is re-centred vertically so the
-  // camera and OrbitControls target (the scene origin) stay on the shirt.
-  const centerY = useMemo(() => {
-    if (!bodyGeometry) return 0;
-    bodyGeometry.computeBoundingBox();
-    const box = bodyGeometry.boundingBox!;
-    return (box.min.y + box.max.y) / 2;
-  }, [bodyGeometry]);
-
+  // setup in Viewer3D. The mesh is re-centred vertically (centerY) so the camera
+  // and OrbitControls target (the scene origin) stay on the shirt.
   return (
     <group scale={0.01} position={[0, -centerY * 0.01, 0]}>
       {bodyGeometry && (
