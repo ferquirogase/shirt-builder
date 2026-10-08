@@ -57,3 +57,13 @@ Una función común dibuja el texto de la espalda (rotado 180°, como hoy) en es
 - Compositor: con estilo de contorno y sombra se llaman `strokeText` y los ajustes de sombra; sin contorno no se llama `strokeText`.
 - Catálogo: los ids de los presets son únicos y todos tienen fuente.
 - Panel: elegir un preset despacha la acción correcta.
+
+## Revisión (2026-10-08): estilo simplificado
+Tras probar la primera versión se redujo el alcance. Esta sección reemplaza lo anterior donde se contradiga:
+- Solo dos tipografías: **Clásico** (Oswald 700) y **Moderno** (Montserrat 800). Se quitan Retro, Bloque, Elegante y Contorno.
+- `nameNumberStyle` pasa a `{ presetId, fill, outline: boolean }`. El borde es un interruptor: negro y de grosor fijo (`OUTLINE_COLOR`, `OUTLINE_WIDTH`); ya no se elige color ni grosor.
+- Se elimina la sombra.
+- Cambiar de tipografía solo cambia `presetId`; el color y el borde elegidos se conservan.
+- Acciones: `SET_NN_PRESET`, `SET_NN_FILL`, `SET_NN_OUTLINE`.
+- El panel muestra: nombre, número, las dos tipografías, color del texto y el interruptor "Borde".
+- El ancho máximo del texto de la espalda sale de `UVRegions.backTextWidthFraction` (0.5 para el modelo GEPE, medido sobre su malla).

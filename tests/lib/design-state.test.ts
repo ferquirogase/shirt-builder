@@ -151,48 +151,28 @@ describe("colorsAfterPatternChange", () => {
 });
 
 describe("name/number style", () => {
-  it("starts with the classic preset's values", () => {
-    expect(initialDesignState.nameNumberStyle).toEqual({
-      presetId: "classic",
-      fill: "#ffffff",
-      outlineColor: "#000000",
-      outlineWidth: 0,
-      shadow: false,
-    });
+  it("starts classic, white and without a border", () => {
+    expect(initialDesignState.nameNumberStyle).toEqual({ presetId: "classic", fill: "#ffffff", outline: false });
   });
 
-  it("applies a preset's defaults, discarding manual tweaks", () => {
-    const tweaked = designReducer(initialDesignState, { type: "SET_NN_FILL", value: "#ff0000" });
-    const next = designReducer(tweaked, { type: "SET_NN_PRESET", id: "retro" });
-    expect(next.nameNumberStyle).toEqual({
-      presetId: "retro",
-      fill: "#ffffff",
-      outlineColor: "#d62828",
-      outlineWidth: 0.03,
-      shadow: true,
-    });
+  it("changing the typeface keeps the chosen color and border", () => {
+    const tweaked = designReducer(
+      designReducer(initialDesignState, { type: "SET_NN_FILL", value: "#ff0000" }),
+      { type: "SET_NN_OUTLINE", value: true }
+    );
+    const next = designReducer(tweaked, { type: "SET_NN_PRESET", id: "modern" });
+    expect(next.nameNumberStyle).toEqual({ presetId: "modern", fill: "#ff0000", outline: true });
   });
 
-  it("ignores an unknown preset id", () => {
-    const next = designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "nope" });
-    expect(next).toBe(initialDesignState);
+  it("ignores an unknown or removed preset id", () => {
+    expect(designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "nope" })).toBe(initialDesignState);
+    expect(designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "retro" })).toBe(initialDesignState);
   });
 
   it("changes only the targeted field", () => {
     const fill = designReducer(initialDesignState, { type: "SET_NN_FILL", value: "#123456" });
     expect(fill.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, fill: "#123456" });
-    const color = designReducer(initialDesignState, { type: "SET_NN_OUTLINE_COLOR", value: "#abcdef" });
-    expect(color.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, outlineColor: "#abcdef" });
-    const shadow = designReducer(initialDesignState, { type: "SET_NN_SHADOW", value: true });
-    expect(shadow.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, shadow: true });
-  });
-
-  it("clamps the outline width to 0..0.12", () => {
-    const over = designReducer(initialDesignState, { type: "SET_NN_OUTLINE_WIDTH", value: 5 });
-    expect(over.nameNumberStyle.outlineWidth).toBe(0.12);
-    const under = designReducer(initialDesignState, { type: "SET_NN_OUTLINE_WIDTH", value: -1 });
-    expect(under.nameNumberStyle.outlineWidth).toBe(0);
-    const ok = designReducer(initialDesignState, { type: "SET_NN_OUTLINE_WIDTH", value: 0.05 });
-    expect(ok.nameNumberStyle.outlineWidth).toBe(0.05);
+    const outline = designReducer(initialDesignState, { type: "SET_NN_OUTLINE", value: true });
+    expect(outline.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, outline: true });
   });
 });

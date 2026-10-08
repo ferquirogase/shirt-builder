@@ -1,6 +1,6 @@
 "use client";
 import { useDesign } from "@/lib/builder/design-context";
-import { MAX_OUTLINE_WIDTH, NAME_NUMBER_PRESETS, getNameNumberPreset } from "@/lib/builder/name-number-presets";
+import { NAME_NUMBER_PRESETS, OUTLINE_COLOR, OUTLINE_WIDTH, getNameNumberPreset } from "@/lib/builder/name-number-presets";
 import { CheckIcon } from "../icons";
 import { PanelShell } from "./PanelShell";
 
@@ -38,7 +38,7 @@ export function TextPanel() {
           />
         </label>
 
-        <div role="radiogroup" aria-label="Estilo" className="grid grid-cols-3 gap-2 md:grid-cols-2 md:gap-3">
+        <div role="radiogroup" aria-label="Estilo" className="grid grid-cols-2 gap-2 md:gap-3">
           {NAME_NUMBER_PRESETS.map((preset) => {
             const selected = preset.id === selectedId;
             return (
@@ -58,13 +58,12 @@ export function TextPanel() {
                   className="flex aspect-square w-full items-center justify-center rounded-xl"
                   style={{
                     background: state.colors.primary,
-                    color: preset.fill,
+                    color: style.fill,
                     fontFamily: `var(${preset.cssVar}), sans-serif`,
                     fontWeight: preset.weight,
                     fontSize: THUMB_FONT_PX,
-                    WebkitTextStroke: `${preset.outlineWidth * THUMB_FONT_PX}px ${preset.outlineColor}`,
+                    WebkitTextStroke: style.outline ? `${OUTLINE_WIDTH * THUMB_FONT_PX}px ${OUTLINE_COLOR}` : undefined,
                     paintOrder: "stroke fill",
-                    textShadow: preset.shadow ? "0 2px 3px rgba(0,0,0,0.45)" : undefined,
                   }}
                 >
                   10
@@ -90,31 +89,11 @@ export function TextPanel() {
           />
         </label>
         <label className="flex items-center justify-between rounded-2xl bg-white/70 p-3 text-sm font-medium">
-          Color del contorno
-          <input
-            type="color"
-            value={style.outlineColor}
-            onChange={(e) => dispatch({ type: "SET_NN_OUTLINE_COLOR", value: e.target.value })}
-            className={COLOR_INPUT}
-          />
-        </label>
-        <label className="flex flex-col gap-2 rounded-2xl bg-white/70 p-3 text-sm font-medium">
-          Grosor del contorno
-          <input
-            type="range"
-            min={0}
-            max={MAX_OUTLINE_WIDTH}
-            step={0.005}
-            value={style.outlineWidth}
-            onChange={(e) => dispatch({ type: "SET_NN_OUTLINE_WIDTH", value: Number(e.target.value) })}
-          />
-        </label>
-        <label className="flex items-center justify-between rounded-2xl bg-white/70 p-3 text-sm font-medium">
-          Sombra
+          Borde
           <input
             type="checkbox"
-            checked={style.shadow}
-            onChange={(e) => dispatch({ type: "SET_NN_SHADOW", value: e.target.checked })}
+            checked={style.outline}
+            onChange={(e) => dispatch({ type: "SET_NN_OUTLINE", value: e.target.checked })}
             className="h-5 w-5"
           />
         </label>

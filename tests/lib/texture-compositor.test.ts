@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { drawDesignToCanvas } from "@/lib/builder/texture-compositor";
 import { initialDesignState } from "@/lib/builder/design-state";
-import { styleFromPreset } from "@/lib/builder/name-number-presets";
+import { OUTLINE_COLOR, OUTLINE_WIDTH } from "@/lib/builder/name-number-presets";
 import { UV_REGIONS, GEPE_UV_REGIONS, UV_FLIP_Y, type UVRegions, type UVRect } from "@/lib/builder/uv-regions";
 
 function createMockCtx() {
@@ -276,13 +276,13 @@ describe("drawDesignToCanvas", () => {
       expect(fill).toBe("#f5d77a");
     });
 
-    it("does not stroke when the outline width is 0 (Review Focus 5)", () => {
+    it("does not stroke when the border is off (Review Focus 5)", () => {
       const ctx = createMockCtx();
       drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10", playerName: "PEREZ" }), blank, regions);
       expect(ctx.strokeText).not.toHaveBeenCalled();
     });
 
-    it("strokes before filling, with a round join and the outline color and width", () => {
+    it("with the border on, strokes in black before filling, with a round join", () => {
       const ctx = createMockCtx();
       const seen: Record<string, unknown> = {};
       (ctx.strokeText as ReturnType<typeof vi.fn>).mockImplementation(() => {
@@ -292,47 +292,30 @@ describe("drawDesignToCanvas", () => {
       });
       const design = withStyle({
         playerNumber: "10",
-        nameNumberStyle: { ...styleFromPreset("outline")!, outlineColor: "#112233", outlineWidth: 0.05 },
+        nameNumberStyle: { ...initialDesignState.nameNumberStyle, outline: true },
       });
       drawDesignToCanvas(ctx, 1000, design, blank, regions);
       const stroke = (ctx.strokeText as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0];
       const fill = (ctx.fillText as ReturnType<typeof vi.fn>).mock.invocationCallOrder[0];
       expect(stroke).toBeLessThan(fill);
-      expect(seen.strokeStyle).toBe("#112233");
+      expect(seen.strokeStyle).toBe(OUTLINE_COLOR);
       expect(seen.lineJoin).toBe("round");
-      // visible outline = 0.05 of the font size; strokes are centered, so the line is twice that.
-      // outline preset number size: 0.12 * 1000 * 1 = 120px -> 0.05 * 120 * 2 = 12
-      expect(seen.lineWidth).toBeCloseTo(12, 5);
+      // Strokes are centered on the glyph edge, so the line is twice the visible border.
+      // Number size: 0.12 * 1000 * 1 = 120px.
+      expect(seen.lineWidth).toBeCloseTo(120 * OUTLINE_WIDTH * 2, 5);
     });
 
-    it("casts the shadow downward on the model despite the 180deg rotation (Review Focus 3)", () => {
+    it("never draws a shadow", () => {
       const ctx = createMockCtx();
       const design = withStyle({
         playerNumber: "10",
-        nameNumberStyle: { ...initialDesignState.nameNumberStyle, shadow: true },
+        playerName: "PEREZ",
+        nameNumberStyle: { ...initialDesignState.nameNumberStyle, outline: true },
       });
       drawDesignToCanvas(ctx, 1000, design, blank, regions);
-      // Canvas shadow offsets ignore the transform; the content is rotated by PI,
-      // so a downward shadow on the model is an upward (negative y) offset here.
-      expect(ctx.shadowOffsetY).toBeLessThan(0);
-      expect(ctx.shadowColor).not.toBe("transparent");
-    });
-
-    it("draws no shadow when the style has none", () => {
-      const ctx = createMockCtx();
-      drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10" }), blank, regions);
       expect(ctx.shadowColor).toBe("transparent");
-    });
-
-    it("keeps the shadow on the outline only, not on the fill, when both exist", () => {
-      const ctx = createMockCtx();
-      const shadowAtStroke: string[] = [];
-      const shadowAtFill: string[] = [];
-      (ctx.strokeText as ReturnType<typeof vi.fn>).mockImplementation(() => shadowAtStroke.push(ctx.shadowColor));
-      (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => shadowAtFill.push(ctx.shadowColor));
-      drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10", nameNumberStyle: styleFromPreset("retro")! }), blank, regions);
-      expect(shadowAtStroke[0]).not.toBe("transparent");
-      expect(shadowAtFill[0]).toBe("transparent");
+      expect(ctx.shadowBlur).toBe(0);
+      expect(ctx.shadowOffsetY).toBe(0);
     });
 
     it("shrinks a very long name to fit 80% of the back panel width (Review Focus 1)", () => {

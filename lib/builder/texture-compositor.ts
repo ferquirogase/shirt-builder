@@ -1,6 +1,12 @@
 import type { DesignState } from "./design-state";
 import { UV_FLIP_Y, type UVRegions, type UVRect } from "./uv-regions";
-import { getNameNumberPreset, type NameNumberPreset, type NameNumberStyle } from "./name-number-presets";
+import {
+  OUTLINE_COLOR,
+  OUTLINE_WIDTH,
+  getNameNumberPreset,
+  type NameNumberPreset,
+  type NameNumberStyle,
+} from "./name-number-presets";
 
 export type CompositorImages = {
   bodyPatternImage: HTMLImageElement | null;
@@ -168,7 +174,6 @@ const NAME_FONT_FRACTION = 0.05;
 const NUMBER_FONT_FRACTION = 0.12;
 // Default share of bodyBack's width the back text may take (see UVRegions.backTextWidthFraction).
 const MAX_BACK_TEXT_WIDTH_FRACTION = 0.8;
-const SHADOW_COLOR = "rgba(0, 0, 0, 0.45)";
 
 type BackTextOptions = {
   basePx: number;
@@ -178,7 +183,7 @@ type BackTextOptions = {
   fontFamily: string;
 };
 
-// Draws shadow -> outline -> fill, centered on (x, y), rotated 180deg.
+// Draws outline -> fill, centered on (x, y), rotated 180deg.
 function drawBackText(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -198,23 +203,12 @@ function drawBackText(
   ctx.rotate(Math.PI);
   ctx.lineJoin = "round";
 
-  if (style.shadow) {
-    ctx.shadowColor = SHADOW_COLOR;
-    ctx.shadowBlur = px * 0.06;
-    ctx.shadowOffsetX = 0;
-    // Shadow offsets ignore the transform, so against the rotated content a
-    // downward shadow on the model is an upward (negative y) offset here.
-    ctx.shadowOffsetY = -px * 0.05;
-  }
-
-  if (style.outlineWidth > 0) {
+  if (style.outline) {
     // A stroke is centered on the glyph edge and the fill covers its inner
     // half, so the line is twice the visible thickness.
-    ctx.lineWidth = px * style.outlineWidth * 2;
-    ctx.strokeStyle = style.outlineColor;
+    ctx.lineWidth = px * OUTLINE_WIDTH * 2;
+    ctx.strokeStyle = OUTLINE_COLOR;
     ctx.strokeText(text, 0, 0);
-    // The outline already cast the shadow; the fill must not add a second one.
-    ctx.shadowColor = "transparent";
   }
 
   ctx.fillStyle = style.fill;

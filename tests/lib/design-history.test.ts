@@ -132,9 +132,9 @@ describe("historyReducer", () => {
 });
 
 describe("name/number style history", () => {
-  it("makes a preset change one undoable step", () => {
-    const changed = run([{ type: "SET_NN_PRESET", id: "block" }]);
-    expect(changed.present.nameNumberStyle.presetId).toBe("block");
+  it("makes a typeface change one undoable step", () => {
+    const changed = run([{ type: "SET_NN_PRESET", id: "modern" }]);
+    expect(changed.present.nameNumberStyle.presetId).toBe("modern");
     const undone = historyReducer(changed, { type: "UNDO" });
     expect(undone.present.nameNumberStyle.presetId).toBe("classic");
   });
@@ -149,17 +149,14 @@ describe("name/number style history", () => {
     expect(burst.present.nameNumberStyle.fill).toBe("#333333");
   });
 
-  it("collapses a burst of outline-width edits into one undo step", () => {
-    const burst = run([
-      { type: "SET_NN_OUTLINE_WIDTH", value: 0.01, at: 10_000 },
-      { type: "SET_NN_OUTLINE_WIDTH", value: 0.02, at: 10_100 },
-    ]);
-    expect(burst.past).toHaveLength(1);
+  it("toggling the border is an undoable step", () => {
+    const changed = run([{ type: "SET_NN_OUTLINE", value: true }]);
+    expect(changed.present.nameNumberStyle.outline).toBe(true);
+    expect(historyReducer(changed, { type: "UNDO" }).present.nameNumberStyle.outline).toBe(false);
   });
 
   it("ignores a change that leaves the style identical", () => {
     const base = createHistory();
-    const same = historyReducer(base, { type: "SET_NN_SHADOW", value: false });
-    expect(same).toBe(base);
+    expect(historyReducer(base, { type: "SET_NN_OUTLINE", value: false })).toBe(base);
   });
 });

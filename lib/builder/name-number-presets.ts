@@ -1,13 +1,11 @@
 export type NameNumberStyle = {
   presetId: string;
   fill: string;
-  outlineColor: string;
-  /** Visible outline thickness as a fraction of the font size (0 = no outline). */
-  outlineWidth: number;
-  shadow: boolean;
+  /** Draws a black border around the text. */
+  outline: boolean;
 };
 
-export type NameNumberPreset = Omit<NameNumberStyle, "presetId"> & {
+export type NameNumberPreset = {
   id: string;
   label: string;
   /** CSS variable exposed by next/font in app/layout.tsx; holds the font-family list. */
@@ -18,8 +16,10 @@ export type NameNumberPreset = Omit<NameNumberStyle, "presetId"> & {
   numberScale: number;
 };
 
-export const MAX_OUTLINE_WIDTH = 0.12;
 export const DEFAULT_PRESET_ID = "classic";
+export const OUTLINE_COLOR = "#000000";
+/** Visible border thickness as a fraction of the font size. */
+export const OUTLINE_WIDTH = 0.04;
 
 export const NAME_NUMBER_PRESETS: NameNumberPreset[] = [
   {
@@ -29,10 +29,6 @@ export const NAME_NUMBER_PRESETS: NameNumberPreset[] = [
     weight: 700,
     nameScale: 1,
     numberScale: 1,
-    fill: "#ffffff",
-    outlineColor: "#000000",
-    outlineWidth: 0,
-    shadow: false,
   },
   {
     id: "modern",
@@ -41,58 +37,6 @@ export const NAME_NUMBER_PRESETS: NameNumberPreset[] = [
     weight: 800,
     nameScale: 0.9,
     numberScale: 1,
-    fill: "#ffffff",
-    outlineColor: "#000000",
-    outlineWidth: 0.02,
-    shadow: false,
-  },
-  {
-    id: "retro",
-    label: "Retro",
-    cssVar: "--font-nn-righteous",
-    weight: 400,
-    nameScale: 1,
-    numberScale: 1,
-    fill: "#ffffff",
-    outlineColor: "#d62828",
-    outlineWidth: 0.03,
-    shadow: true,
-  },
-  {
-    id: "block",
-    label: "Bloque",
-    cssVar: "--font-nn-anton",
-    weight: 400,
-    nameScale: 1.05,
-    numberScale: 1.1,
-    fill: "#ffffff",
-    outlineColor: "#000000",
-    outlineWidth: 0,
-    shadow: false,
-  },
-  {
-    id: "elegant",
-    label: "Elegante",
-    cssVar: "--font-nn-playfair",
-    weight: 900,
-    nameScale: 0.95,
-    numberScale: 1,
-    fill: "#f5d77a",
-    outlineColor: "#000000",
-    outlineWidth: 0,
-    shadow: false,
-  },
-  {
-    id: "outline",
-    label: "Contorno",
-    cssVar: "--font-nn-alfa-slab",
-    weight: 400,
-    nameScale: 0.9,
-    numberScale: 1,
-    fill: "#ffffff",
-    outlineColor: "#000000",
-    outlineWidth: 0.06,
-    shadow: false,
   },
 ];
 
@@ -104,14 +48,6 @@ export function getNameNumberPreset(id: string): NameNumberPreset {
   return findNameNumberPreset(id) ?? findNameNumberPreset(DEFAULT_PRESET_ID)!;
 }
 
-export function styleFromPreset(id: string): NameNumberStyle | null {
-  const preset = findNameNumberPreset(id);
-  if (!preset) return null;
-  return {
-    presetId: preset.id,
-    fill: preset.fill,
-    outlineColor: preset.outlineColor,
-    outlineWidth: preset.outlineWidth,
-    shadow: preset.shadow,
-  };
+export function initialNameNumberStyle(): NameNumberStyle {
+  return { presetId: DEFAULT_PRESET_ID, fill: "#ffffff", outline: false };
 }

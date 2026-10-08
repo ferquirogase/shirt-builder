@@ -1,6 +1,6 @@
 import type { ColorSlot } from "./svg-recolor";
 import { findPattern, visibleColors } from "./patterns";
-import { MAX_OUTLINE_WIDTH, styleFromPreset, type NameNumberStyle } from "./name-number-presets";
+import { findNameNumberPreset, initialNameNumberStyle, type NameNumberStyle } from "./name-number-presets";
 
 export type DesignState = {
   bodyPatternId: string;
@@ -24,9 +24,7 @@ export type DesignAction =
   | { type: "SET_PLAYER_NUMBER"; value: string }
   | { type: "SET_NN_PRESET"; id: string }
   | { type: "SET_NN_FILL"; value: string }
-  | { type: "SET_NN_OUTLINE_COLOR"; value: string }
-  | { type: "SET_NN_OUTLINE_WIDTH"; value: number }
-  | { type: "SET_NN_SHADOW"; value: boolean }
+  | { type: "SET_NN_OUTLINE"; value: boolean }
   | { type: "SET_PROJECT_NAME"; value: string };
 
 export const initialDesignState: DesignState = {
@@ -37,7 +35,7 @@ export const initialDesignState: DesignState = {
   sponsorText: "",
   playerName: "",
   playerNumber: "",
-  nameNumberStyle: styleFromPreset("classic")!,
+  nameNumberStyle: initialNameNumberStyle(),
   projectName: "Mi diseño",
 };
 
@@ -81,24 +79,15 @@ export function designReducer(state: DesignState, action: DesignAction): DesignS
       return { ...state, playerName: action.value };
     case "SET_PLAYER_NUMBER":
       return { ...state, playerNumber: action.value };
-    case "SET_NN_PRESET": {
-      const style = styleFromPreset(action.id);
-      return style ? { ...state, nameNumberStyle: style } : state;
-    }
+    case "SET_NN_PRESET":
+      // Only the typeface changes; the user's color and border stay.
+      return findNameNumberPreset(action.id)
+        ? { ...state, nameNumberStyle: { ...state.nameNumberStyle, presetId: action.id } }
+        : state;
     case "SET_NN_FILL":
       return { ...state, nameNumberStyle: { ...state.nameNumberStyle, fill: action.value } };
-    case "SET_NN_OUTLINE_COLOR":
-      return { ...state, nameNumberStyle: { ...state.nameNumberStyle, outlineColor: action.value } };
-    case "SET_NN_OUTLINE_WIDTH":
-      return {
-        ...state,
-        nameNumberStyle: {
-          ...state.nameNumberStyle,
-          outlineWidth: Math.min(MAX_OUTLINE_WIDTH, Math.max(0, action.value)),
-        },
-      };
-    case "SET_NN_SHADOW":
-      return { ...state, nameNumberStyle: { ...state.nameNumberStyle, shadow: action.value } };
+    case "SET_NN_OUTLINE":
+      return { ...state, nameNumberStyle: { ...state.nameNumberStyle, outline: action.value } };
     case "SET_PROJECT_NAME":
       return { ...state, projectName: action.value };
     default:

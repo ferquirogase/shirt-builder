@@ -34,10 +34,6 @@ function groupKey(action: DesignAction): string | null {
       return "number";
     case "SET_NN_FILL":
       return "nn:fill";
-    case "SET_NN_OUTLINE_COLOR":
-      return "nn:outline-color";
-    case "SET_NN_OUTLINE_WIDTH":
-      return "nn:outline-width";
     default:
       return null;
   }
@@ -57,9 +53,7 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
     a.playerNumber === b.playerNumber &&
     a.nameNumberStyle.presetId === b.nameNumberStyle.presetId &&
     a.nameNumberStyle.fill === b.nameNumberStyle.fill &&
-    a.nameNumberStyle.outlineColor === b.nameNumberStyle.outlineColor &&
-    a.nameNumberStyle.outlineWidth === b.nameNumberStyle.outlineWidth &&
-    a.nameNumberStyle.shadow === b.nameNumberStyle.shadow &&
+    a.nameNumberStyle.outline === b.nameNumberStyle.outline &&
     a.projectName === b.projectName
   );
 }

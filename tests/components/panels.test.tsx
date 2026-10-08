@@ -184,43 +184,36 @@ describe("SponsorPanel and TextPanel", () => {
     }
   });
 
-  it("lists the six style presets and marks the current one", () => {
+  it("offers only the Clásico and Moderno typefaces and marks the current one", () => {
     renderWithDesign(<TextPanel />);
-    for (const name of ["Clásico", "Moderno", "Retro", "Bloque", "Elegante", "Contorno"]) {
-      expect(screen.getByRole("radio", { name })).toBeInTheDocument();
-    }
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
     expect(screen.getByRole("radio", { name: "Clásico" })).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByRole("radio", { name: "Retro" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("radio", { name: "Moderno" })).toHaveAttribute("aria-checked", "false");
   });
 
-  it("applies a preset and syncs the controls to its defaults", () => {
-    const { api } = renderWithDesign(<TextPanel />);
-    fireEvent.click(screen.getByRole("radio", { name: "Retro" }));
-    expect(api.current!.state.nameNumberStyle.presetId).toBe("retro");
-    expect(screen.getByLabelText("Color del contorno")).toHaveValue("#d62828");
-    expect(screen.getByLabelText("Sombra")).toBeChecked();
-    expect(screen.getByRole("radio", { name: "Retro" })).toHaveAttribute("aria-checked", "true");
-  });
-
-  it("adjusts fill, outline and shadow independently of the preset", () => {
+  it("switches the typeface without touching color or border", () => {
     const { api } = renderWithDesign(<TextPanel />);
     fireEvent.change(screen.getByLabelText("Color del texto"), { target: { value: "#ff0000" } });
-    fireEvent.change(screen.getByLabelText("Color del contorno"), { target: { value: "#00ff00" } });
-    fireEvent.change(screen.getByLabelText("Grosor del contorno"), { target: { value: "0.05" } });
-    fireEvent.click(screen.getByLabelText("Sombra"));
-    expect(api.current!.state.nameNumberStyle).toEqual({
-      presetId: "classic",
-      fill: "#ff0000",
-      outlineColor: "#00ff00",
-      outlineWidth: 0.05,
-      shadow: true,
-    });
+    fireEvent.click(screen.getByLabelText("Borde"));
+    fireEvent.click(screen.getByRole("radio", { name: "Moderno" }));
+    expect(api.current!.state.nameNumberStyle).toEqual({ presetId: "modern", fill: "#ff0000", outline: true });
+    expect(screen.getByRole("radio", { name: "Moderno" })).toHaveAttribute("aria-checked", "true");
   });
 
-  it("keeps the classic preset selected when an unknown preset is dispatched (Review Focus 2)", () => {
+  it("toggles the border and sets the text color", () => {
     const { api } = renderWithDesign(<TextPanel />);
-    act(() => api.current!.dispatch({ type: "SET_NN_PRESET", id: "gone" }));
-    expect(screen.getByRole("radio", { name: "Clásico" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByLabelText("Borde")).not.toBeChecked();
+    fireEvent.click(screen.getByLabelText("Borde"));
+    expect(api.current!.state.nameNumberStyle.outline).toBe(true);
+    fireEvent.change(screen.getByLabelText("Color del texto"), { target: { value: "#00ff00" } });
+    expect(api.current!.state.nameNumberStyle.fill).toBe("#00ff00");
+  });
+
+  it("no longer offers shadow, outline color or outline width", () => {
+    renderWithDesign(<TextPanel />);
+    expect(screen.queryByLabelText("Sombra")).toBeNull();
+    expect(screen.queryByLabelText("Color del contorno")).toBeNull();
+    expect(screen.queryByLabelText("Grosor del contorno")).toBeNull();
   });
 
   it("sets the sponsor text", () => {
