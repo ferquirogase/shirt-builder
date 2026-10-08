@@ -595,9 +595,9 @@ describe("drawDesignToCanvas", () => {
       const img = square("abdomen");
       drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: img } }, regions);
       const { x, y, w, h, translate, rotate } = drawn(ctx, img);
-      // bodyFront u .3..0.7 -> center u 0.5 -> x 500; v .5..0.9, vFrac 0.52 -> v 0.708 -> y 292.
+      // bodyFront u .3..0.7 -> center u 0.5 -> x 500; v .5..0.9, vFrac 0.58 -> v 0.732 -> y 268.
       expect(translate[0][0]).toBeCloseTo(500, 5);
-      expect(translate[0][1]).toBeCloseTo(292, 5);
+      expect(translate[0][1]).toBeCloseTo(268, 5);
       expect(rotate).toHaveLength(0);
       expect(w).toBeCloseTo(120, 5); // baseBox 0.12 of 1000
       expect(h).toBeCloseTo(120, 5);
