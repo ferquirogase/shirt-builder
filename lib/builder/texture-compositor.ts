@@ -71,6 +71,8 @@ function pointInRegionToCanvas(
 // too close to the armpit).
 const CREST_U_FRAC = 0.7;
 const CREST_V_FRAC = 0.71;
+// The longer side of the crest, as a share of the canvas (it was 0.08, which looked too big).
+const CREST_BOX_FRACTION = 0.065;
 
 export function drawDesignToCanvas(
   ctx: CanvasRenderingContext2D,
@@ -116,7 +118,7 @@ export function drawDesignToCanvas(
     // is vFrac=1 (its v1 edge, the one shared with bodyBack).
     // Preserve the source image's aspect ratio by fitting within a
     // bounding box rather than forcing a square.
-    const boxSize = canvasSize * 0.08;
+    const boxSize = canvasSize * CREST_BOX_FRACTION;
     const { naturalWidth, naturalHeight } = images.logoImage;
     const [logoWidth, logoHeight] =
       naturalWidth > 0 && naturalHeight > 0

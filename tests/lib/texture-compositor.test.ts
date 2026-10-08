@@ -457,10 +457,10 @@ describe("drawDesignToCanvas", () => {
     // bodyFront u .3..0.7, v .5..0.9. Chest point: 0.70 across (toward the viewer's right,
     // since u grows with model x) and 0.71 up from the hem:
     //   u = 0.3 + 0.70 * 0.4 = 0.58 -> x 580;  v = 0.5 + 0.71 * 0.4 = 0.784 -> y 216.
-    // The crest box is 80px, centered there.
+    // The crest box is 65px (6.5% of the canvas), centered there.
     const [, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(w).toBeCloseTo(80, 5);
-    expect(h).toBeCloseTo(80, 5);
+    expect(w).toBeCloseTo(65, 5);
+    expect(h).toBeCloseTo(65, 5);
     expect(x + w / 2).toBeCloseTo(580, 5);
     expect(y + h / 2).toBeCloseTo(216, 5);
   });
