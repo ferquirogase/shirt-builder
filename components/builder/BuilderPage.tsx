@@ -58,9 +58,9 @@ export function BuilderPage() {
 
   return (
     <DesignProvider>
-      <div className="min-h-dvh md:p-6">
+      <div className="min-h-dvh">
         <main
-          className="mx-auto flex h-dvh max-w-[1680px] flex-col overflow-hidden border-line md:h-[calc(100dvh-3rem)] md:rounded-[28px] md:border md:shadow-2xl"
+          className="flex h-dvh flex-col overflow-hidden"
           style={{ background: stageBaseCss() }}
         >
           <Header />

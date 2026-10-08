@@ -44,7 +44,7 @@ describe("historyReducer", () => {
   it("clears the redo stack when a new change is made after undo", () => {
     let s = run([{ type: "SET_BODY_PATTERN", id: "plain-body" }]);
     s = historyReducer(s, { type: "UNDO" });
-    s = historyReducer(s, { type: "SET_SPONSOR_TEXT", value: "ACME", at: 10_000 });
+    s = historyReducer(s, { type: "SET_SPONSOR", slot: "abdomen", dataUrl: "data:image/png;base64,AAAA", at: 10_000 });
     expect(s.future).toHaveLength(0);
   });
 
@@ -128,5 +128,82 @@ describe("historyReducer", () => {
     } finally {
       patterns.BODY_PATTERNS.pop();
     }
+  });
+});
+
+describe("name/number style history", () => {
+  it("makes a typeface change one undoable step", () => {
+    const changed = run([{ type: "SET_NN_PRESET", id: "modern" }]);
+    expect(changed.present.nameNumberStyle.presetId).toBe("modern");
+    const undone = historyReducer(changed, { type: "UNDO" });
+    expect(undone.present.nameNumberStyle.presetId).toBe("classic");
+  });
+
+  it("collapses a burst of fill-color edits into one undo step (Review Focus 6)", () => {
+    const burst = run([
+      { type: "SET_NN_FILL", value: "#111111", at: 10_000 },
+      { type: "SET_NN_FILL", value: "#222222", at: 10_100 },
+      { type: "SET_NN_FILL", value: "#333333", at: 10_200 },
+    ]);
+    expect(burst.past).toHaveLength(1);
+    expect(burst.present.nameNumberStyle.fill).toBe("#333333");
+  });
+
+  it("toggling the border is an undoable step", () => {
+    const changed = run([{ type: "SET_NN_OUTLINE", value: true }]);
+    expect(changed.present.nameNumberStyle.outline).toBe(true);
+    expect(historyReducer(changed, { type: "UNDO" }).present.nameNumberStyle.outline).toBe(false);
+  });
+
+  it("ignores a change that leaves the style identical", () => {
+    const base = createHistory();
+    expect(historyReducer(base, { type: "SET_NN_OUTLINE", value: false })).toBe(base);
+  });
+});
+
+describe("sponsor history", () => {
+  const IMG = "data:image/png;base64,AAAA";
+
+  it("makes uploading a sponsor one undoable step and undo restores it (Review Focus 6)", () => {
+    const up = run([{ type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG }]);
+    expect(up.present.sponsors.abdomen).toEqual({ dataUrl: IMG, scale: 1 });
+    expect(historyReducer(up, { type: "UNDO" }).present.sponsors).toEqual({});
+  });
+
+  it("undoing a removal brings back the image and its scale", () => {
+    const s = run([
+      { type: "SET_SPONSOR", slot: "nape", dataUrl: IMG },
+      { type: "SET_SPONSOR_SCALE", slot: "nape", value: 1.4, at: 10_000 },
+      { type: "REMOVE_SPONSOR", slot: "nape" },
+    ]);
+    expect(s.present.sponsors).toEqual({});
+    expect(historyReducer(s, { type: "UNDO" }).present.sponsors.nape).toEqual({ dataUrl: IMG, scale: 1.4 });
+  });
+
+  it("collapses dragging one placement's scale into one undo step", () => {
+    const s = run([
+      { type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG },
+      { type: "SET_SPONSOR_SCALE", slot: "abdomen", value: 1.1, at: 10_000 },
+      { type: "SET_SPONSOR_SCALE", slot: "abdomen", value: 1.2, at: 10_100 },
+      { type: "SET_SPONSOR_SCALE", slot: "abdomen", value: 1.3, at: 10_200 },
+    ]);
+    expect(s.past).toHaveLength(2); // the upload, then the whole drag
+    expect(historyReducer(s, { type: "UNDO" }).present.sponsors.abdomen!.scale).toBe(1);
+  });
+
+  it("does not group scale changes of two different placements", () => {
+    const s = run([
+      { type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG },
+      { type: "SET_SPONSOR", slot: "nape", dataUrl: IMG },
+      { type: "SET_SPONSOR_SCALE", slot: "abdomen", value: 1.1, at: 10_000 },
+      { type: "SET_SPONSOR_SCALE", slot: "nape", value: 1.1, at: 10_100 },
+    ]);
+    expect(s.past).toHaveLength(4);
+  });
+
+  it("ignores a change that leaves the sponsors identical", () => {
+    const s = run([{ type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG }]);
+    const again = historyReducer(s, { type: "SET_SPONSOR_SCALE", slot: "abdomen", value: 1 });
+    expect(again).toBe(s);
   });
 });

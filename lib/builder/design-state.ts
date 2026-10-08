@@ -1,14 +1,17 @@
 import type { ColorSlot } from "./svg-recolor";
 import { findPattern, visibleColors } from "./patterns";
+import { clampSponsorScale, isSponsorSlotId, type SponsorMap, type SponsorSlotId } from "./sponsor-slots";
+import { findNameNumberPreset, initialNameNumberStyle, type NameNumberStyle } from "./name-number-presets";
 
 export type DesignState = {
   bodyPatternId: string;
   sleevePatternId: string;
   colors: Record<ColorSlot, string>;
   logoDataUrl: string | null;
-  sponsorText: string;
+  sponsors: SponsorMap;
   playerName: string;
   playerNumber: string;
+  nameNumberStyle: NameNumberStyle;
   projectName: string;
 };
 
@@ -17,9 +20,14 @@ export type DesignAction =
   | { type: "SET_SLEEVE_PATTERN"; id: string }
   | { type: "SET_COLOR"; slot: ColorSlot; value: string }
   | { type: "SET_LOGO"; dataUrl: string | null }
-  | { type: "SET_SPONSOR_TEXT"; value: string }
+  | { type: "SET_SPONSOR"; slot: SponsorSlotId; dataUrl: string }
+  | { type: "SET_SPONSOR_SCALE"; slot: SponsorSlotId; value: number }
+  | { type: "REMOVE_SPONSOR"; slot: SponsorSlotId }
   | { type: "SET_PLAYER_NAME"; value: string }
   | { type: "SET_PLAYER_NUMBER"; value: string }
+  | { type: "SET_NN_PRESET"; id: string }
+  | { type: "SET_NN_FILL"; value: string }
+  | { type: "SET_NN_OUTLINE"; value: boolean }
   | { type: "SET_PROJECT_NAME"; value: string };
 
 export const initialDesignState: DesignState = {
@@ -27,9 +35,10 @@ export const initialDesignState: DesignState = {
   sleevePatternId: "sleeve-plain",
   colors: { primary: "#0a5c36", secondary: "#ffffff", accent: "#f5b700", collar: "#ffffff" },
   logoDataUrl: null,
-  sponsorText: "",
+  sponsors: {},
   playerName: "",
   playerNumber: "",
+  nameNumberStyle: initialNameNumberStyle(),
   projectName: "Mi diseño",
 };
 
@@ -67,12 +76,36 @@ export function designReducer(state: DesignState, action: DesignAction): DesignS
       return { ...state, colors: { ...state.colors, [action.slot]: action.value } };
     case "SET_LOGO":
       return { ...state, logoDataUrl: action.dataUrl };
-    case "SET_SPONSOR_TEXT":
-      return { ...state, sponsorText: action.value };
+    case "SET_SPONSOR": {
+      if (!isSponsorSlotId(action.slot)) return state;
+      const scale = state.sponsors[action.slot]?.scale ?? 1;
+      return { ...state, sponsors: { ...state.sponsors, [action.slot]: { dataUrl: action.dataUrl, scale } } };
+    }
+    case "SET_SPONSOR_SCALE": {
+      const current = isSponsorSlotId(action.slot) ? state.sponsors[action.slot] : undefined;
+      if (!current) return state;
+      const entry = { ...current, scale: clampSponsorScale(action.value) };
+      return { ...state, sponsors: { ...state.sponsors, [action.slot]: entry } };
+    }
+    case "REMOVE_SPONSOR": {
+      if (!isSponsorSlotId(action.slot) || !state.sponsors[action.slot]) return state;
+      const sponsors = { ...state.sponsors };
+      delete sponsors[action.slot];
+      return { ...state, sponsors };
+    }
     case "SET_PLAYER_NAME":
       return { ...state, playerName: action.value };
     case "SET_PLAYER_NUMBER":
       return { ...state, playerNumber: action.value };
+    case "SET_NN_PRESET":
+      // Only the typeface changes; the user's color and border stay.
+      return findNameNumberPreset(action.id)
+        ? { ...state, nameNumberStyle: { ...state.nameNumberStyle, presetId: action.id } }
+        : state;
+    case "SET_NN_FILL":
+      return { ...state, nameNumberStyle: { ...state.nameNumberStyle, fill: action.value } };
+    case "SET_NN_OUTLINE":
+      return { ...state, nameNumberStyle: { ...state.nameNumberStyle, outline: action.value } };
     case "SET_PROJECT_NAME":
       return { ...state, projectName: action.value };
     default:

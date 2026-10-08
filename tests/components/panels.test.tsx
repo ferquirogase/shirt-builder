@@ -171,23 +171,44 @@ describe("CrestPanel", () => {
   });
 });
 
-describe("SponsorPanel and TextPanel", () => {
+describe("TextPanel", () => {
   it("makes keyboard focus visible on the text fields", () => {
-    renderWithDesign(
-      <>
-        <SponsorPanel />
-        <TextPanel />
-      </>
-    );
-    for (const name of ["Texto del sponsor", "Nombre", "Número"]) {
+    renderWithDesign(<TextPanel />);
+    for (const name of ["Nombre", "Número"]) {
       expect(screen.getByLabelText(name).className).toContain("focus-visible:ring-2");
     }
   });
 
-  it("sets the sponsor text", () => {
-    const { api } = renderWithDesign(<SponsorPanel />);
-    fireEvent.change(screen.getByLabelText("Texto del sponsor"), { target: { value: "ACME" } });
-    expect(api.current!.state.sponsorText).toBe("ACME");
+  it("offers only the Clásico and Moderno typefaces and marks the current one", () => {
+    renderWithDesign(<TextPanel />);
+    expect(screen.getAllByRole("radio")).toHaveLength(2);
+    expect(screen.getByRole("radio", { name: "Clásico" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Moderno" })).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("switches the typeface without touching color or border", () => {
+    const { api } = renderWithDesign(<TextPanel />);
+    fireEvent.change(screen.getByLabelText("Color del texto"), { target: { value: "#ff0000" } });
+    fireEvent.click(screen.getByLabelText("Borde"));
+    fireEvent.click(screen.getByRole("radio", { name: "Moderno" }));
+    expect(api.current!.state.nameNumberStyle).toEqual({ presetId: "modern", fill: "#ff0000", outline: true });
+    expect(screen.getByRole("radio", { name: "Moderno" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("toggles the border and sets the text color", () => {
+    const { api } = renderWithDesign(<TextPanel />);
+    expect(screen.getByLabelText("Borde")).not.toBeChecked();
+    fireEvent.click(screen.getByLabelText("Borde"));
+    expect(api.current!.state.nameNumberStyle.outline).toBe(true);
+    fireEvent.change(screen.getByLabelText("Color del texto"), { target: { value: "#00ff00" } });
+    expect(api.current!.state.nameNumberStyle.fill).toBe("#00ff00");
+  });
+
+  it("no longer offers shadow, outline color or outline width", () => {
+    renderWithDesign(<TextPanel />);
+    expect(screen.queryByLabelText("Sombra")).toBeNull();
+    expect(screen.queryByLabelText("Color del contorno")).toBeNull();
+    expect(screen.queryByLabelText("Grosor del contorno")).toBeNull();
   });
 
   it("uppercases the name and keeps only two digits of the number", () => {
@@ -197,5 +218,145 @@ describe("SponsorPanel and TextPanel", () => {
     expect(api.current!.state.playerName).toBe("PEREZ");
     expect(api.current!.state.playerNumber).toBe("10");
     expect(screen.getByLabelText("Número")).toHaveAttribute("maxlength", "2");
+  });
+});
+
+describe("SponsorPanel", () => {
+  const upload = (label: string, file: File) =>
+    fireEvent.change(screen.getByLabelText(`Subir sponsor: ${label}`), { target: { files: [file] } });
+  const png = (name = "logo.png") => new File(["x"], name, { type: "image/png" });
+
+  it("lists the five placements in order, each with an upload control and nothing else yet", () => {
+    renderWithDesign(<SponsorPanel />);
+    // The panel's own wrapper is a region too ("Sponsor"); the cards are what we count.
+    const names = screen
+      .getAllByRole("region")
+      .map((r) => r.getAttribute("aria-label"))
+      .filter((name) => name !== "Sponsor");
+    expect(names).toEqual(["Abdomen", "Manga izquierda", "Manga derecha", "Nuca", "Espalda baja"]);
+    expect(screen.queryByRole("slider")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Quitar sponsor/ })).toBeNull();
+  });
+
+  it("uploads to the chosen placement only", async () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    upload("Nuca", png());
+    await waitFor(() => expect(api.current!.state.sponsors.nape?.dataUrl).toMatch(/^data:image\/png/));
+    expect(api.current!.state.sponsors.nape!.scale).toBe(1);
+    expect(Object.keys(api.current!.state.sponsors)).toEqual(["nape"]);
+  });
+
+  it("shows the preview, the scale control and remove only for a placement that has an image", async () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    upload("Abdomen", png());
+    await waitFor(() => expect(api.current!.state.sponsors.abdomen).toBeDefined());
+    expect(screen.getByRole("img", { name: "Sponsor de Abdomen" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Tamaño del sponsor: Abdomen")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Quitar sponsor: Abdomen" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Tamaño del sponsor: Nuca")).toBeNull();
+    expect(screen.getAllByRole("slider")).toHaveLength(1);
+  });
+
+  it("limits the scale control to 50%..150%", async () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    upload("Abdomen", png());
+    await waitFor(() => expect(api.current!.state.sponsors.abdomen).toBeDefined());
+    const slider = screen.getByLabelText("Tamaño del sponsor: Abdomen");
+    expect(slider).toHaveAttribute("min", "0.5");
+    expect(slider).toHaveAttribute("max", "1.5");
+    fireEvent.change(slider, { target: { value: "1.3" } });
+    expect(api.current!.state.sponsors.abdomen!.scale).toBe(1.3);
+  });
+
+  it("replaces an image keeping the chosen scale", async () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    upload("Abdomen", png("a.png"));
+    await waitFor(() => expect(api.current!.state.sponsors.abdomen).toBeDefined());
+    fireEvent.change(screen.getByLabelText("Tamaño del sponsor: Abdomen"), { target: { value: "1.4" } });
+    const first = api.current!.state.sponsors.abdomen!.dataUrl;
+    upload("Abdomen", new File(["different"], "b.png", { type: "image/png" }));
+    await waitFor(() => expect(api.current!.state.sponsors.abdomen!.dataUrl).not.toBe(first));
+    expect(api.current!.state.sponsors.abdomen!.scale).toBe(1.4);
+  });
+
+  it("removes a sponsor", async () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    upload("Nuca", png());
+    await waitFor(() => expect(api.current!.state.sponsors.nape).toBeDefined());
+    fireEvent.click(screen.getByRole("button", { name: "Quitar sponsor: Nuca" }));
+    expect(api.current!.state.sponsors.nape).toBeUndefined();
+    expect(screen.queryByRole("button", { name: "Quitar sponsor: Nuca" })).toBeNull();
+  });
+
+  it("rejects a file of the wrong type, and shows the error only in that card (Review Focus 4)", () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    upload("Nuca", new File(["x"], "doc.pdf", { type: "application/pdf" }));
+    const alerts = screen.getAllByRole("alert");
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toHaveTextContent(/PNG, JPG o SVG/);
+    expect(screen.getByRole("region", { name: "Nuca" })).toContainElement(alerts[0]);
+    expect(api.current!.state.sponsors).toEqual({});
+  });
+
+  it("rejects a file over 2 MB", () => {
+    renderWithDesign(<SponsorPanel />);
+    upload("Abdomen", new File([new Uint8Array(2 * 1024 * 1024 + 1)], "big.png", { type: "image/png" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(/2 MB/);
+  });
+
+  it("reports an image that cannot be decoded without touching the design", async () => {
+    vi.mocked(loadImage).mockRejectedValue(new Error("decode failed"));
+    const { api } = renderWithDesign(<SponsorPanel />);
+    upload("Manga izquierda", png("broken.png"));
+    expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo leer la imagen.");
+    expect(api.current!.state.sponsors).toEqual({});
+    expect(api.current!.canUndo).toBe(false);
+  });
+
+  it("keeps the latest upload to a placement when an older one finishes decoding last (Review Focus 4)", async () => {
+    const pending: Array<{ src: string; resolve: () => void }> = [];
+    vi.mocked(loadImage).mockImplementation(
+      (src: string) =>
+        new Promise<HTMLImageElement>((resolve) => {
+          pending.push({ src, resolve: () => resolve({} as HTMLImageElement) });
+        })
+    );
+    const { api } = renderWithDesign(<SponsorPanel />);
+    upload("Abdomen", new File(["a"], "a.png", { type: "image/png" }));
+    await waitFor(() => expect(pending).toHaveLength(1));
+    upload("Abdomen", new File(["b"], "b.png", { type: "image/png" }));
+    await waitFor(() => expect(pending).toHaveLength(2));
+
+    pending[1].resolve();
+    await waitFor(() => expect(api.current!.state.sponsors.abdomen?.dataUrl).toBe(pending[1].src));
+    pending[0].resolve();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(api.current!.state.sponsors.abdomen!.dataUrl).toBe(pending[1].src);
+  });
+
+  it("does not let an upload to one placement cancel another's", async () => {
+    const pending: Array<{ src: string; resolve: () => void }> = [];
+    vi.mocked(loadImage).mockImplementation(
+      (src: string) =>
+        new Promise<HTMLImageElement>((resolve) => {
+          pending.push({ src, resolve: () => resolve({} as HTMLImageElement) });
+        })
+    );
+    const { api } = renderWithDesign(<SponsorPanel />);
+    upload("Abdomen", new File(["a"], "a.png", { type: "image/png" }));
+    await waitFor(() => expect(pending).toHaveLength(1));
+    upload("Nuca", new File(["b"], "b.png", { type: "image/png" }));
+    await waitFor(() => expect(pending).toHaveLength(2));
+    pending[0].resolve();
+    pending[1].resolve();
+    await waitFor(() => expect(Object.keys(api.current!.state.sponsors).sort()).toEqual(["abdomen", "nape"]));
+  });
+
+  it("makes keyboard focus visible on every upload control", () => {
+    renderWithDesign(<SponsorPanel />);
+    for (const label of ["Abdomen", "Manga izquierda", "Manga derecha", "Nuca", "Espalda baja"]) {
+      const control = screen.getByLabelText(`Subir sponsor: ${label}`).closest("label");
+      expect(control?.className).toContain("focus-within:ring-2");
+    }
   });
 });

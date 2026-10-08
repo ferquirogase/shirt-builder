@@ -1,3 +1,4 @@
+import { SPONSOR_SLOTS, type SponsorMap } from "./sponsor-slots";
 import { designReducer, initialDesignState, type DesignAction, type DesignState } from "./design-state";
 
 export const HISTORY_LIMIT = 100;
@@ -26,15 +27,21 @@ function groupKey(action: DesignAction): string | null {
   switch (action.type) {
     case "SET_COLOR":
       return `color:${action.slot}`;
-    case "SET_SPONSOR_TEXT":
-      return "sponsor";
+    case "SET_SPONSOR_SCALE":
+      return `sponsor-scale:${action.slot}`;
     case "SET_PLAYER_NAME":
       return "name";
     case "SET_PLAYER_NUMBER":
       return "number";
+    case "SET_NN_FILL":
+      return "nn:fill";
     default:
       return null;
   }
+}
+
+function sameSponsors(a: SponsorMap, b: SponsorMap): boolean {
+  return SPONSOR_SLOTS.every(({ id }) => a[id]?.dataUrl === b[id]?.dataUrl && a[id]?.scale === b[id]?.scale);
 }
 
 function sameDesign(a: DesignState, b: DesignState): boolean {
@@ -46,9 +53,12 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
     a.colors.accent === b.colors.accent &&
     a.colors.collar === b.colors.collar &&
     a.logoDataUrl === b.logoDataUrl &&
-    a.sponsorText === b.sponsorText &&
+    sameSponsors(a.sponsors, b.sponsors) &&
     a.playerName === b.playerName &&
     a.playerNumber === b.playerNumber &&
+    a.nameNumberStyle.presetId === b.nameNumberStyle.presetId &&
+    a.nameNumberStyle.fill === b.nameNumberStyle.fill &&
+    a.nameNumberStyle.outline === b.nameNumberStyle.outline &&
     a.projectName === b.projectName
   );
 }

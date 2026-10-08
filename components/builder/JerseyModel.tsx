@@ -9,6 +9,10 @@ import { loadImage, loadPatternImage, loadTintedMask } from "@/lib/builder/image
 import { drawDesignToCanvas } from "@/lib/builder/texture-compositor";
 import { UV_FLIP_Y } from "@/lib/builder/uv-regions";
 import { JERSEY_MODEL } from "@/lib/builder/jersey-model";
+import { BRAND_LOGO_URLS } from "@/lib/builder/brand-logo";
+import { loadSponsorImages, type SponsorImageCache, type SponsorImages } from "@/lib/builder/sponsor-images";
+import { getNameNumberPreset } from "@/lib/builder/name-number-presets";
+import { resolveFontFamily } from "@/lib/builder/resolve-font-family";
 import { createBlendedNormalTexture, createFabricNormalTexture } from "@/lib/builder/fabric-texture";
 import { findBoundaryLoops, pickNeckLoop, type Vec3 } from "@/lib/builder/mesh-boundary";
 import { createNecklineRounding } from "@/lib/builder/neckline";
@@ -68,6 +72,16 @@ export function JerseyModel() {
     collarMaskImage: null,
   });
   const [logoImage, setLogoImage] = useState<HTMLImageElement | null>(null);
+  const [brandLogos, setBrandLogos] = useState<{ forLight: HTMLImageElement | null; forDark: HTMLImageElement | null }>({
+    forLight: null,
+    forDark: null,
+  });
+  const sponsorCache = useRef<SponsorImageCache>(new Map());
+  const [sponsorImages, setSponsorImages] = useState<SponsorImages>({});
+  // Bumped when the name/number font finishes loading, to repaint the canvas
+  // (the first paint would otherwise keep the fallback font).
+  const [fontsVersion, setFontsVersion] = useState(0);
+  const nnPreset = getNameNumberPreset(state.nameNumberStyle.presetId);
 
   const canvas = useMemo(() => {
     const el = document.createElement("canvas");
@@ -209,6 +223,36 @@ export function JerseyModel() {
     };
   }, [state.bodyPatternId, state.sleevePatternId, state.colors]);
 
+  // The maker's logo never changes: load both versions once. A broken one must
+  // not break the shirt, so each failure just leaves that version out.
+  useEffect(() => {
+    let cancelled = false;
+    const load = (src: string) =>
+      loadImage(src).catch((err) => {
+        console.error("Failed to load brand logo", err);
+        return null;
+      });
+    Promise.all([load(BRAND_LOGO_URLS.forLight), load(BRAND_LOGO_URLS.forDark)]).then(([forLight, forDark]) => {
+      if (!cancelled) setBrandLogos({ forLight, forDark });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Decodes the sponsor images. Cached by data URL, so moving a scale slider
+  // (which changes `state.sponsors` but not the images) decodes nothing; a result
+  // that arrives after the design moved on is ignored.
+  useEffect(() => {
+    let cancelled = false;
+    loadSponsorImages(state.sponsors, sponsorCache.current).then((images) => {
+      if (!cancelled) setSponsorImages(images);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [state.sponsors]);
+
   // Undebounced: loads the logo image only when its data URL actually
   // changes (a discrete upload, not a continuous input).
   useEffect(() => {
@@ -235,6 +279,24 @@ export function JerseyModel() {
     };
   }, [state.logoDataUrl]);
 
+  // Loads the chosen name/number font on demand (the fonts are declared with
+  // preload: false) and asks for a repaint once it is available.
+  useEffect(() => {
+    let cancelled = false;
+    const family = resolveFontFamily(nnPreset.cssVar);
+    document.fonts
+      .load(`${nnPreset.weight} 48px ${family}`, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+      .then(() => {
+        if (!cancelled) setFontsVersion((v) => v + 1);
+      })
+      .catch((err) => {
+        console.error("Failed to load name/number font", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [nnPreset]);
+
   // Cheap and undebounced: redraws the canvas with whatever pattern/logo
   // images are currently cached, on every design state change.
   useEffect(() => {
@@ -251,11 +313,15 @@ export function JerseyModel() {
         sleevePatternImage: patternImages.sleevePatternImage,
         collarMaskImage: patternImages.collarMaskImage,
         logoImage,
+        brandLogoForLight: brandLogos.forLight,
+        brandLogoForDark: brandLogos.forDark,
+        sponsorImages,
       },
-      JERSEY_MODEL.uvRegions
+      JERSEY_MODEL.uvRegions,
+      resolveFontFamily(nnPreset.cssVar)
     );
     texture.needsUpdate = true;
-  }, [state, canvas, texture, patternImages, logoImage]);
+  }, [state, canvas, texture, patternImages, logoImage, brandLogos, sponsorImages, fontsVersion, nnPreset]);
 
   // The OBJ's vertex coordinates are in the hundreds, so scale=0.01 brings the
   // model to roughly a metre, a reasonable size for the camera/OrbitControls
