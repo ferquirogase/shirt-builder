@@ -69,10 +69,15 @@ function pointInRegionToCanvas(
 
 type LogoBox = { x: number; y: number; width: number; height: number };
 
-// Fits a logo inside a square box of CREST_BOX_FRACTION of the canvas, keeping
-// its aspect ratio, centered on `center`.
-function fitLogoBox(image: HTMLImageElement, center: { x: number; y: number }, canvasSize: number): LogoBox {
-  const boxSize = canvasSize * CREST_BOX_FRACTION;
+// Fits a logo inside a square box of `boxFraction` of the canvas, keeping its
+// aspect ratio, centered on `center`.
+function fitLogoBox(
+  image: HTMLImageElement,
+  center: { x: number; y: number },
+  canvasSize: number,
+  boxFraction: number
+): LogoBox {
+  const boxSize = canvasSize * boxFraction;
   const { naturalWidth, naturalHeight } = image;
   const [width, height] =
     naturalWidth > 0 && naturalHeight > 0
@@ -134,7 +139,7 @@ function drawBrandLogo(
   if (!reference) return;
 
   const center = pointInRegionToCanvas(regions.bodyFront, 1 - CREST_U_FRAC, CREST_V_FRAC, canvasSize);
-  const box = fitLogoBox(reference, center, canvasSize);
+  const box = fitLogoBox(reference, center, canvasSize, BRAND_BOX_FRACTION);
   const lightCloth = isLightUnder(ctx, box, canvasSize, design.colors.primary);
   const chosen = (lightCloth ? forLight ?? forDark : forDark ?? forLight)!;
   ctx.drawImage(chosen, box.x, box.y, box.width, box.height);
@@ -149,6 +154,8 @@ const CREST_U_FRAC = 0.7;
 const CREST_V_FRAC = 0.71;
 // The longer side of the crest, as a share of the canvas (it was 0.08, which looked too big).
 const CREST_BOX_FRACTION = 0.065;
+// The maker's mark is smaller than the crest, like a brand on a real shirt.
+const BRAND_BOX_FRACTION = 0.045;
 // Cloth at least this bright (0..1) gets the logo version meant for light backgrounds.
 const LIGHT_BACKGROUND_LUMA = 0.5;
 
@@ -195,7 +202,7 @@ export function drawDesignToCanvas(
     // goes down the torso toward the hem. So "top of bodyFront" in UV space
     // is vFrac=1 (its v1 edge, the one shared with bodyBack).
     const center = pointInRegionToCanvas(regions.bodyFront, CREST_U_FRAC, CREST_V_FRAC, canvasSize);
-    const box = fitLogoBox(images.logoImage, center, canvasSize);
+    const box = fitLogoBox(images.logoImage, center, canvasSize, CREST_BOX_FRACTION);
     ctx.drawImage(images.logoImage, box.x, box.y, box.width, box.height);
   }
 

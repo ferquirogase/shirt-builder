@@ -504,14 +504,15 @@ describe("drawDesignToCanvas", () => {
     const drawnImages = (ctx: CanvasRenderingContext2D) =>
       (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
 
-    it("is centered on the right chest, mirroring the crest, at the crest's size", () => {
+    it("is centered on the right chest at the crest's height, smaller than the crest", () => {
       const ctx = ctxWithPixels(0, 0, 0);
       drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions);
       const [img, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(img).toBe(forDark);
       // bodyFront u .3..0.7, v .5..0.9: 0.30 across -> u 0.42 -> x 420; same height as the crest, y 216.
-      expect(w).toBeCloseTo(65, 5);
-      expect(h).toBeCloseTo(65 * (381 / 512), 5);
+      // Smaller than the crest (65px): a maker's mark is 4.5% of the canvas.
+      expect(w).toBeCloseTo(45, 5);
+      expect(h).toBeCloseTo(45 * (381 / 512), 5);
       expect(x + w / 2).toBeCloseTo(420, 5);
       expect(y + h / 2).toBeCloseTo(216, 5);
     });
