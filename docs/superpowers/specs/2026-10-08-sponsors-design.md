@@ -17,7 +17,7 @@ Un catálogo `SPONSOR_SLOTS` en este orden. Cada ubicación define: `id`, `label
 
 | id | Etiqueta | Región | Tamaño base | Notas |
 |---|---|---|---|---|
-| `abdomen` | Abdomen | `bodyFront` | 0.12 | el más grande; centro horizontal; unos 30 % de altura desde el borde de abajo |
+| `abdomen` | Abdomen | `bodyFront` | 0.12 | el más grande; centro horizontal; 52 % de altura desde el borde de abajo (a la altura del pecho, calibrado con una captura) |
 | `sleeve-left` | Manga izquierda | `sleeveLeft` | 0.05 | pequeño-normal; cara exterior de la manga |
 | `sleeve-right` | Manga derecha | `sleeveRight` | 0.05 | espejo de la izquierda |
 | `nape` | Nuca | `bodyBack` | 0.03 | pequeño; bajo la banda del cuello y sobre el nombre |

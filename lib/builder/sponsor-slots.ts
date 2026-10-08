@@ -27,7 +27,7 @@ export const SPONSOR_MAX_SCALE = 1.5;
 // needs mirroring. The back is rotated half a turn like the name and number.
 // The sleeve anchor is the middle of the outer face of the arm.
 export const SPONSOR_SLOTS: SponsorSlot[] = [
-  { id: "abdomen", label: "Abdomen", region: "bodyFront", uFrac: 0.5, vFrac: 0.3, rotation: 0, baseBox: 0.12 },
+  { id: "abdomen", label: "Abdomen", region: "bodyFront", uFrac: 0.5, vFrac: 0.52, rotation: 0, baseBox: 0.12 },
   {
     id: "sleeve-left",
     label: "Manga izquierda",
