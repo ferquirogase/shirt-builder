@@ -9,6 +9,8 @@ import { loadImage, loadPatternImage, loadTintedMask } from "@/lib/builder/image
 import { drawDesignToCanvas } from "@/lib/builder/texture-compositor";
 import { UV_FLIP_Y } from "@/lib/builder/uv-regions";
 import { JERSEY_MODEL } from "@/lib/builder/jersey-model";
+import { getNameNumberPreset } from "@/lib/builder/name-number-presets";
+import { resolveFontFamily } from "@/lib/builder/resolve-font-family";
 import { createBlendedNormalTexture, createFabricNormalTexture } from "@/lib/builder/fabric-texture";
 import { findBoundaryLoops, pickNeckLoop, type Vec3 } from "@/lib/builder/mesh-boundary";
 import { createNecklineRounding } from "@/lib/builder/neckline";
@@ -68,6 +70,10 @@ export function JerseyModel() {
     collarMaskImage: null,
   });
   const [logoImage, setLogoImage] = useState<HTMLImageElement | null>(null);
+  // Bumped when the name/number font finishes loading, to repaint the canvas
+  // (the first paint would otherwise keep the fallback font).
+  const [fontsVersion, setFontsVersion] = useState(0);
+  const nnPreset = getNameNumberPreset(state.nameNumberStyle.presetId);
 
   const canvas = useMemo(() => {
     const el = document.createElement("canvas");
@@ -235,6 +241,24 @@ export function JerseyModel() {
     };
   }, [state.logoDataUrl]);
 
+  // Loads the chosen name/number font on demand (the fonts are declared with
+  // preload: false) and asks for a repaint once it is available.
+  useEffect(() => {
+    let cancelled = false;
+    const family = resolveFontFamily(nnPreset.cssVar);
+    document.fonts
+      .load(`${nnPreset.weight} 48px ${family}`, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+      .then(() => {
+        if (!cancelled) setFontsVersion((v) => v + 1);
+      })
+      .catch((err) => {
+        console.error("Failed to load name/number font", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [nnPreset]);
+
   // Cheap and undebounced: redraws the canvas with whatever pattern/logo
   // images are currently cached, on every design state change.
   useEffect(() => {
@@ -252,10 +276,11 @@ export function JerseyModel() {
         collarMaskImage: patternImages.collarMaskImage,
         logoImage,
       },
-      JERSEY_MODEL.uvRegions
+      JERSEY_MODEL.uvRegions,
+      resolveFontFamily(nnPreset.cssVar)
     );
     texture.needsUpdate = true;
-  }, [state, canvas, texture, patternImages, logoImage]);
+  }, [state, canvas, texture, patternImages, logoImage, fontsVersion, nnPreset]);
 
   // The OBJ's vertex coordinates are in the hundreds, so scale=0.01 brings the
   // model to roughly a metre, a reasonable size for the camera/OrbitControls

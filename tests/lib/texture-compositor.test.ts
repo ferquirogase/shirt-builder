@@ -338,7 +338,7 @@ describe("drawDesignToCanvas", () => {
       const ctx = createMockCtx();
       let widthAtDraw = 0;
       (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation((text: string) => {
-        widthAtDraw = (ctx.measureText as ReturnType<typeof vi.fn>)(text).width;
+        widthAtDraw = ctx.measureText(text).width;
       });
       const longName = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
       drawDesignToCanvas(ctx, 1000, withStyle({ playerName: longName }), blank, regions);
