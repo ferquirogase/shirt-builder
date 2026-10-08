@@ -14,31 +14,13 @@ import { loadSponsorImages, type SponsorImageCache, type SponsorImages } from "@
 import { getNameNumberPreset } from "@/lib/builder/catalog/name-number-presets";
 import { resolveFontFamily } from "@/lib/builder/texture/resolve-font-family";
 import { createBlendedNormalTexture, createFabricNormalTexture } from "@/lib/builder/texture/fabric-texture";
-import { findBoundaryLoops, pickNeckLoop, type Vec3 } from "@/lib/builder/geometry/mesh-boundary";
-import { createNecklineRounding } from "@/lib/builder/geometry/neckline";
-import { createGarmentReshape } from "@/lib/builder/geometry/garment-shape";
-import { buildCollarGeometry, smoothLoop } from "@/lib/builder/geometry/collar-geometry";
 
 const CANVAS_SIZE = 2048;
-// One fabric-normal-map tile covers about this many model units (~cm), so the
-// weave has the same scale on the body (UV-mapped) and on the collar.
-const FABRIC_TILE_CM = 12;
 // The weave has to be coarse enough to survive at the on-screen size of the shirt.
 const JERSEY_FABRIC_REPEAT = 11;
 const WEAVE_STRENGTH = 0.22; // how much of the weave's tilt is added to the wrinkles
 // The interior of the garment, seen through the neck, hem and sleeve openings.
 const LINING_COLOR = "#c9c3b6";
-const COLLAR_OPTIONS = { halfWidth: 1.15, halfThickness: 0.22, radialSegments: 10, uvTile: FABRIC_TILE_CM };
-const COLLAR_LOOP_POINTS = 192;
-// Thin contrast tape sewn just inside the collar, as on the reference shirts.
-const TAPE_OPTIONS = {
-  halfWidth: 0.4,
-  halfThickness: 0.14,
-  radialSegments: 6,
-  radialOffset: -1.2,
-  upOffset: -0.1,
-  uvTile: FABRIC_TILE_CM,
-};
 // Pattern SVGs are re-fetched/re-rasterized only when the pattern choice or
 // colors change. Debouncing this avoids refetching on every render caused by
 // unrelated, continuously-changing inputs (color sliders, sponsor/name/number
@@ -53,11 +35,7 @@ type PatternImages = {
 };
 
 export function JerseyModel() {
-  // The URL list is fixed per build, so the hook is always called the same way.
-  const [obj, collarObj] = useLoader(
-    OBJLoader,
-    JERSEY_MODEL.collarUrl ? [JERSEY_MODEL.url, JERSEY_MODEL.collarUrl] : [JERSEY_MODEL.url]
-  );
+  const [obj, collarObj] = useLoader(OBJLoader, [JERSEY_MODEL.url, JERSEY_MODEL.collarUrl]);
   // Wrinkle normal map in the model's UV layout (see jersey-model.ts).
   const [wrinkleSource] = useLoader(
     THREE.TextureLoader,
@@ -99,7 +77,6 @@ export function JerseyModel() {
   }, [canvas]);
 
   const fabricNormal = useMemo(() => createFabricNormalTexture(JERSEY_FABRIC_REPEAT), []);
-  const collarNormal = useMemo(() => createFabricNormalTexture(1), []);
   // The model's wrinkle normal map with the fine knit blended in. Both maps
   // share the one normal-map slot (three.js ignores bump maps when a normal
   // map is present), so they are combined here.
@@ -129,39 +106,25 @@ export function JerseyModel() {
     [texture, wrinkleNormal, fabricNormal]
   );
 
-  // The OBJ's neckline is too wide and square; reshape a copy of its geometry
-  // (see neckline.ts). The cached OBJ itself is never modified, and the body is
-  // rendered as our own mesh below so it can't fall back to the loader's
-  // default grey material.
+  // The collar takes the same texture as the body, drawn on both sides.
   const collarMaterial = useMemo(() => {
     const m = material.clone();
     m.side = THREE.DoubleSide;
     return m;
   }, [material]);
 
+  // A copy of the body geometry: the cached OBJ itself is never touched, and the
+  // body is rendered as our own mesh below so it can't fall back to the loader's
+  // default grey material.
   const bodyGeometry = useMemo(() => {
     let source: THREE.BufferGeometry | null = null;
     obj.traverse((child) => {
       if (!source && child instanceof THREE.Mesh) source = child.geometry;
     });
-    if (!source) return null;
-    const geometry = (source as THREE.BufferGeometry).clone();
-    const position = geometry.getAttribute("position");
-    const loops = findBoundaryLoops(position.array);
-    if (loops.length === 0) return geometry;
-    const { reshapeBody, neckline } = JERSEY_MODEL;
-    if (!reshapeBody && !neckline) return geometry;
-    const shapeBody = reshapeBody ? createGarmentReshape() : (p: Vec3) => p;
-    const reshapeNeck = neckline ? createNecklineRounding(pickNeckLoop(loops), neckline) : (p: Vec3) => p;
-    for (let i = 0; i < position.count; i++) {
-      const [x, y, z] = reshapeNeck(shapeBody([position.getX(i), position.getY(i), position.getZ(i)]));
-      position.setXYZ(i, x, y, z);
-    }
-    position.needsUpdate = true;
-    return geometry;
+    return source ? (source as THREE.BufferGeometry).clone() : null;
   }, [obj]);
 
-  // A collar mesh that ships with the model, in the same coordinates as the body.
+  // The collar mesh that ships with the model, in the same coordinates as the body.
   const modelCollarGeometry = useMemo(() => {
     let found: THREE.BufferGeometry | null = null;
     collarObj?.traverse((child) => {
@@ -169,18 +132,6 @@ export function JerseyModel() {
     });
     return found as THREE.BufferGeometry | null;
   }, [collarObj]);
-
-  // Without one, the collar is generated along the neckline edge.
-  const { collarGeometry, tapeGeometry } = useMemo(() => {
-    if (!bodyGeometry || JERSEY_MODEL.collarUrl) return { collarGeometry: null, tapeGeometry: null };
-    const loops = findBoundaryLoops(bodyGeometry.getAttribute("position").array);
-    if (loops.length === 0) return { collarGeometry: null, tapeGeometry: null };
-    const neck = smoothLoop(pickNeckLoop(loops), COLLAR_LOOP_POINTS);
-    return {
-      collarGeometry: buildCollarGeometry(neck, COLLAR_OPTIONS),
-      tapeGeometry: buildCollarGeometry(neck, TAPE_OPTIONS),
-    };
-  }, [bodyGeometry]);
 
   // Debounced: loads/caches the pattern SVGs. Keyed only on what can change
   // the rasterized pattern images, not the full design state, so typing in
@@ -325,7 +276,7 @@ export function JerseyModel() {
 
   // The OBJ's vertex coordinates are in the hundreds, so scale=0.01 brings the
   // model to roughly a metre, a reasonable size for the camera/OrbitControls
-  // setup in Viewer3D. The reshaped mesh is re-centred vertically so the
+  // setup in Viewer3D. The mesh is re-centred vertically so the
   // camera and OrbitControls target (the scene origin) stay on the shirt.
   const centerY = useMemo(() => {
     if (!bodyGeometry) return 0;
@@ -348,23 +299,6 @@ export function JerseyModel() {
         // Its UVs sit inside the body island of the same atlas, so it takes the
         // same texture and the pattern continues up to the collar.
         <mesh geometry={modelCollarGeometry} material={collarMaterial} dispose={null} />
-      )}
-      {collarGeometry && (
-        <mesh geometry={collarGeometry} dispose={null}>
-          <meshPhysicalMaterial
-            color={state.colors.collar}
-            normalMap={collarNormal}
-            normalScale={new THREE.Vector2(0.35, 0.35)}
-            roughness={0.82}
-            sheen={0.4}
-            sheenRoughness={0.55}
-          />
-        </mesh>
-      )}
-      {tapeGeometry && (
-        <mesh geometry={tapeGeometry} dispose={null}>
-          <meshStandardMaterial color={state.colors.primary} roughness={0.8} />
-        </mesh>
       )}
     </group>
   );
