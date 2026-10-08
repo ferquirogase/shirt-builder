@@ -184,6 +184,45 @@ describe("SponsorPanel and TextPanel", () => {
     }
   });
 
+  it("lists the six style presets and marks the current one", () => {
+    renderWithDesign(<TextPanel />);
+    for (const name of ["Clásico", "Moderno", "Retro", "Bloque", "Elegante", "Contorno"]) {
+      expect(screen.getByRole("radio", { name })).toBeInTheDocument();
+    }
+    expect(screen.getByRole("radio", { name: "Clásico" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Retro" })).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("applies a preset and syncs the controls to its defaults", () => {
+    const { api } = renderWithDesign(<TextPanel />);
+    fireEvent.click(screen.getByRole("radio", { name: "Retro" }));
+    expect(api.current!.state.nameNumberStyle.presetId).toBe("retro");
+    expect(screen.getByLabelText("Color del contorno")).toHaveValue("#d62828");
+    expect(screen.getByLabelText("Sombra")).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Retro" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("adjusts fill, outline and shadow independently of the preset", () => {
+    const { api } = renderWithDesign(<TextPanel />);
+    fireEvent.change(screen.getByLabelText("Color del texto"), { target: { value: "#ff0000" } });
+    fireEvent.change(screen.getByLabelText("Color del contorno"), { target: { value: "#00ff00" } });
+    fireEvent.change(screen.getByLabelText("Grosor del contorno"), { target: { value: "0.05" } });
+    fireEvent.click(screen.getByLabelText("Sombra"));
+    expect(api.current!.state.nameNumberStyle).toEqual({
+      presetId: "classic",
+      fill: "#ff0000",
+      outlineColor: "#00ff00",
+      outlineWidth: 0.05,
+      shadow: true,
+    });
+  });
+
+  it("keeps the classic preset selected when an unknown preset is dispatched (Review Focus 2)", () => {
+    const { api } = renderWithDesign(<TextPanel />);
+    act(() => api.current!.dispatch({ type: "SET_NN_PRESET", id: "gone" }));
+    expect(screen.getByRole("radio", { name: "Clásico" })).toHaveAttribute("aria-checked", "true");
+  });
+
   it("sets the sponsor text", () => {
     const { api } = renderWithDesign(<SponsorPanel />);
     fireEvent.change(screen.getByLabelText("Texto del sponsor"), { target: { value: "ACME" } });
