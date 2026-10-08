@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useDesign } from "@/lib/builder/design-context";
+import { useDesign } from "@/lib/builder/state/design-context";
 import { ArrowRightIcon, PencilIcon, ShareIcon } from "./icons";
 
 export function Header() {

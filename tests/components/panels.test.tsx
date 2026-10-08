@@ -6,12 +6,12 @@ import { ColorsPanel } from "@/components/builder/panels/ColorsPanel";
 import { CrestPanel } from "@/components/builder/panels/CrestPanel";
 import { SponsorPanel } from "@/components/builder/panels/SponsorPanel";
 import { TextPanel } from "@/components/builder/panels/TextPanel";
-import { clearPatternMarkupCache } from "@/lib/builder/pattern-thumbnail";
-import { loadImage } from "@/lib/builder/image-loader";
+import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
+import { loadImage } from "@/lib/builder/texture/image-loader";
 
 // jsdom never decodes images, so the crest's "can this actually be drawn?"
 // check is driven by this mock.
-vi.mock("@/lib/builder/image-loader", () => ({ loadImage: vi.fn() }));
+vi.mock("@/lib/builder/texture/image-loader", () => ({ loadImage: vi.fn() }));
 
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="primary" fill="#000"/></svg>`;
 

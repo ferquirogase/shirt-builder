@@ -1,6 +1,6 @@
 "use client";
-import { useDesign } from "@/lib/builder/design-context";
-import { useImageUpload } from "@/lib/builder/use-image-upload";
+import { useDesign } from "@/lib/builder/state/design-context";
+import { useImageUpload } from "@/lib/builder/io/use-image-upload";
 import { UploadIcon } from "../icons";
 import { PanelShell } from "./PanelShell";
 

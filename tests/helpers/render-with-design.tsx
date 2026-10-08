@@ -1,6 +1,6 @@
 import { useEffect, type ReactElement } from "react";
 import { render } from "@testing-library/react";
-import { DesignProvider, useDesign, type DesignContextValue } from "@/lib/builder/design-context";
+import { DesignProvider, useDesign, type DesignContextValue } from "@/lib/builder/state/design-context";
 
 // Renders `ui` inside a DesignProvider and exposes the live context value as
 // `api.current` so tests can dispatch actions and read state.

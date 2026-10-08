@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { PatternDef } from "@/lib/builder/patterns";
-import type { ColorMap } from "@/lib/builder/svg-recolor";
-import { patternThumbnailUrl } from "@/lib/builder/pattern-thumbnail";
+import type { PatternDef } from "@/lib/builder/catalog/patterns";
+import type { ColorMap } from "@/lib/builder/texture/svg-recolor";
+import { patternThumbnailUrl } from "@/lib/builder/texture/pattern-thumbnail";
 import { CheckIcon } from "./icons";
 
 type ThumbProps = { svgPath: string; colors: ColorMap };

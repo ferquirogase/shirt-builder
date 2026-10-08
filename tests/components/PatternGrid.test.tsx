@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { PatternGrid } from "@/components/builder/PatternGrid";
-import { clearPatternMarkupCache } from "@/lib/builder/pattern-thumbnail";
+import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
 
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="primary" fill="#000"/></svg>`;
 const COLORS = [{ role: "primary" as const, label: "Color primario", default: "#000000" }];

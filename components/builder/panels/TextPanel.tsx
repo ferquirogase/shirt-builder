@@ -1,6 +1,6 @@
 "use client";
-import { useDesign } from "@/lib/builder/design-context";
-import { NAME_NUMBER_PRESETS, OUTLINE_COLOR, OUTLINE_WIDTH, getNameNumberPreset } from "@/lib/builder/name-number-presets";
+import { useDesign } from "@/lib/builder/state/design-context";
+import { NAME_NUMBER_PRESETS, OUTLINE_COLOR, OUTLINE_WIDTH, getNameNumberPreset } from "@/lib/builder/catalog/name-number-presets";
 import { CheckIcon } from "../icons";
 import { PanelShell } from "./PanelShell";
 
