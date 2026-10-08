@@ -12,7 +12,7 @@
 // from the mesh.)
 export const COLLAR_BAND_END_V_FRAC = 0.07;
 
-export const NAPE_V_FRAC = 0.12; // between the collar and the name
+export const NAPE_V_FRAC = 0.1; // between the collar and the name
 export const NAME_V_FRAC = 0.25; // baseline of the player name
 export const NUMBER_V_FRAC = 0.55; // baseline of the number
 export const LOWER_BACK_V_FRAC = 0.75; // waist height

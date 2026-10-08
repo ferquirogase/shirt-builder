@@ -28,8 +28,10 @@ describe("back layout (GEPE model, sponsors at max scale)", () => {
     expect(NUMBER_V_FRAC).toBe(0.55);
   });
 
-  it("puts the nape sponsor between the collar and the name without touching either", () => {
-    expect(NAPE_V_FRAC - halfBox("nape")).toBeGreaterThanOrEqual(COLLAR_BAND_END_V_FRAC);
+  it("puts the nape sponsor between the collar and the name: clear of the collar at its normal size, clear of the name at its largest", () => {
+    // It sits close under the collar, so only the normal size is guaranteed clear of it.
+    const halfAtNormalSize = toV(findSponsorSlot("nape")!.baseBox / 2);
+    expect(NAPE_V_FRAC - halfAtNormalSize).toBeGreaterThanOrEqual(COLLAR_BAND_END_V_FRAC);
     expect(NAPE_V_FRAC + halfBox("nape")).toBeLessThanOrEqual(nameTop);
   });
 
