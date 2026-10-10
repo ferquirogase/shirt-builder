@@ -74,3 +74,62 @@ describe("RosterTable", () => {
     expect(screen.getByLabelText("Número del jugador 1")).toHaveAccessibleDescription("Ingresá un número");
   });
 });
+
+describe("RosterTable on mobile (one compact line per player)", () => {
+  it("starts with quantity and duplicate folded away and opens them with the ⋯ button", () => {
+    render(<Harness initial={order(createPlayerLine("a"))} />);
+    const toggle = screen.getByRole("button", { name: "Más opciones del jugador 1" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    const panel = document.getElementById(toggle.getAttribute("aria-controls")!)!;
+    expect(panel.className).toContain("max-md:hidden");
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(panel.className).not.toContain("max-md:hidden");
+
+    fireEvent.click(toggle);
+    expect(panel.className).toContain("max-md:hidden");
+  });
+
+  it("keeps quantity and duplicate inside the panel and remove in the line itself", () => {
+    render(<Harness initial={order(createPlayerLine("a"))} />);
+    const toggle = screen.getByRole("button", { name: "Más opciones del jugador 1" });
+    const panel = document.getElementById(toggle.getAttribute("aria-controls")!)!;
+    expect(panel).toContainElement(screen.getByRole("group", { name: "Cantidad del jugador 1" }));
+    expect(panel).toContainElement(screen.getByRole("button", { name: "Duplicar jugador 1" }));
+    expect(panel).not.toContainElement(screen.getByRole("button", { name: "Quitar jugador 1" }));
+  });
+
+  it("shows the quantity on the toggle when it is more than one, and ⋯ otherwise", () => {
+    render(<Harness initial={order(createPlayerLine("a", { quantity: 1 }), createPlayerLine("b", { quantity: 3 }))} />);
+    expect(screen.getByRole("button", { name: "Más opciones del jugador 1" })).toHaveTextContent("⋯");
+    expect(screen.getByRole("button", { name: "Más opciones del jugador 2" })).toHaveTextContent("×3");
+  });
+
+  it("opens one player's options without opening the others", () => {
+    render(<Harness initial={order(createPlayerLine("a"), createPlayerLine("b"))} />);
+    fireEvent.click(screen.getByRole("button", { name: "Más opciones del jugador 2" }));
+    expect(screen.getByRole("button", { name: "Más opciones del jugador 1" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Más opciones del jugador 2" })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("hides the toggle from md up, where quantity and duplicate are always columns", () => {
+    render(<Harness initial={order(createPlayerLine("a"))} />);
+    const toggle = screen.getByRole("button", { name: "Más opciones del jugador 1" });
+    expect(toggle.className).toContain("md:hidden");
+    const panel = document.getElementById(toggle.getAttribute("aria-controls")!)!;
+    expect(panel.className).toContain("md:contents");
+  });
+
+  it("shows both error messages in one full-width block under the line", () => {
+    render(
+      <Harness
+        initial={order(createPlayerLine("a"))}
+        errors={{ a: { name: "Ingresá un nombre", number: "Ingresá un número" } }}
+      />
+    );
+    const block = screen.getByText("Ingresá un nombre").parentElement!;
+    expect(block.className).toContain("col-span-full");
+    expect(block).toContainElement(screen.getByText("Ingresá un número"));
+  });
+});
