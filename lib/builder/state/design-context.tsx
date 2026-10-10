@@ -18,7 +18,9 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   // Timestamps are attached here (not in the reducer) so the reducer stays pure.
   const dispatch = useCallback((action: DesignDispatchAction) => {
     const timed: HistoryAction =
-      action.type === "UNDO" || action.type === "REDO" ? action : { ...action, at: Date.now() };
+      action.type === "UNDO" || action.type === "REDO" || action.type === "LOAD_DESIGN"
+        ? action
+        : { ...action, at: Date.now() };
     rawDispatch(timed);
   }, []);
 
