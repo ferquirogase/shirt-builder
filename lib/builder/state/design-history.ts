@@ -37,6 +37,8 @@ function groupKey(action: DesignAction): string | null {
       return `color:${action.slot}`;
     case "SET_SPONSOR_SCALE":
       return `sponsor-scale:${action.slot}`;
+    case "SET_CREST_CONFIG":
+      return "crest";
     case "SET_PLAYER_NAME":
       return "name";
     case "SET_PLAYER_NUMBER":
@@ -61,6 +63,7 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
     a.colors.accent === b.colors.accent &&
     a.colors.collar === b.colors.collar &&
     a.logoDataUrl === b.logoDataUrl &&
+    JSON.stringify(a.crestConfig) === JSON.stringify(b.crestConfig) &&
     sameSponsors(a.sponsors, b.sponsors) &&
     a.playerName === b.playerName &&
     a.playerNumber === b.playerNumber &&

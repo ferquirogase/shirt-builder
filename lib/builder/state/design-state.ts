@@ -1,4 +1,7 @@
 import type { ColorSlot } from "../texture/svg-recolor";
+import { findCrestShape } from "../catalog/crest-shapes";
+import type { CrestConfig } from "../crest/crest-config";
+import { crestDataUrl } from "../crest/crest-svg";
 import { findPattern, visibleColors } from "../catalog/patterns";
 import { clampSponsorScale, isSponsorSlotId, type SponsorMap, type SponsorSlotId } from "../catalog/sponsor-slots";
 import { findNameNumberPreset, initialNameNumberStyle, type NameNumberStyle } from "../catalog/name-number-presets";
@@ -12,6 +15,8 @@ export type DesignState = {
   sleevePatternId: string;
   colors: Record<ColorSlot, string>;
   logoDataUrl: string | null;
+  /** The crest made in the creator; `logoDataUrl` holds it drawn. Null when there is none or it was uploaded. */
+  crestConfig: CrestConfig | null;
   sponsors: SponsorMap;
   playerName: string;
   playerNumber: string;
@@ -25,6 +30,7 @@ export type DesignAction =
   | { type: "SET_SLEEVE_PATTERN"; id: string }
   | { type: "SET_COLOR"; slot: ColorSlot; value: string }
   | { type: "SET_LOGO"; dataUrl: string | null }
+  | { type: "SET_CREST_CONFIG"; config: CrestConfig }
   | { type: "SET_SPONSOR"; slot: SponsorSlotId; dataUrl: string }
   | { type: "SET_SPONSOR_SCALE"; slot: SponsorSlotId; value: number }
   | { type: "REMOVE_SPONSOR"; slot: SponsorSlotId }
@@ -43,6 +49,7 @@ export const initialDesignState: DesignState = {
   sleevePatternId: "sleeve-plain",
   colors: { primary: "#0a5c36", secondary: "#ffffff", accent: "#f5b700", collar: "#ffffff" },
   logoDataUrl: null,
+  crestConfig: null,
   sponsors: {},
   playerName: "",
   playerNumber: "",
@@ -89,7 +96,11 @@ export function designReducer(state: DesignState, action: DesignAction): DesignS
     case "SET_COLOR":
       return { ...state, colors: { ...state.colors, [action.slot]: action.value } };
     case "SET_LOGO":
-      return { ...state, logoDataUrl: action.dataUrl };
+      return { ...state, logoDataUrl: action.dataUrl, crestConfig: null };
+    case "SET_CREST_CONFIG":
+      return findCrestShape(action.config.shapeId)
+        ? { ...state, crestConfig: action.config, logoDataUrl: crestDataUrl(action.config) }
+        : state;
     case "SET_SPONSOR": {
       if (!isSponsorSlotId(action.slot)) return state;
       const scale = state.sponsors[action.slot]?.scale ?? 1;

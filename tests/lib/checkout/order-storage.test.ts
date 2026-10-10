@@ -174,3 +174,16 @@ describe("design images", () => {
     expect(loadDesignImages()).toBeNull();
   });
 });
+
+describe("orders saved before the made crest", () => {
+  beforeEach(() => clearOrder());
+
+  it("load with no crest", () => {
+    const { crestConfig: _drop, ...oldDesign } = initialDesignState;
+    window.sessionStorage.setItem(
+      ORDER_KEY,
+      JSON.stringify({ design: oldDesign, thumbnails: null, roster: [createPlayerLine("a")] })
+    );
+    expect(loadOrder()?.design.crestConfig).toBeNull();
+  });
+});

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { initialDesignState } from "@/lib/builder/state/design-state";
+import { INITIAL_CREST } from "@/lib/builder/crest/crest-config";
 import {
   createHistory,
   historyReducer,
@@ -245,5 +246,18 @@ describe("LOAD_DESIGN", () => {
     ]);
     expect(changed.past).toHaveLength(2);
     expect(historyReducer(changed, { type: "UNDO" }).present.shorts.colorSource).toBe("primary");
+  });
+});
+
+describe("made crest history", () => {
+  it("collapses a burst of crest edits into one undo step and can undo it", () => {
+    const edited = run([
+      { type: "SET_CREST_CONFIG", config: INITIAL_CREST, at: 1000 },
+      { type: "SET_CREST_CONFIG", config: { ...INITIAL_CREST, colors: { primary: "#111111", secondary: "#ffffff" } }, at: 1100 },
+    ]);
+    expect(edited.past).toHaveLength(1);
+    const undone = historyReducer(edited, { type: "UNDO" });
+    expect(undone.present.crestConfig).toBeNull();
+    expect(undone.present.logoDataUrl).toBeNull();
   });
 });

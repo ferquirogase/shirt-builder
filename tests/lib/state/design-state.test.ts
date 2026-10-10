@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { colorsAfterPatternChange, designReducer, initialDesignState, shortsColor } from "@/lib/builder/state/design-state";
+import { INITIAL_CREST } from "@/lib/builder/crest/crest-config";
+import { crestDataUrl } from "@/lib/builder/crest/crest-svg";
 
 describe("designReducer", () => {
   it("sets a color for the given slot", () => {
@@ -299,5 +301,39 @@ describe("RESET_DESIGN", () => {
     expect(reset.shorts.included).toBe(true);
     expect(reset.projectName).toBe("Los Pibes");
     expect(reset.colors).toEqual(initialDesignState.colors);
+  });
+});
+
+describe("made crest", () => {
+  it("starts without one", () => {
+    expect(initialDesignState.crestConfig).toBeNull();
+  });
+
+  it("stores the config and draws it as the logo", () => {
+    const next = designReducer(initialDesignState, { type: "SET_CREST_CONFIG", config: INITIAL_CREST });
+    expect(next.crestConfig).toEqual(INITIAL_CREST);
+    expect(next.logoDataUrl).toBe(crestDataUrl(INITIAL_CREST));
+  });
+
+  it("ignores a config whose shape does not exist", () => {
+    const next = designReducer(initialDesignState, { type: "SET_CREST_CONFIG", config: { ...INITIAL_CREST, shapeId: "nope" } });
+    expect(next).toBe(initialDesignState);
+  });
+
+  it("an uploaded crest replaces the made one, and removing it clears both", () => {
+    const made = designReducer(initialDesignState, { type: "SET_CREST_CONFIG", config: INITIAL_CREST });
+    const uploaded = designReducer(made, { type: "SET_LOGO", dataUrl: "data:image/png;base64,AAAA" });
+    expect(uploaded.crestConfig).toBeNull();
+    expect(uploaded.logoDataUrl).toBe("data:image/png;base64,AAAA");
+    const removed = designReducer(made, { type: "SET_LOGO", dataUrl: null });
+    expect(removed.crestConfig).toBeNull();
+    expect(removed.logoDataUrl).toBeNull();
+  });
+
+  it("is dropped by a reset", () => {
+    const made = designReducer(initialDesignState, { type: "SET_CREST_CONFIG", config: INITIAL_CREST });
+    const reset = designReducer(made, { type: "RESET_DESIGN" });
+    expect(reset.crestConfig).toBeNull();
+    expect(reset.logoDataUrl).toBeNull();
   });
 });
