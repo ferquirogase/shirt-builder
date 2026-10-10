@@ -76,7 +76,7 @@ export function CheckoutView({ initial }: { initial: Order }) {
     <CheckoutShell title="Tu pedido" splitScroll>
       {/* On desktop each column scrolls on its own and the page stays still. The negative margin and padding keep shadows and focus rings from being clipped. */}
       <div className="grid gap-6 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,1fr)_24rem] md:grid-rows-[minmax(0,1fr)]">
-        <div className="space-y-6 md:-m-1 md:overflow-y-auto md:p-1">
+        <div className="thin-scroll space-y-6 md:-m-1 md:overflow-y-auto md:p-1">
           <DesignPreview order={order} />
           <section aria-labelledby="roster-title" className={CARD}>
             <h2 id="roster-title" className="mb-1 text-lg font-bold">
@@ -93,7 +93,7 @@ export function CheckoutView({ initial }: { initial: Order }) {
           </section>
         </div>
 
-        <div className="space-y-6 md:-m-1 md:overflow-y-auto md:p-1">
+        <div className="thin-scroll space-y-6 md:-m-1 md:overflow-y-auto md:p-1">
           <section aria-labelledby="contact-title" className={CARD}>
             <h2 id="contact-title" className="mb-4 text-lg font-bold">
               Contacto y envío
