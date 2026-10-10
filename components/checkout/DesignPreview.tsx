@@ -33,6 +33,18 @@ export function DesignPreview({ order }: { order: Order }) {
         </div>
       )}
 
+      {design.keeper.included && order.keeperThumbnails && (
+        <div className="mt-4">
+          <h3 className="mb-2 text-sm font-semibold">Arquero</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- a data URL made in the browser, nothing to optimize */}
+            <img src={order.keeperThumbnails.front} alt="Camiseta del arquero de frente" className="w-full rounded-2xl" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- a data URL made in the browser, nothing to optimize */}
+            <img src={order.keeperThumbnails.back} alt="Camiseta del arquero de espalda" className="w-full rounded-2xl" />
+          </div>
+        </div>
+      )}
+
       <AiTryOn order={order} />
     </section>
   );

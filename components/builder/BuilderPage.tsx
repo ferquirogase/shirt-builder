@@ -2,16 +2,16 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DesignProvider } from "@/lib/builder/state/design-context";
-import type { DesignState } from "@/lib/builder/state/design-state";
+import type { DesignState, LookTarget } from "@/lib/builder/state/design-state";
 import { captureViews } from "@/lib/builder/io/capture-views";
 import type { ShirtViews } from "@/lib/share/compose-story";
 import { shirtImageOf } from "@/lib/share/shirt-image";
 import { useShareStory } from "@/lib/share/use-share-story";
 import { ShareStoryDialog } from "@/components/share/ShareStoryDialog";
-import { orderFromDesign } from "@/lib/checkout/order";
+import { orderFromDesign, type Thumbnails } from "@/lib/checkout/order";
 import { clearDesignImages, loadOrder, saveDesignImages, saveOrder } from "@/lib/checkout/order-storage";
 import { pause } from "@/lib/checkout/pause";
-import { captureDesignImages } from "@/lib/checkout/thumbnails";
+import { captureDesignImages, captureThumbnails } from "@/lib/checkout/thumbnails";
 import { stageBaseCss, stageGlowCss } from "@/lib/builder/stage-style";
 import type { ViewSide } from "@/lib/builder/geometry/camera-math";
 import { useModelReady } from "@/lib/builder/use-model-ready";
@@ -94,26 +94,36 @@ export function BuilderPage() {
   // "Revisar diseño": freeze the design, photograph both sides from the 3D
   // viewer (the camera visibly turns while we do), keep it as an order and go
   // to the checkout. A failed capture only costs the images.
-  async function handleReview(design: DesignState) {
+  async function handleReview(design: DesignState, showKit: (target: LookTarget) => void) {
     if (reviewing || sharing) return;
     setReviewing(true);
     let captured = null;
+    let keeperThumbnails: Thumbnails | null = null;
     const canvas = canvasRef.current;
     if (canvas) {
+      const options = { canvas, showView: (side: ViewSide) => requestView(side, true), wait: pause };
       try {
-        captured = await captureDesignImages({
-          canvas,
-          showView: (side) => requestView(side, true),
-          wait: pause,
-        });
+        captured = await captureDesignImages(options);
       } catch {
         captured = null;
+      }
+      // The keeper's shirt is photographed after the player's: the viewer shows it for a moment,
+      // then goes back to the player. Only small photos: the AI try-on uses the player shirt.
+      if (captured && design.keeper.included) {
+        showKit("keeper");
+        try {
+          keeperThumbnails = await captureThumbnails(options);
+        } catch {
+          keeperThumbnails = null;
+        } finally {
+          showKit("player");
+        }
       }
     }
     // The big images (for the AI try-on) are kept apart; stale ones must not outlive a failed capture.
     if (captured) saveDesignImages(captured.images);
     else clearDesignImages();
-    saveOrder(orderFromDesign(design, captured?.thumbnails ?? null, loadOrder()));
+    saveOrder(orderFromDesign(design, captured?.thumbnails ?? null, loadOrder(), keeperThumbnails));
     router.push("/checkout", { transitionTypes: ["nav-forward"] });
   }
 

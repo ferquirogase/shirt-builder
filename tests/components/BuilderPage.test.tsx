@@ -10,8 +10,10 @@ const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const captureDesignImages = vi.fn();
+const captureThumbnails = vi.fn();
 vi.mock("@/lib/checkout/thumbnails", () => ({
   captureDesignImages: (options: unknown) => captureDesignImages(options),
+  captureThumbnails: (options: unknown) => captureThumbnails(options),
 }));
 
 const captureViews = vi.fn();
@@ -168,6 +170,45 @@ describe("BuilderPage", () => {
     expect(loadOrder()?.thumbnails).toEqual({ front: "F", back: "B" });
     expect(loadDesignImages()).toEqual({ front: "FF", back: "BB" });
     expect(loadOrder()?.roster).toHaveLength(1);
+  });
+
+  it("also photographs the keeper's shirt when the keeper is in the design, then goes back to the player", async () => {
+    captureDesignImages.mockResolvedValue({ thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } });
+    captureThumbnails.mockResolvedValue({ front: "KF", back: "KB" });
+    render(<BuilderPage />);
+    fireEvent.click(screen.getByRole("switch", { name: "Sumar camiseta de arquero" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
+    expect(captureThumbnails).toHaveBeenCalledTimes(1);
+    expect(loadOrder()?.keeperThumbnails).toEqual({ front: "KF", back: "KB" });
+    expect(screen.getByRole("radio", { name: "Jugador" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("does not photograph a keeper when there is none", async () => {
+    captureDesignImages.mockResolvedValue({ thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } });
+    captureThumbnails.mockReset();
+    render(<BuilderPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
+    expect(captureThumbnails).not.toHaveBeenCalled();
+    expect(loadOrder()?.keeperThumbnails).toBeNull();
+  });
+
+  it("goes to the checkout without the keeper's photos when taking them fails", async () => {
+    captureDesignImages.mockResolvedValue({ thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } });
+    captureThumbnails.mockRejectedValue(new Error("tainted canvas"));
+    render(<BuilderPage />);
+    fireEvent.click(screen.getByRole("switch", { name: "Sumar camiseta de arquero" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
+    expect(loadOrder()?.keeperThumbnails).toBeNull();
+    expect(loadOrder()?.thumbnails).toEqual({ front: "F", back: "B" });
   });
 
   it("shows the progress on the button itself, with no extra message at the bottom", async () => {

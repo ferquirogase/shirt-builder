@@ -275,3 +275,28 @@ describe("CheckoutView", () => {
     });
   });
 });
+
+describe("CheckoutView keeper", () => {
+  const withKeeper = (order: Order): Order => ({
+    ...order,
+    design: { ...order.design, keeper: { ...order.design.keeper, included: true } },
+  });
+
+  it("shows the keeper's photos next to the player's", () => {
+    const order = withKeeper({ ...makeOrder(), keeperThumbnails: { front: "data:image/jpeg;base64,KF", back: "data:image/jpeg;base64,KB" } });
+    render(<CheckoutView initial={order} />);
+    expect(screen.getByAltText("Camiseta del arquero de frente")).toBeInTheDocument();
+    expect(screen.getByAltText("Camiseta del arquero de espalda")).toBeInTheDocument();
+  });
+
+  it("shows no keeper photos without a keeper, even from an old order", () => {
+    const stale: Order = { ...makeOrder(), keeperThumbnails: { front: "data:image/jpeg;base64,KF", back: "data:image/jpeg;base64,KB" } };
+    render(<CheckoutView initial={stale} />);
+    expect(screen.queryByAltText("Camiseta del arquero de frente")).toBeNull();
+  });
+
+  it("asks who plays in goal in the roster", () => {
+    render(<CheckoutView initial={withKeeper(makeOrder())} />);
+    expect(screen.getByLabelText("Arquero: jugador 1")).toBeInTheDocument();
+  });
+});

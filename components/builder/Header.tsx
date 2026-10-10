@@ -1,18 +1,18 @@
 "use client";
 import { useState } from "react";
 import { useDesign } from "@/lib/builder/state/design-context";
-import type { DesignState } from "@/lib/builder/state/design-state";
+import type { DesignState, LookTarget } from "@/lib/builder/state/design-state";
 import { ArrowRightIcon, PencilIcon, ShareIcon } from "./icons";
 
 type HeaderProps = {
-  onReview: (design: DesignState) => void;
+  onReview: (design: DesignState, showKit: (target: LookTarget) => void) => void;
   onShare: () => void;
   reviewing?: boolean;
   sharing?: boolean;
 };
 
 export function Header({ onReview, onShare, reviewing = false, sharing = false }: HeaderProps) {
-  const { state, dispatch } = useDesign();
+  const { state, dispatch, setEditing } = useDesign();
   const [draft, setDraft] = useState(state.projectName);
   // The name can change from outside the field (a design loaded from the
   // checkout): when it does, the draft follows it.
@@ -72,7 +72,7 @@ export function Header({ onReview, onShare, reviewing = false, sharing = false }
           type="button"
           disabled={reviewing || sharing}
           aria-busy={reviewing}
-          onClick={() => onReview(state)}
+          onClick={() => onReview(state, setEditing)}
           className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-3 text-sm font-semibold transition-colors enabled:hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 md:px-5"
         >
           <span className="sr-only md:not-sr-only">{reviewing ? "Preparando…" : "Hacer pedido"}</span>
