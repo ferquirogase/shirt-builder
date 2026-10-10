@@ -17,7 +17,7 @@ type Props = {
 const SECONDARY_BUTTON =
   "inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/70 bg-white/10 px-5 text-sm font-semibold text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60";
 const PRIMARY_BUTTON =
-  "inline-flex h-11 items-center justify-center gap-2 rounded-full bg-accent px-6 text-sm font-bold text-foreground disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full bg-accent px-6 text-sm font-bold text-foreground transition-colors enabled:hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60";
 const FOCUSABLE = "button:not([disabled]), [href], [tabindex]:not([tabindex='-1'])";
 
 export function ShareStoryDialog({ state, onShare, onAnother, onRetry, onClose }: Props) {

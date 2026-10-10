@@ -63,7 +63,7 @@ export function Header({ onReview, onShare, reviewing = false, sharing = false }
           aria-busy={sharing}
           aria-label="Compartir"
           onClick={onShare}
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-foreground/80 bg-white/70 px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:px-5"
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-foreground/80 bg-white/70 px-3 text-sm font-semibold transition-colors enabled:hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-60 md:px-5"
         >
           <ShareIcon className="h-5 w-5" />
           <span className="hidden md:inline">Compartir</span>
@@ -73,7 +73,7 @@ export function Header({ onReview, onShare, reviewing = false, sharing = false }
           disabled={reviewing || sharing}
           aria-busy={reviewing}
           onClick={() => onReview(state)}
-          className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:px-5"
+          className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-3 text-sm font-semibold transition-colors enabled:hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 md:px-5"
         >
           <span className="sr-only md:not-sr-only">{reviewing ? "Preparando…" : "Hacer pedido"}</span>
           {reviewing ? (

@@ -129,7 +129,7 @@ export function CheckoutView({ initial }: { initial: Order }) {
             type="submit"
             form={CHECKOUT_FORM_ID}
             disabled={paying}
-            className="inline-flex h-11 items-center rounded-full bg-accent px-6 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-11 items-center rounded-full bg-accent px-6 text-sm font-bold transition-colors enabled:hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
           >
             Pagar
           </button>

@@ -18,7 +18,7 @@ function SavedOrder() {
           <Link
             href="/"
             transitionTypes={["nav-back"]}
-            className="inline-flex h-10 items-center rounded-full bg-accent px-5 text-sm font-semibold"
+            className="inline-flex h-10 items-center rounded-full bg-accent px-5 text-sm font-semibold transition-colors hover:bg-accent-strong"
           >
             Volver a diseñar
           </Link>
