@@ -3,10 +3,19 @@ import { readFileSync } from "node:fs";
 import { JERSEY_BOTTOM_Y } from "@/lib/builder/geometry/jersey-model";
 import { SHORTS_BOTTOM_Y, SHORTS_MODEL } from "@/lib/builder/geometry/shorts-model";
 
-const vertices = readFileSync("public/models/gepe_shorts.obj", "utf8")
-  .split("\n")
-  .filter((line) => line.startsWith("v "))
-  .map((line) => line.trim().split(/\s+/).slice(1, 4).map(Number));
+function objVertices(path: string): number[][] {
+  return readFileSync(path, "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith("v "))
+    .map((line) => line.trim().split(/\s+/).slice(1, 4).map(Number));
+}
+
+const vertices = objVertices("public/models/gepe_shorts.obj");
+// Body only: the sleeves reach far wider than the torso.
+const shirtBody = objVertices("public/models/gepe_shirt.obj").filter((v) => Math.abs(v[0]) < 45);
+const SHIRT_BAND = 5;
+// The shorts may reach the shirt's own hem width; a unit (a centimetre) is flush.
+const POKE_TOLERANCE = 1;
 
 describe("the real shorts model", () => {
   it("is loaded from the shorts OBJ and its normal map", () => {
@@ -22,9 +31,15 @@ describe("the real shorts model", () => {
     expect(Math.max(...vertices.map((v) => v[1]))).toBeGreaterThan(JERSEY_BOTTOM_Y);
   });
 
-  it("stays inside the shirt's width where the two overlap, so the waist cannot poke through it", () => {
+  it("stays inside the shirt's width at every height where the two overlap, so the waist cannot poke through it", () => {
     const overlap = vertices.filter((v) => v[1] > JERSEY_BOTTOM_Y);
     expect(overlap.length).toBeGreaterThan(0);
-    expect(Math.max(...overlap.map((v) => Math.abs(v[0])))).toBeLessThan(36);
+    for (const [x, y] of overlap) {
+      // The shirt's body (not its sleeves) within 5 units of this height.
+      const shirtHalfWidth = Math.max(
+        ...shirtBody.filter((v) => Math.abs(v[1] - y) <= SHIRT_BAND).map((v) => Math.abs(v[0]))
+      );
+      expect(Math.abs(x)).toBeLessThanOrEqual(shirtHalfWidth + POKE_TOLERANCE);
+    }
   });
 });
