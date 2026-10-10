@@ -5,6 +5,7 @@ import { orderReducer, type Order, type OrderAction } from "@/lib/checkout/order
 import { clearOrder, saveConfirmation, saveOrder } from "@/lib/checkout/order-storage";
 import { payWithRipple } from "@/lib/checkout/payment";
 import { formatMoney, orderTotals } from "@/lib/checkout/pricing";
+import { useInView } from "@/lib/checkout/use-in-view";
 import { emptyContact, hasErrors, noErrors, validateOrder, type ContactInfo } from "@/lib/checkout/validation";
 import { CheckoutShell } from "./CheckoutShell";
 import { CHECKOUT_FORM_ID, ContactForm } from "./ContactForm";
@@ -14,6 +15,10 @@ import { RosterTable } from "./RosterTable";
 import { CARD } from "./styles";
 
 const PAYMENT_ERROR = "No pudimos procesar el pago. Probá de nuevo.";
+
+// Height of the bar fixed to the bottom on mobile (plus a little air): the
+// summary Pagar button only counts as seen once it is above this strip.
+const TOTAL_BAR_CLEARANCE_PX = 80;
 
 export function CheckoutView({ initial }: { initial: Order }) {
   const router = useRouter();
@@ -29,6 +34,7 @@ export function CheckoutView({ initial }: { initial: Order }) {
   const [attempted, setAttempted] = useState(false);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | undefined>();
+  const [payButtonRef, payButtonInView] = useInView<HTMLButtonElement>(`0px 0px -${TOTAL_BAR_CLEARANCE_PX}px 0px`);
 
   useEffect(() => {
     if (!locked.current) saveOrder(order);
@@ -96,27 +102,30 @@ export function CheckoutView({ initial }: { initial: Order }) {
               />
             </fieldset>
           </section>
-          <OrderSummary totals={totals} paying={paying} error={payError} />
+          <OrderSummary totals={totals} paying={paying} error={payError} payButtonRef={payButtonRef} />
         </div>
       </div>
 
-      <div
-        data-testid="mobile-total-bar"
-        className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-between gap-3 border-t border-line bg-white/95 px-4 py-3 md:hidden"
-      >
-        <div>
-          <p className="text-xs text-muted">{totals.shirts} camisetas</p>
-          <p className="text-lg font-bold tabular-nums">{formatMoney(totals.total)}</p>
-        </div>
-        <button
-          type="submit"
-          form={CHECKOUT_FORM_ID}
-          disabled={paying}
-          className="inline-flex h-11 items-center rounded-full bg-accent px-6 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+      {/* One pay action at a time: once the summary button is on screen, the bar steps aside. */}
+      {!payButtonInView && (
+        <div
+          data-testid="mobile-total-bar"
+          className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-between gap-3 border-t border-line bg-white/95 px-4 py-3 md:hidden"
         >
-          Pagar
-        </button>
-      </div>
+          <div>
+            <p className="text-xs text-muted">{totals.shirts} camisetas</p>
+            <p className="text-lg font-bold tabular-nums">{formatMoney(totals.total)}</p>
+          </div>
+          <button
+            type="submit"
+            form={CHECKOUT_FORM_ID}
+            disabled={paying}
+            className="inline-flex h-11 items-center rounded-full bg-accent px-6 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Pagar
+          </button>
+        </div>
+      )}
     </CheckoutShell>
   );
 }

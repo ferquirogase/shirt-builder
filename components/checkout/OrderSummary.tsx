@@ -1,10 +1,17 @@
+import type { Ref } from "react";
 import { formatMoney, type Totals } from "@/lib/checkout/pricing";
 import { CHECKOUT_FORM_ID } from "./ContactForm";
 import { CARD } from "./styles";
 
-type Props = { totals: Totals; paying: boolean; error?: string };
+type Props = {
+  totals: Totals;
+  paying: boolean;
+  error?: string;
+  // The page watches this button to hide its mobile bar while it is on screen.
+  payButtonRef?: Ref<HTMLButtonElement>;
+};
 
-export function OrderSummary({ totals, paying, error }: Props) {
+export function OrderSummary({ totals, paying, error, payButtonRef }: Props) {
   return (
     <section aria-label="Resumen del pedido" className={CARD}>
       <h2 className="mb-3 text-lg font-bold">Resumen</h2>
@@ -36,15 +43,16 @@ export function OrderSummary({ totals, paying, error }: Props) {
       )}
 
       <button
+        ref={payButtonRef}
         type="submit"
         form={CHECKOUT_FORM_ID}
         disabled={paying}
         aria-busy={paying}
         className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-accent px-6 text-base font-bold disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {paying ? "Procesando pago…" : "Pagar con Ripple"}
+        {paying ? "Procesando pago…" : "Pagar"}
       </button>
-      <p className="mt-2 text-center text-xs text-muted">Demo: no se realiza ningún cobro.</p>
+      <p className="mt-2 text-center text-xs text-muted">Pagás con Ripple. Demo: no se realiza ningún cobro.</p>
     </section>
   );
 }

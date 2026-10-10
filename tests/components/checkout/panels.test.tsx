@@ -64,12 +64,17 @@ describe("OrderSummary", () => {
     expect(screen.getByRole("button", { name: "Procesando pago…" })).toBeDisabled();
     rerender(<OrderSummary totals={orderTotals(roster)} paying={false} error="No pudimos procesar el pago." />);
     expect(screen.getByRole("alert")).toHaveTextContent("No pudimos procesar el pago.");
-    expect(screen.getByRole("button", { name: "Pagar con Ripple" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Pagar" })).toBeEnabled();
+  });
+
+  it("says it is paid with Ripple, and that the demo charges nothing, in the small print", () => {
+    render(<OrderSummary totals={orderTotals(roster)} paying={false} />);
+    expect(screen.getByText("Pagás con Ripple. Demo: no se realiza ningún cobro.")).toBeInTheDocument();
   });
 
   it("is a submit button tied to the checkout form", () => {
     render(<OrderSummary totals={orderTotals(roster)} paying={false} />);
-    const button = screen.getByRole("button", { name: "Pagar con Ripple" });
+    const button = screen.getByRole("button", { name: "Pagar" });
     expect(button).toHaveAttribute("type", "submit");
     expect(button).toHaveAttribute("form", "checkout-form");
   });

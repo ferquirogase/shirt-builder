@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 
 const push = vi.fn();
@@ -31,6 +31,11 @@ function makeOrder(...roster: ReturnType<typeof createPlayerLine>[]): Order {
   };
 }
 
+// The summary has the real "Pagar"; the mobile bar has another one with the same name.
+function payButton() {
+  return within(screen.getByRole("region", { name: "Resumen del pedido" })).getByRole("button", { name: "Pagar" });
+}
+
 function fillContact() {
   const values: Record<string, string> = {
     "Nombre y apellido": "Leo Messi",
@@ -60,6 +65,23 @@ beforeEach(() => {
   push.mockReset();
   payWithRipple.mockReset();
 });
+
+type ObserverCallback = (entries: Array<{ isIntersecting: boolean }>) => void;
+let observerCallback: ObserverCallback | null = null;
+let observerOptions: IntersectionObserverInit | undefined;
+let observed: Element[] = [];
+
+class FakeIntersectionObserver {
+  constructor(callback: ObserverCallback, options?: IntersectionObserverInit) {
+    observerCallback = callback;
+    observerOptions = options;
+  }
+  observe(element: Element) {
+    observed.push(element);
+  }
+  unobserve() {}
+  disconnect() {}
+}
 
 describe("CheckoutPage", () => {
   it("tells the user there is no order and offers to go back to the builder", () => {
@@ -94,7 +116,7 @@ describe("CheckoutView", () => {
     render(<CheckoutView initial={makeOrder(createPlayerLine("a"))} />);
     expect(screen.queryByText("Ingresá un nombre")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Pagar con Ripple" }));
+    fireEvent.click(payButton());
 
     expect(screen.getByText("Ingresá un nombre")).toBeInTheDocument();
     expect(screen.getByText("Ingresá un número")).toBeInTheDocument();
@@ -111,7 +133,7 @@ describe("CheckoutView", () => {
       />
     );
     fillContact();
-    fireEvent.click(screen.getByRole("button", { name: "Pagar con Ripple" }));
+    fireEvent.click(payButton());
     expect(screen.getAllByText("Número repetido")).toHaveLength(2);
     expect(payWithRipple).not.toHaveBeenCalled();
   });
@@ -122,7 +144,7 @@ describe("CheckoutView", () => {
     render(<CheckoutView initial={order} />);
     fillContact();
 
-    fireEvent.click(screen.getByRole("button", { name: "Pagar con Ripple" }));
+    fireEvent.click(payButton());
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout/confirmacion"));
     expect(payWithRipple).toHaveBeenCalledTimes(1);
@@ -137,16 +159,16 @@ describe("CheckoutView", () => {
     render(<CheckoutView initial={makeOrder()} />);
     fillContact();
 
-    fireEvent.click(screen.getByRole("button", { name: "Pagar con Ripple" }));
+    fireEvent.click(payButton());
 
     expect(await screen.findByRole("alert")).toHaveTextContent("No pudimos procesar el pago");
     expect(push).not.toHaveBeenCalled();
     expect(loadOrder()).not.toBeNull();
     expect(loadConfirmation()).toBeNull();
-    expect(screen.getByRole("button", { name: "Pagar con Ripple" })).toBeEnabled();
+    expect(payButton()).toBeEnabled();
 
     payWithRipple.mockResolvedValueOnce(confirmation);
-    fireEvent.click(screen.getByRole("button", { name: "Pagar con Ripple" }));
+    fireEvent.click(payButton());
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout/confirmacion"));
   });
 
@@ -156,7 +178,7 @@ describe("CheckoutView", () => {
     render(<CheckoutView initial={makeOrder()} />);
     fillContact();
 
-    fireEvent.click(screen.getByRole("button", { name: "Pagar con Ripple" }));
+    fireEvent.click(payButton());
 
     // Disabled for the user...
     await waitFor(() => expect(screen.getByRole("button", { name: "Agregar jugador" })).toBeDisabled());
@@ -179,7 +201,7 @@ describe("CheckoutView", () => {
     render(<CheckoutView initial={makeOrder()} />);
     fillContact();
 
-    fireEvent.click(screen.getByRole("button", { name: "Pagar con Ripple" }));
+    fireEvent.click(payButton());
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout/confirmacion"));
     expect(loadOrder()).toBeNull();
 
@@ -201,5 +223,33 @@ describe("CheckoutView", () => {
     const bar = screen.getByTestId("mobile-total-bar");
     expect(bar).toHaveTextContent("3 camisetas");
     expect(bar.className).toContain("md:hidden");
+  });
+
+  describe("mobile total bar", () => {
+    beforeEach(() => {
+      observerCallback = null;
+      observerOptions = undefined;
+      observed = [];
+      vi.stubGlobal("IntersectionObserver", FakeIntersectionObserver);
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("goes away while the summary Pagar button is on screen, so there is one pay action, and comes back", () => {
+      render(<CheckoutView initial={makeOrder()} />);
+      expect(screen.getByTestId("mobile-total-bar")).toBeInTheDocument();
+
+      act(() => observerCallback!([{ isIntersecting: true }]));
+      expect(screen.queryByTestId("mobile-total-bar")).toBeNull();
+      expect(screen.getAllByRole("button", { name: "Pagar" })).toHaveLength(1);
+
+      act(() => observerCallback!([{ isIntersecting: false }]));
+      expect(screen.getByTestId("mobile-total-bar")).toBeInTheDocument();
+    });
+
+    it("watches the summary button itself and counts the bar as covering the bottom of the screen", () => {
+      render(<CheckoutView initial={makeOrder()} />);
+      expect(observed).toEqual([payButton()]);
+      expect(observerOptions?.rootMargin).toMatch(/^0px 0px -[1-9]\d*px 0px$/);
+    });
   });
 });
