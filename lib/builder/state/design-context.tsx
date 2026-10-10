@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useCallback, useContext, useMemo, useReducer, type ReactNode } from "react";
-import { createHistory, historyReducer, type DesignDispatchAction, type HistoryAction } from "./design-history";
+import { canResetDesign, createHistory, historyReducer, type DesignDispatchAction, type HistoryAction } from "./design-history";
 import type { DesignState } from "./design-state";
 
 export type DesignContextValue = {
@@ -8,6 +8,7 @@ export type DesignContextValue = {
   dispatch: (action: DesignDispatchAction) => void;
   canUndo: boolean;
   canRedo: boolean;
+  canReset: boolean;
 };
 
 const DesignContext = createContext<DesignContextValue | null>(null);
@@ -30,6 +31,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       dispatch,
       canUndo: history.past.length > 0,
       canRedo: history.future.length > 0,
+      canReset: canResetDesign(history.present),
     }),
     [history, dispatch]
   );
