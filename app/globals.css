@@ -28,6 +28,13 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+/* A column that scrolls on its own: a thin, quiet bar that is still there to be seen and dragged. */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(28, 25, 23, 0.3) transparent;
+  scrollbar-gutter: stable;
+}
+
 /* Share story: reveal animation and confetti. */
 @keyframes story-in {
   from {
