@@ -55,7 +55,7 @@ Fondo provisto: `public/share/story-background.png`, un estadio nocturno en carb
 
 Las dos camisetas van **escalonadas en diagonal** (frente arriba a la izquierda, espalda abajo a la derecha, con un leve cruce de esquinas): aprovechan el alto del formato y se sienten más dinámicas que dos camisetas alineadas.
 
-**Dirección del enlace:** valor inicial `gepe.com`, **provisorio**; se cambia en la constante `SHARE_URL` cuando se sepa la dirección real.
+**Dirección del enlace:** `gepesport.com`, en la constante `SHARE_URL`.
 
 **Frases iniciales** (una se elige al azar; "Otra frase" cicla sin repetir la actual):
 1. Esta camiseta es para ganar
@@ -92,7 +92,6 @@ Con TDD (ver cada test fallar primero): `nextPhrase` (nunca repite), recorte al 
 - Las fuentes del texto sobre el canvas deben estar cargadas antes de dibujar, o sale con la fuente de reemplazo.
 
 ## Pendientes después de la demo
-- Dirección real del enlace (hoy `gepe.com`, provisoria).
 - Revisar las frases con el equipo y sumar las que quieran.
 - Afinar posiciones, tamaños y tipografías con la imagen ya compuesta.
 - Evaluar más fondos para elegir y un código QR.

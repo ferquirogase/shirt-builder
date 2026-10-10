@@ -7,7 +7,7 @@ export const BACKGROUND_SRC = "/share/story-background.png";
 export const LOGO_SRC = "/brand/gepe-logo-white.png";
 
 // Address printed under "Diseñá la tuya en". Provisional: replace with the real one.
-export const SHARE_URL = "gepe.com";
+export const SHARE_URL = "gepesport.com";
 
 // Instagram covers about 250 px at the top and the bottom with its own UI, so
 // text and logo stay between y = 270 and y = 1670.
