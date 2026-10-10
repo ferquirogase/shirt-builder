@@ -3,6 +3,8 @@ import { Suspense, forwardRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ContactShadows } from "@react-three/drei";
 import { DEFAULT_CAMERA_HEIGHT, DEFAULT_CAMERA_RADIUS, type ViewSide } from "@/lib/builder/geometry/camera-math";
+import { framingFor } from "@/lib/builder/geometry/set-framing";
+import { useDesign } from "@/lib/builder/state/design-context";
 import { CameraKeyLight } from "./CameraKeyLight";
 import { CameraRig } from "./CameraRig";
 import {
@@ -11,18 +13,21 @@ import {
   TONE_MAPPING_EXPOSURE,
 } from "./lighting";
 import { JerseyModel } from "./JerseyModel";
+import { ShortsModel } from "./ShortsModel";
 
 type Props = { view: ViewSide; viewToken: number; resetPose: boolean; onInteract: () => void };
 
-// The "floor" shadow sits at FLOOR_Y, just under the jersey (see JerseyModel for
-// how the mesh is scaled and centred). The canvas is transparent: the stage
-// gradient is CSS behind it, and the exported PNG paints the same gradient.
-const FLOOR_Y = -0.6;
+// The "floor" shadow sits just under the garment (framingFor gives its height and
+// how far the set is raised; see JerseyModel for how the mesh is scaled and
+// centred). The canvas is transparent: the stage gradient is CSS behind it, and
+// the exported PNG paints the same gradient.
 
 export const Viewer3D = forwardRef<HTMLCanvasElement, Props>(function Viewer3D(
   { view, viewToken, resetPose, onInteract },
   ref
 ) {
+  const { state } = useDesign();
+  const { lift, floorY } = framingFor(state.shorts.included);
   return (
     <Canvas
       camera={{ position: [0, DEFAULT_CAMERA_HEIGHT, DEFAULT_CAMERA_RADIUS], fov: 45 }}
@@ -37,11 +42,14 @@ export const Viewer3D = forwardRef<HTMLCanvasElement, Props>(function Viewer3D(
     >
       <ambientLight intensity={AMBIENT_INTENSITY} />
       <CameraKeyLight />
-      <Suspense fallback={null}>
-        <JerseyModel />
-      </Suspense>
+      <group position={[0, lift, 0]}>
+        <Suspense fallback={null}>
+          <JerseyModel />
+        </Suspense>
+        {state.shorts.included && <ShortsModel />}
+      </group>
       <ContactShadows
-        position={[0, FLOOR_Y, 0]}
+        position={[0, floorY, 0]}
         opacity={0.35}
         scale={6}
         blur={3}

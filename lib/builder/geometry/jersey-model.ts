@@ -30,3 +30,8 @@ export const JERSEY_MODEL: JerseyModelConfig = {
   normalMapStrength: 1.5,
   uvRegions: GEPE_UV_REGIONS,
 };
+
+// Middle of the shirt OBJ's vertical extent (y 167.17 .. 294.91). JerseyModel
+// re-centres the shirt on this; the shorts use the same offset so the two stay
+// aligned. A test checks it against the OBJ.
+export const JERSEY_CENTER_Y = 231.04;
