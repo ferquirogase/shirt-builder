@@ -38,9 +38,12 @@ body {
 /* Splash: the shirt is uncovered from the bottom up and then tries on a few designs before
    settling on its own. Like the share story, it plays whatever the system motion setting.
    The resting values (no animation) are the finished shirt. */
-@keyframes splash-wipe-up {
+@keyframes splash-reveal-up {
   from {
-    transform: translateY(500px);
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }
 
@@ -133,8 +136,8 @@ body {
   }
 }
 
-.splash-wipe {
-  animation: splash-wipe-up 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+.splash-reveal {
+  animation: splash-reveal-up 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .splash-body {

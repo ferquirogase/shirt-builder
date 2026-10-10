@@ -25,10 +25,6 @@ export function SplashShirt({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 453.3 475.4" className={className}>
       <defs>
-        {/* The whole shirt is uncovered from the bottom up. */}
-        <clipPath id="splash-wipe">
-          <rect className="splash-wipe" x={-10} y={-10} width={474} height={496} />
-        </clipPath>
         {/* Patterns only paint inside the garment. */}
         <clipPath id="splash-garment">
           <path d={BODY} />
@@ -37,7 +33,7 @@ export function SplashShirt({ className }: { className?: string }) {
         </clipPath>
       </defs>
 
-      <g clipPath="url(#splash-wipe)">
+      <g>
         {/* Inside of the neck. */}
         <rect x={178.9} y={4} width={96.3} height={89.5} fill="#000" fillOpacity={0.35} />
         <rect x={178.7} width={96.1} height={14.6} fill="#000" fillOpacity={0.4} />

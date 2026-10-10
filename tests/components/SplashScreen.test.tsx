@@ -20,6 +20,14 @@ describe("SplashScreen", () => {
     expect(screen.getByRole("status", { name: "Cargando GEPE" }).className).not.toContain("opacity-0");
   });
 
+  it("reveals the shirt with a CSS clip on a wrapper, not by animating inside an SVG clipPath", () => {
+    // Chrome does not repaint an animation inside a clipPath: the reveal got stuck halfway,
+    // leaving a horizontal cut in the shirt until something else forced a repaint.
+    const { container } = render(<SplashScreen phase="showing" />);
+    expect(container.querySelector(".splash-reveal svg")).not.toBeNull();
+    expect(container.querySelector("clipPath [class]")).toBeNull();
+  });
+
   it("renders nothing once gone", () => {
     render(<SplashScreen phase="gone" />);
     expect(screen.queryByRole("status")).toBeNull();

@@ -18,7 +18,10 @@ export function SplashScreen({ phase }: { phase: SplashPhase }) {
       <div className="absolute inset-0" style={{ background: stageGlowCss() }} aria-hidden="true" />
 
       <div className="relative flex flex-col items-center gap-6" aria-hidden="true">
-        <SplashShirt className="splash-shirt h-48 w-auto md:h-64" />
+        {/* The shirt is uncovered from the bottom up by clipping this box. */}
+        <div className="splash-reveal">
+          <SplashShirt className="splash-shirt h-48 w-auto md:h-64" />
+        </div>
 
         <p className="splash-word text-4xl font-black tracking-tight md:text-5xl">
           GEPE<sup className="ml-0.5 align-super text-[0.4em] font-bold">®</sup>
