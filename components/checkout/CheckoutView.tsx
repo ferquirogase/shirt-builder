@@ -92,7 +92,8 @@ export function CheckoutView({ initial }: { initial: Order }) {
           </section>
         </div>
 
-        <div className="space-y-6">
+        {/* On desktop this column stays in view while the left one grows; if it is taller than the screen it scrolls on its own. */}
+        <div className="space-y-6 md:sticky md:top-4 md:-m-1 md:max-h-[calc(100dvh-2rem)] md:overflow-y-auto md:p-1">
           <section aria-labelledby="contact-title" className={CARD}>
             <h2 id="contact-title" className="mb-4 text-lg font-bold">
               Contacto y envío
