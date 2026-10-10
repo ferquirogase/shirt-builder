@@ -92,7 +92,7 @@ describe("order storage", () => {
   it("opens an order whose lines have no quantity", () => {
     const lines = { ...makeOrder(), roster: [{ id: "a", name: "Leo", number: "10", size: "M" }] };
     sessionStorage.setItem(ORDER_KEY, JSON.stringify(lines));
-    expect(loadOrder()?.roster[0]).toEqual({ id: "a", name: "Leo", number: "10", size: "M" });
+    expect(loadOrder()?.roster[0]).toEqual({ id: "a", name: "Leo", number: "10", size: "M", shortsSize: "M" });
   });
 
   it("opens an order saved before quantities were removed, ignoring the old field", () => {
