@@ -1,12 +1,8 @@
 import { describe, it, expect } from "vitest";
 import * as THREE from "three";
-import { JERSEY_BOTTOM_Y } from "@/lib/builder/geometry/jersey-model";
-import { SHORTS_BOTTOM_Y } from "@/lib/builder/geometry/shorts-model";
 import {
   MAX_SWAY,
-  addShortsSwayWeights,
   addSwayWeights,
-  shortsSwayWeight,
   stepSpring,
   swayTarget,
   swayWeight,
@@ -31,54 +27,6 @@ describe("swayWeight", () => {
     expect(swayWeight(60, 250)).toBeGreaterThan(swayWeight(50, 250));
     expect(swayWeight(66, 250)).toBe(1);
     expect(swayWeight(-60, 250)).toBe(swayWeight(60, 250));
-  });
-});
-
-describe("shortsSwayWeight", () => {
-  it("moves exactly like the shirt's body at every height where the two overlap", () => {
-    // The waist is tucked inside the shirt: if it moved differently the shirt would cut through it.
-    for (let y = JERSEY_BOTTOM_Y; y <= 230; y += 3) {
-      expect(shortsSwayWeight(y)).toBeCloseTo(swayWeight(0, y), 10);
-    }
-  });
-
-  it("is fully free at the shirt's hem, with no jump where the shirt ends", () => {
-    expect(shortsSwayWeight(JERSEY_BOTTOM_Y)).toBeCloseTo(1, 3);
-    expect(shortsSwayWeight(JERSEY_BOTTOM_Y - 0.01)).toBeCloseTo(1, 2);
-  });
-
-  it("fades out down the legs and is still at the bottom edge", () => {
-    expect(shortsSwayWeight(SHORTS_BOTTOM_Y)).toBe(0);
-    expect(shortsSwayWeight(SHORTS_BOTTOM_Y - 20)).toBe(0);
-    const mid = (SHORTS_BOTTOM_Y + JERSEY_BOTTOM_Y) / 2;
-    expect(shortsSwayWeight(mid)).toBeGreaterThan(0);
-    expect(shortsSwayWeight(mid)).toBeLessThan(1);
-  });
-
-  it("never grows going down below the hem", () => {
-    let previous = 1;
-    for (let y = JERSEY_BOTTOM_Y; y >= SHORTS_BOTTOM_Y; y -= 2) {
-      const weight = shortsSwayWeight(y);
-      expect(weight).toBeLessThanOrEqual(previous + 1e-12);
-      previous = weight;
-    }
-  });
-});
-
-describe("addShortsSwayWeights", () => {
-  it("adds one weight per vertex from its height alone, leaving the positions alone", () => {
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute([40, 205, 0, -40, JERSEY_BOTTOM_Y, 0, 0, SHORTS_BOTTOM_Y, 0], 3)
-    );
-    addShortsSwayWeights(geometry);
-    const weights = geometry.getAttribute("swayWeight");
-    expect(weights.count).toBe(3);
-    expect(weights.getX(0)).toBeCloseTo(swayWeight(0, 205), 5);
-    expect(weights.getX(1)).toBeCloseTo(1, 3);
-    expect(weights.getX(2)).toBe(0);
-    expect(geometry.getAttribute("position").getY(1)).toBeCloseTo(JERSEY_BOTTOM_Y, 3);
   });
 });
 
