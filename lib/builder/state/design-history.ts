@@ -32,9 +32,10 @@ export function createHistory(initial: DesignState = initialDesignState): Histor
 // Continuous inputs (color pickers, text fields) get a group key so a burst of
 // edits is one undo step. Discrete choices (patterns, logo) return null.
 function groupKey(action: DesignAction): string | null {
+  const who = "target" in action && action.target === "keeper" ? "keeper:" : "";
   switch (action.type) {
     case "SET_COLOR":
-      return `color:${action.slot}`;
+      return `${who}color:${action.slot}`;
     case "SET_SPONSOR_SCALE":
       return `sponsor-scale:${action.slot}`;
     case "SET_CREST_CONFIG":
@@ -44,7 +45,7 @@ function groupKey(action: DesignAction): string | null {
     case "SET_PLAYER_NUMBER":
       return "number";
     case "SET_NN_FILL":
-      return "nn:fill";
+      return `${who}nn:fill`;
     default:
       return null;
   }
@@ -71,6 +72,9 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
     a.nameNumberStyle.fill === b.nameNumberStyle.fill &&
     a.nameNumberStyle.outline === b.nameNumberStyle.outline &&
     a.shorts.included === b.shorts.included &&
+    a.keeper.included === b.keeper.included &&
+    a.keeper.nameNumberFill === b.keeper.nameNumberFill &&
+    JSON.stringify(a.keeper.look) === JSON.stringify(b.keeper.look) &&
     a.shorts.colorSource === b.shorts.colorSource &&
     a.projectName === b.projectName
   );
