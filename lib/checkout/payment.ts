@@ -24,6 +24,7 @@ export async function payWithRipple(
 ): Promise<Confirmation> {
   await wait(SIMULATED_PAYMENT_MS);
   const totals = orderTotals(order.roster, order.design.shorts.included);
+  const keeperIncluded = order.design.keeper.included;
   return {
     number: orderNumber(),
     email: contact.email.trim(),
@@ -31,6 +32,6 @@ export async function payWithRipple(
     shirts: totals.shirts,
     shorts: totals.shorts,
     total: totals.total,
-    roster: order.roster,
+    roster: order.roster.map((line) => ({ ...line, keeper: line.keeper && keeperIncluded })),
   };
 }

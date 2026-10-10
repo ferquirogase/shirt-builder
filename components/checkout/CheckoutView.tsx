@@ -88,7 +88,7 @@ export function CheckoutView({ initial }: { initial: Order }) {
                 : "Cada fila es una camiseta con este diseño. Agregá un jugador por cada integrante."}
             </p>
             <fieldset disabled={paying} className="min-w-0 border-0 p-0">
-              <RosterTable roster={order.roster} errors={shown.players} dispatch={dispatch} withShorts={withShorts} />
+              <RosterTable roster={order.roster} errors={shown.players} dispatch={dispatch} withShorts={withShorts} withKeeper={order.design.keeper.included} />
             </fieldset>
           </section>
         </div>

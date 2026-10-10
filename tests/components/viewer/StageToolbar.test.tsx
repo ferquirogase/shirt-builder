@@ -50,3 +50,31 @@ describe("StageToolbar", () => {
     expect(screen.queryByRole("button", { name: "Descargar PNG" })).toBeNull();
   });
 });
+
+describe("shirt selector", () => {
+  it("only shows when the keeper is in the order", () => {
+    const { api } = renderWithDesign(<StageToolbar />);
+    expect(screen.queryByRole("radiogroup", { name: "Camiseta" })).toBeNull();
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    expect(screen.getByRole("radio", { name: "Jugador" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("switches what is shown", () => {
+    const { api } = renderWithDesign(<StageToolbar />);
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    fireEvent.click(screen.getByRole("radio", { name: "Arquero" }));
+    expect(api.current!.editing).toBe("keeper");
+    expect(screen.getByRole("radio", { name: "Arquero" })).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(screen.getByRole("radio", { name: "Jugador" }));
+    expect(api.current!.editing).toBe("player");
+  });
+
+  it("goes back to the player when the keeper is taken out", () => {
+    const { api } = renderWithDesign(<StageToolbar />);
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    fireEvent.click(screen.getByRole("radio", { name: "Arquero" }));
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: false }));
+    expect(api.current!.editing).toBe("player");
+    expect(screen.queryByRole("radiogroup", { name: "Camiseta" })).toBeNull();
+  });
+});

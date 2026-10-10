@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { colorsAfterPatternChange, designReducer, initialDesignState, shortsColor } from "@/lib/builder/state/design-state";
+import { INITIAL_CREST } from "@/lib/builder/crest/crest-config";
+import { colorDistance, contrastColor } from "@/lib/builder/color/contrast";
+import { defaultKeeperLook, lookFor, pickKeeperPrimary } from "@/lib/builder/state/design-state";
+import { crestDataUrl } from "@/lib/builder/crest/crest-svg";
 
 describe("designReducer", () => {
   it("sets a color for the given slot", () => {
@@ -299,5 +303,119 @@ describe("RESET_DESIGN", () => {
     expect(reset.shorts.included).toBe(true);
     expect(reset.projectName).toBe("Los Pibes");
     expect(reset.colors).toEqual(initialDesignState.colors);
+  });
+});
+
+describe("made crest", () => {
+  it("starts without one", () => {
+    expect(initialDesignState.crestConfig).toBeNull();
+  });
+
+  it("stores the config and draws it as the logo", () => {
+    const next = designReducer(initialDesignState, { type: "SET_CREST_CONFIG", config: INITIAL_CREST });
+    expect(next.crestConfig).toEqual(INITIAL_CREST);
+    expect(next.logoDataUrl).toBe(crestDataUrl(INITIAL_CREST));
+  });
+
+  it("ignores a config whose shape does not exist", () => {
+    const next = designReducer(initialDesignState, { type: "SET_CREST_CONFIG", config: { ...INITIAL_CREST, shapeId: "nope" } });
+    expect(next).toBe(initialDesignState);
+  });
+
+  it("an uploaded crest replaces the made one, and removing it clears both", () => {
+    const made = designReducer(initialDesignState, { type: "SET_CREST_CONFIG", config: INITIAL_CREST });
+    const uploaded = designReducer(made, { type: "SET_LOGO", dataUrl: "data:image/png;base64,AAAA" });
+    expect(uploaded.crestConfig).toBeNull();
+    expect(uploaded.logoDataUrl).toBe("data:image/png;base64,AAAA");
+    const removed = designReducer(made, { type: "SET_LOGO", dataUrl: null });
+    expect(removed.crestConfig).toBeNull();
+    expect(removed.logoDataUrl).toBeNull();
+  });
+
+  it("is dropped by a reset", () => {
+    const made = designReducer(initialDesignState, { type: "SET_CREST_CONFIG", config: INITIAL_CREST });
+    const reset = designReducer(made, { type: "RESET_DESIGN" });
+    expect(reset.crestConfig).toBeNull();
+    expect(reset.logoDataUrl).toBeNull();
+  });
+});
+
+const withKeeper = () => designReducer(initialDesignState, { type: "SET_KEEPER_INCLUDED", value: true });
+
+describe("keeper", () => {
+  it("starts out of the order", () => {
+    expect(initialDesignState.keeper).toEqual({ included: false, look: null, nameNumberFill: null });
+    expect(lookFor(initialDesignState, "keeper")).toBe(initialDesignState);
+  });
+
+  it("is given colors that contrast with the team's when it is added", () => {
+    const state = withKeeper();
+    expect(state.keeper.included).toBe(true);
+    const look = state.keeper.look!;
+    expect(colorDistance(look.colors.primary, state.colors.primary)).toBeGreaterThan(150);
+    expect(colorDistance(look.colors.primary, state.colors.secondary)).toBeGreaterThan(150);
+  });
+
+  it("does not pick the team's own color for the keeper", () => {
+    expect(pickKeeperPrimary({ primary: "#f5b700", secondary: "#000000" })).not.toBe("#f5b700");
+    expect(defaultKeeperLook({ primary: "#f5b700", secondary: "#000000" }).colors.primary).not.toBe("#f5b700");
+  });
+
+  it("keeps its look when taken out and put back", () => {
+    let state = withKeeper();
+    state = designReducer(state, { type: "SET_COLOR", slot: "primary", value: "#123456", target: "keeper" });
+    state = designReducer(state, { type: "SET_KEEPER_INCLUDED", value: false });
+    state = designReducer(state, { type: "SET_KEEPER_INCLUDED", value: true });
+    expect(state.keeper.look!.colors.primary).toBe("#123456");
+  });
+
+  it("edits the keeper's look without touching the team's", () => {
+    let state = withKeeper();
+    const before = state.colors;
+    state = designReducer(state, { type: "SET_COLOR", slot: "primary", value: "#abcdef", target: "keeper" });
+    state = designReducer(state, { type: "SET_BODY_PATTERN", id: "hoops", target: "keeper" });
+    expect(state.colors).toEqual(before);
+    expect(state.bodyPatternId).toBe(initialDesignState.bodyPatternId);
+    expect(state.keeper.look!.colors.primary).toBe("#abcdef");
+    expect(state.keeper.look!.bodyPatternId).toBe("hoops");
+  });
+
+  it("takes the pattern's default colors for new roles, like the team does", () => {
+    let state = withKeeper();
+    state = designReducer(state, { type: "SET_BODY_PATTERN", id: "stripes-wide", target: "keeper" });
+    expect(state.keeper.look!.colors.secondary).toBe("#111111");
+  });
+
+  it("ignores keeper edits while the keeper is not in the order", () => {
+    const next = designReducer(initialDesignState, { type: "SET_COLOR", slot: "primary", value: "#abcdef", target: "keeper" });
+    expect(next).toBe(initialDesignState);
+  });
+
+  it("lookFor wears the keeper's look and picks a readable number color", () => {
+    let state = withKeeper();
+    state = designReducer(state, { type: "SET_COLOR", slot: "primary", value: "#ffffff", target: "keeper" });
+    const view = lookFor(state, "keeper");
+    expect(view.colors.primary).toBe("#ffffff");
+    expect(view.nameNumberStyle.fill).toBe(contrastColor("#ffffff"));
+    expect(view.playerName).toBe(state.playerName);
+    expect(lookFor(state, "player")).toBe(state);
+  });
+
+  it("lets the keeper's number color be chosen, apart from the team's", () => {
+    let state = withKeeper();
+    state = designReducer(state, { type: "SET_NN_FILL", value: "#ff00ff", target: "keeper" });
+    expect(lookFor(state, "keeper").nameNumberStyle.fill).toBe("#ff00ff");
+    expect(state.nameNumberStyle.fill).toBe(initialDesignState.nameNumberStyle.fill);
+  });
+
+  it("keeps whether it is in the order on reset, with a fresh look", () => {
+    let state = withKeeper();
+    state = designReducer(state, { type: "SET_COLOR", slot: "primary", value: "#abcdef", target: "keeper" });
+    const reset = designReducer(state, { type: "RESET_DESIGN" });
+    expect(reset.keeper.included).toBe(true);
+    expect(reset.keeper.look).toEqual(defaultKeeperLook(initialDesignState.colors));
+    expect(reset.keeper.nameNumberFill).toBeNull();
+    const resetOut = designReducer(initialDesignState, { type: "RESET_DESIGN" });
+    expect(resetOut.keeper).toEqual(initialDesignState.keeper);
   });
 });

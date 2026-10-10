@@ -39,7 +39,7 @@ function flagForUpload(texture: THREE.Texture): void {
 // name/number font loaded here. It repaints whenever the design or one of those
 // images changes, and returns the texture to put on the shirt.
 export function useJerseyTexture(): THREE.CanvasTexture {
-  const { state } = useDesign();
+  const { viewed: state } = useDesign();
   const logoUrlRef = useRef<string | null>(null);
   const [patternImages, setPatternImages] = useState<PatternImages>({
     bodyPatternImage: null,

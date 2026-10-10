@@ -49,7 +49,7 @@ describe("order storage", () => {
     sessionStorage.setItem(ORDER_KEY, JSON.stringify({ ...old, design: oldDesign, roster: [oldLine] }));
     const loaded = loadOrder()!;
     expect(loaded.design.shorts).toEqual({ included: false, colorSource: "primary" });
-    expect(loaded.roster[0]).toEqual({ ...oldLine, shortsSize: "M" });
+    expect(loaded.roster[0]).toEqual({ ...oldLine, shortsSize: "M", keeper: false });
   });
 
   it("rejects an order whose shorts size is not a real size", () => {
@@ -96,7 +96,7 @@ describe("order storage", () => {
   it("opens an order whose lines have no quantity", () => {
     const lines = { ...makeOrder(), roster: [{ id: "a", name: "Leo", number: "10", size: "M" }] };
     sessionStorage.setItem(ORDER_KEY, JSON.stringify(lines));
-    expect(loadOrder()?.roster[0]).toEqual({ id: "a", name: "Leo", number: "10", size: "M", shortsSize: "M" });
+    expect(loadOrder()?.roster[0]).toEqual({ id: "a", name: "Leo", number: "10", size: "M", shortsSize: "M", keeper: false });
   });
 
   it("opens an order saved before quantities were removed, ignoring the old field", () => {
@@ -172,5 +172,43 @@ describe("design images", () => {
     clearDesignImages();
     window.sessionStorage.setItem(DESIGN_IMAGES_KEY, JSON.stringify({ front: 1 }));
     expect(loadDesignImages()).toBeNull();
+  });
+});
+
+describe("orders saved before the made crest", () => {
+  beforeEach(() => clearOrder());
+
+  it("load with no crest", () => {
+    const oldDesign: Partial<typeof initialDesignState> = { ...initialDesignState };
+    delete oldDesign.crestConfig;
+    window.sessionStorage.setItem(
+      ORDER_KEY,
+      JSON.stringify({ design: oldDesign, thumbnails: null, roster: [createPlayerLine("a")] })
+    );
+    expect(loadOrder()?.design.crestConfig).toBeNull();
+  });
+});
+
+describe("orders saved before the keeper", () => {
+  beforeEach(() => clearOrder());
+
+  it("load with nobody as keeper", () => {
+    window.sessionStorage.setItem(
+      ORDER_KEY,
+      JSON.stringify({
+        design: initialDesignState,
+        thumbnails: null,
+        roster: [{ id: "a", name: "Leo", number: "10", size: "M", shortsSize: "M" }],
+      })
+    );
+    expect(loadOrder()?.roster[0].keeper).toBe(false);
+  });
+
+  it("are rejected when the keeper thumbnails are not a pair of images", () => {
+    window.sessionStorage.setItem(
+      ORDER_KEY,
+      JSON.stringify({ design: initialDesignState, thumbnails: null, keeperThumbnails: { front: 1 }, roster: [createPlayerLine("a")] })
+    );
+    expect(loadOrder()).toBeNull();
   });
 });

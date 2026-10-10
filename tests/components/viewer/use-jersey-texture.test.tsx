@@ -54,6 +54,17 @@ afterEach(() => {
   Reflect.deleteProperty(document, "fonts");
 });
 
+describe("useJerseyTexture keeper", () => {
+  it("paints the keeper's look when the keeper is the shirt being shown", async () => {
+    const { result } = mount();
+    act(() => result.current.design.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    act(() => result.current.design.setEditing("keeper"));
+    const keeperPrimary = result.current.design.state.keeper.look!.colors.primary;
+    await waitFor(() => expect(lastDesign().colors.primary).toBe(keeperPrimary));
+    expect(lastDesign().colors.primary).not.toBe(result.current.design.state.colors.primary);
+  });
+});
+
 describe("useJerseyTexture", () => {
   it("returns a 2048px canvas texture that is flipped like the UVs and read as sRGB", () => {
     const { result } = mount();

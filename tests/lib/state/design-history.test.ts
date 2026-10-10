@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { initialDesignState } from "@/lib/builder/state/design-state";
+import { INITIAL_CREST } from "@/lib/builder/crest/crest-config";
 import {
   createHistory,
   historyReducer,
@@ -7,6 +8,7 @@ import {
   HISTORY_LIMIT,
   type HistoryAction,
   type HistoryState,
+  canResetDesign,
 } from "@/lib/builder/state/design-history";
 
 function run(actions: HistoryAction[], from: HistoryState = createHistory()): HistoryState {
@@ -245,5 +247,44 @@ describe("LOAD_DESIGN", () => {
     ]);
     expect(changed.past).toHaveLength(2);
     expect(historyReducer(changed, { type: "UNDO" }).present.shorts.colorSource).toBe("primary");
+  });
+});
+
+describe("made crest history", () => {
+  it("collapses a burst of crest edits into one undo step and can undo it", () => {
+    const edited = run([
+      { type: "SET_CREST_CONFIG", config: INITIAL_CREST, at: 1000 },
+      { type: "SET_CREST_CONFIG", config: { ...INITIAL_CREST, colors: { primary: "#111111", secondary: "#ffffff" } }, at: 1100 },
+    ]);
+    expect(edited.past).toHaveLength(1);
+    const undone = historyReducer(edited, { type: "UNDO" });
+    expect(undone.present.crestConfig).toBeNull();
+    expect(undone.present.logoDataUrl).toBeNull();
+  });
+});
+
+describe("keeper history", () => {
+  it("records the keeper's edits and undoes them", () => {
+    const edited = run([
+      { type: "SET_KEEPER_INCLUDED", value: true },
+      { type: "SET_BODY_PATTERN", id: "hoops", target: "keeper" },
+    ]);
+    expect(edited.present.keeper.look!.bodyPatternId).toBe("hoops");
+    const undone = historyReducer(edited, { type: "UNDO" });
+    expect(undone.present.keeper.look!.bodyPatternId).not.toBe("hoops");
+  });
+
+  it("groups the keeper's color bursts apart from the team's", () => {
+    const edited = run([
+      { type: "SET_KEEPER_INCLUDED", value: true },
+      { type: "SET_COLOR", slot: "primary", value: "#111111", at: 1000 },
+      { type: "SET_COLOR", slot: "primary", value: "#222222", target: "keeper", at: 1100 },
+    ]);
+    expect(edited.past).toHaveLength(3);
+  });
+
+  it("cannot be reset when only the keeper was added", () => {
+    const added = run([{ type: "SET_KEEPER_INCLUDED", value: true }]);
+    expect(canResetDesign(added.present)).toBe(false);
   });
 });

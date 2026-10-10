@@ -33,7 +33,7 @@ describe("Header", () => {
     const onReview = vi.fn();
     const { api } = renderWithDesign(<Header onReview={onReview} onShare={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
-    expect(onReview).toHaveBeenCalledWith(api.current!.state);
+    expect(onReview).toHaveBeenCalledWith(api.current!.state, api.current!.setEditing);
   });
 
   it("blocks double taps while reviewing", () => {

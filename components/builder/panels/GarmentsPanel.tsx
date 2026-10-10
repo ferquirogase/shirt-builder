@@ -55,6 +55,36 @@ export function GarmentsPanel() {
         })}
       </div>
 
+      <button
+        type="button"
+        role="switch"
+        aria-checked={state.keeper.included}
+        aria-labelledby="keeper-label"
+        aria-describedby="keeper-hint"
+        onClick={() => dispatch({ type: "SET_KEEPER_INCLUDED", value: !state.keeper.included })}
+        className={`${OPTION} ${border(state.keeper.included)} mt-3 w-full justify-between md:p-4`}
+      >
+        <span className="flex flex-col">
+          <span id="keeper-label" className="text-base font-semibold">
+            Sumar camiseta de arquero
+          </span>
+          <span id="keeper-hint" className="font-normal text-muted">
+            Colores y patrón propios. Comparte escudo y sponsors.
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          className={`flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+            state.keeper.included ? "bg-foreground" : "bg-black/20"
+          }`}
+        >
+          <span
+            className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${
+              state.keeper.included ? "translate-x-5" : ""
+            }`}
+          />
+        </span>
+      </button>
     </PanelShell>
   );
 }

@@ -10,13 +10,15 @@ function Harness({
   initial,
   errors = {},
   withShorts = false,
+  withKeeper = false,
 }: {
   initial: Order;
   errors?: Record<string, PlayerErrors>;
   withShorts?: boolean;
+  withKeeper?: boolean;
 }) {
   const [order, dispatch] = useReducer(orderReducer, initial);
-  return <RosterTable roster={order.roster} errors={errors} dispatch={dispatch} withShorts={withShorts} />;
+  return <RosterTable roster={order.roster} errors={errors} dispatch={dispatch} withShorts={withShorts} withKeeper={withKeeper} />;
 }
 
 function order(...lines: ReturnType<typeof createPlayerLine>[]): Order {
@@ -96,5 +98,21 @@ describe("RosterTable", () => {
     const block = screen.getByText("Ingresá un nombre").parentElement!;
     expect(block.className).toContain("col-span-full");
     expect(block).toContainElement(screen.getByText("Ingresá un número"));
+  });
+});
+
+describe("RosterTable keeper", () => {
+  it("has no keeper column unless the keeper is in the design", () => {
+    render(<Harness initial={order(createPlayerLine("a"))} />);
+    expect(screen.queryByLabelText("Arquero: jugador 1")).toBeNull();
+  });
+
+  it("marks who plays in goal", () => {
+    render(<Harness initial={order(createPlayerLine("a"), createPlayerLine("b"))} withKeeper />);
+    expect(screen.getByRole("status")).toHaveTextContent("Marcá quién es el arquero.");
+    fireEvent.click(screen.getByLabelText("Arquero: jugador 2"));
+    expect(screen.getByLabelText("Arquero: jugador 2")).toBeChecked();
+    expect(screen.getByLabelText("Arquero: jugador 1")).not.toBeChecked();
+    expect(screen.queryByText("Marcá quién es el arquero.")).toBeNull();
   });
 });

@@ -73,3 +73,16 @@ describe("ConfirmationPage", () => {
     expect(loadConfirmation()).toBeNull();
   });
 });
+
+describe("ConfirmationPage keeper", () => {
+  it("marks the keeper's line", () => {
+    saveConfirmation({
+      ...confirmation,
+      roster: [{ ...confirmation.roster[0], keeper: true }, confirmation.roster[1]],
+    });
+    render(<ConfirmationPage />);
+    const rows = screen.getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("Arquero");
+    expect(rows[1]).not.toHaveTextContent("Arquero");
+  });
+});
