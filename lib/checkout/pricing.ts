@@ -4,6 +4,7 @@ import type { PlayerLine } from "./order";
 // the only file whose numbers change.
 export const CURRENCY = "USD";
 export const PRICE_PER_SHIRT = 35;
+export const PRICE_PER_SHORTS = 20;
 
 // Largest threshold first: the first tier the order reaches wins.
 export const DISCOUNT_TIERS: ReadonlyArray<{ minShirts: number; rate: number }> = [
@@ -13,6 +14,7 @@ export const DISCOUNT_TIERS: ReadonlyArray<{ minShirts: number; rate: number }> 
 
 export type Totals = {
   shirts: number;
+  shorts: number;
   subtotal: number;
   discountRate: number;
   discount: number;
@@ -23,13 +25,14 @@ function cents(amount: number): number {
   return Math.round(amount * 100) / 100;
 }
 
-export function orderTotals(roster: readonly PlayerLine[]): Totals {
-  // One line is one shirt.
+export function orderTotals(roster: readonly PlayerLine[], withShorts = false): Totals {
+  // One line is one shirt, and one pair of shorts when the order is a full kit.
   const shirts = roster.length;
-  const subtotal = cents(shirts * PRICE_PER_SHIRT);
+  const shorts = withShorts ? roster.length : 0;
+  const subtotal = cents(shirts * PRICE_PER_SHIRT + shorts * PRICE_PER_SHORTS);
   const discountRate = DISCOUNT_TIERS.find((tier) => shirts >= tier.minShirts)?.rate ?? 0;
   const discount = cents(subtotal * discountRate);
-  return { shirts, subtotal, discountRate, discount, total: cents(subtotal - discount) };
+  return { shirts, shorts, subtotal, discountRate, discount, total: cents(subtotal - discount) };
 }
 
 export function formatMoney(amount: number): string {

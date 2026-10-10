@@ -43,4 +43,16 @@ describe("payWithRipple", () => {
     });
     expect(confirmation.number).toMatch(/^GEPE-/);
   });
+
+  it("confirms no shorts for a shirt-only order", async () => {
+    const confirmation = await payWithRipple(order, contact, async () => {});
+    expect(confirmation.shorts).toBe(0);
+  });
+
+  it("confirms the shorts and charges them for a full kit", async () => {
+    const kit: Order = { ...order, design: { ...order.design, shorts: { included: true, colorSource: "primary" } } };
+    const confirmation = await payWithRipple(kit, contact, async () => {});
+    expect(confirmation.shorts).toBe(2);
+    expect(confirmation.total).toBe(orderTotals(kit.roster, true).total);
+  });
 });

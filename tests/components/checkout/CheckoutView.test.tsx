@@ -55,6 +55,7 @@ const confirmation: Confirmation = {
   email: "leo@club.com",
   projectName: "Los del viernes",
   shirts: 1,
+  shorts: 0,
   total: 35,
   roster: [createPlayerLine("a", { name: "Leo", number: "10" })],
 };

@@ -23,12 +23,13 @@ export async function payWithRipple(
   wait: (ms: number) => Promise<void> = pause
 ): Promise<Confirmation> {
   await wait(SIMULATED_PAYMENT_MS);
-  const totals = orderTotals(order.roster);
+  const totals = orderTotals(order.roster, order.design.shorts.included);
   return {
     number: orderNumber(),
     email: contact.email.trim(),
     projectName: order.design.projectName,
     shirts: totals.shirts,
+    shorts: totals.shorts,
     total: totals.total,
     roster: order.roster,
   };

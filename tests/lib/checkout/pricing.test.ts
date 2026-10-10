@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createPlayerLine } from "@/lib/checkout/order";
-import { PRICE_PER_SHIRT, formatMoney, orderTotals } from "@/lib/checkout/pricing";
+import { PRICE_PER_SHIRT, PRICE_PER_SHORTS, formatMoney, orderTotals } from "@/lib/checkout/pricing";
 
 // Each roster line is one shirt.
 function players(count: number) {
@@ -11,11 +11,34 @@ describe("orderTotals", () => {
   it("charges the unit price with no discount for a small order", () => {
     expect(orderTotals(players(1))).toEqual({
       shirts: 1,
+      shorts: 0,
       subtotal: PRICE_PER_SHIRT,
       discountRate: 0,
       discount: 0,
       total: PRICE_PER_SHIRT,
     });
+  });
+
+  it("charges no shorts when the order is shirt only", () => {
+    const totals = orderTotals(players(3), false);
+    expect(totals.shorts).toBe(0);
+    expect(totals.subtotal).toBe(3 * PRICE_PER_SHIRT);
+  });
+
+  it("adds a pair of shorts per player for a full kit", () => {
+    const totals = orderTotals(players(3), true);
+    expect(totals.shirts).toBe(3);
+    expect(totals.shorts).toBe(3);
+    expect(totals.subtotal).toBe(3 * (PRICE_PER_SHIRT + PRICE_PER_SHORTS));
+    expect(totals.total).toBe(totals.subtotal);
+  });
+
+  it("applies the quantity discount to shirts and shorts together", () => {
+    const totals = orderTotals(players(10), true);
+    const subtotal = 10 * (PRICE_PER_SHIRT + PRICE_PER_SHORTS);
+    expect(totals.discountRate).toBe(0.1);
+    expect(totals.discount).toBe(subtotal * 0.1);
+    expect(totals.total).toBe(subtotal - subtotal * 0.1);
   });
 
   it("counts one shirt per player", () => {
