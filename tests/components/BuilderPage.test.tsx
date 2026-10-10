@@ -156,10 +156,25 @@ describe("BuilderPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
     expect(screen.getByTestId("viewer")).toHaveAttribute("data-view", "back");
     expect(loadOrder()?.thumbnails).toEqual({ front: "F", back: "B" });
     expect(loadOrder()?.roster).toHaveLength(1);
+  });
+
+  it("shows the progress on the button itself, with no extra message at the bottom", async () => {
+    let finish!: (value: { front: string; back: string }) => void;
+    captureThumbnails.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+    render(<BuilderPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
+
+    expect(await screen.findByRole("button", { name: "Preparando…" })).toBeDisabled();
+    expect(screen.queryByText("Preparando tu pedido…")).toBeNull();
+    expect(screen.queryByRole("status")).toBeNull();
+
+    finish({ front: "F", back: "B" });
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
   });
 
   it("still goes to the checkout, without thumbnails, when the capture fails", async () => {
@@ -168,7 +183,7 @@ describe("BuilderPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
     expect(loadOrder()?.thumbnails).toBeNull();
   });
 
@@ -186,7 +201,7 @@ describe("BuilderPage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
     expect(loadOrder()!.roster.map((l) => l.name)).toEqual(["Leo", "Dibu"]);
     expect(loadOrder()!.thumbnails).toEqual({ front: "F2", back: "B2" });
     expect(loadOrder()!.design.projectName).toBe("Los del viernes");

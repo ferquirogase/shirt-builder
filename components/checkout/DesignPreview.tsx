@@ -11,6 +11,7 @@ export function DesignPreview({ order }: { order: Order }) {
         <h2 className="min-w-0 truncate text-lg font-bold">{design.projectName}</h2>
         <Link
           href="/"
+          transitionTypes={["nav-back"]}
           className="inline-flex h-10 shrink-0 items-center rounded-full border border-foreground/80 bg-white/70 px-5 text-sm font-semibold hover:bg-accent-soft"
         >
           Editar diseño

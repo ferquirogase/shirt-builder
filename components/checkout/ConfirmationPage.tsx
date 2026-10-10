@@ -55,6 +55,7 @@ function SavedConfirmation() {
         <div className="text-center">
           <Link
             href="/"
+            transitionTypes={["nav-back"]}
             onClick={clearConfirmation}
             className="inline-flex h-11 items-center rounded-full bg-accent px-6 text-sm font-bold"
           >
