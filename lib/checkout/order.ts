@@ -6,7 +6,7 @@ export type Size = (typeof SIZES)[number];
 export const MAX_NAME_LENGTH = 12;
 
 // One line is one shirt.
-export type PlayerLine = { id: string; name: string; number: string; size: Size };
+export type PlayerLine = { id: string; name: string; number: string; size: Size; shortsSize: Size };
 export type Thumbnails = { front: string; back: string };
 
 // A frozen design plus the roster that wears it. Plain JSON on purpose: this
@@ -23,6 +23,7 @@ export type Confirmation = {
   email: string;
   projectName: string;
   shirts: number;
+  shorts: number;
   total: number;
   roster: PlayerLine[];
 };
@@ -36,7 +37,7 @@ export function newLineId(): string {
 }
 
 export function createPlayerLine(id: string, patch: Partial<Omit<PlayerLine, "id">> = {}): PlayerLine {
-  return { id, name: "", number: "", size: "M", ...patch };
+  return { id, name: "", number: "", size: "M", shortsSize: "M", ...patch };
 }
 
 function cleanNumber(value: string): string {
@@ -48,6 +49,9 @@ function cleanPatch(patch: Partial<Omit<PlayerLine, "id">>): Partial<Omit<Player
   if (patch.name !== undefined) clean.name = patch.name.slice(0, MAX_NAME_LENGTH);
   if (patch.number !== undefined) clean.number = cleanNumber(patch.number);
   if (patch.size !== undefined && (SIZES as readonly string[]).includes(patch.size)) clean.size = patch.size;
+  if (patch.shortsSize !== undefined && (SIZES as readonly string[]).includes(patch.shortsSize)) {
+    clean.shortsSize = patch.shortsSize;
+  }
   return clean;
 }
 
