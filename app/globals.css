@@ -35,6 +35,147 @@ body {
   scrollbar-gutter: stable;
 }
 
+/* Splash: the shirt is uncovered from the bottom up and then tries on a few designs before
+   settling on its own. Like the share story, it plays whatever the system motion setting.
+   The resting values (no animation) are the finished shirt. */
+@keyframes splash-reveal-up {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Each design holds for a while and the change between them is quick: a slow blend
+   between two colors passes through a muddy grey. */
+@keyframes splash-body-colors {
+  0%,
+  22% {
+    fill: #b9233e;
+  }
+  27%,
+  50% {
+    fill: #1e50d0;
+  }
+  55%,
+  78% {
+    fill: #f5b700;
+  }
+  83%,
+  100% {
+    fill: #b9233e;
+  }
+}
+
+@keyframes splash-trim-colors {
+  0%,
+  22% {
+    fill: #439360;
+  }
+  27%,
+  50% {
+    fill: #f5b700;
+  }
+  55%,
+  78% {
+    fill: #1c1917;
+  }
+  83%,
+  100% {
+    fill: #439360;
+  }
+}
+
+@keyframes splash-bands-in {
+  0%,
+  24% {
+    opacity: 0;
+  }
+  27%,
+  50% {
+    opacity: 1;
+  }
+  53%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes splash-hoops-in {
+  0%,
+  52% {
+    opacity: 0;
+  }
+  55%,
+  78% {
+    opacity: 1;
+  }
+  81%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes splash-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes splash-grow {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes splash-breathe {
+  to {
+    transform: scale(1.04);
+  }
+}
+
+.splash-reveal {
+  animation: splash-reveal-up 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.splash-body {
+  /* A faint outline, so the white parts of a design do not melt into the light background. */
+  stroke: rgb(28 25 23 / 0.2);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  fill: #b9233e;
+  animation: splash-body-colors 2200ms ease-in-out 500ms both;
+}
+
+.splash-trim {
+  fill: #439360;
+  animation: splash-trim-colors 2200ms ease-in-out 500ms both;
+}
+
+.splash-bands {
+  opacity: 0;
+  animation: splash-bands-in 2200ms ease-in-out 500ms both;
+}
+
+.splash-hoops {
+  opacity: 0;
+  animation: splash-hoops-in 2200ms ease-in-out 500ms both;
+}
+
+.splash-word {
+  animation: splash-fade-up 600ms ease-out 1900ms both;
+}
+
+.splash-bar {
+  animation: splash-grow var(--splash-ms) linear both;
+}
+
+.splash-shirt {
+  animation: splash-breathe 1600ms ease-in-out 2700ms infinite alternate;
+}
+
 /* Share story: reveal animation and confetti. */
 @keyframes story-in {
   from {
