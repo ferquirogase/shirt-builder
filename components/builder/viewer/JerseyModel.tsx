@@ -14,7 +14,8 @@ import {
   type SpringState,
 } from "@/lib/builder/geometry/cloth-sway";
 import { prepareJerseyGeometry } from "@/lib/builder/geometry/jersey-geometry";
-import { applyClothSway, createClothSwayUniforms, updateClothSway } from "./cloth-sway-shader";
+import { applyClothSway, updateClothSway } from "./cloth-sway-shader";
+import { useClothSway } from "./ClothSwayProvider";
 import { FABRIC_REPEAT, LINING_COLOR, WEAVE_STRENGTH } from "./fabric-look";
 import { useJerseyTexture } from "./use-jersey-texture";
 
@@ -75,7 +76,7 @@ export function JerseyModel() {
   } = useMemo(() => prepareJerseyGeometry(obj, collarObj), [obj, collarObj]);
 
   // Sleeves and hem swing behind the camera as it orbits (see cloth-sway.ts).
-  const sway = useMemo(() => createClothSwayUniforms(), []);
+  const sway = useClothSway();
   const liningMaterial = useMemo(
     () => new THREE.MeshStandardMaterial({ color: LINING_COLOR, roughness: 0.9, side: THREE.BackSide }),
     []

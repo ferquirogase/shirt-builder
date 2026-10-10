@@ -7,6 +7,7 @@ import { framingFor } from "@/lib/builder/geometry/set-framing";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { CameraKeyLight } from "./CameraKeyLight";
 import { CameraRig } from "./CameraRig";
+import { ClothSwayProvider } from "./ClothSwayProvider";
 import {
   AMBIENT_INTENSITY,
   TONE_MAPPING,
@@ -42,16 +43,18 @@ export const Viewer3D = forwardRef<HTMLCanvasElement, Props>(function Viewer3D(
     >
       <ambientLight intensity={AMBIENT_INTENSITY} />
       <CameraKeyLight />
-      <group position={[0, lift, 0]}>
-        <Suspense fallback={null}>
-          <JerseyModel />
-        </Suspense>
-        {state.shorts.included && (
+      <ClothSwayProvider>
+        <group position={[0, lift, 0]}>
           <Suspense fallback={null}>
-            <ShortsModel />
+            <JerseyModel />
           </Suspense>
-        )}
-      </group>
+          {state.shorts.included && (
+            <Suspense fallback={null}>
+              <ShortsModel />
+            </Suspense>
+          )}
+        </group>
+      </ClothSwayProvider>
       <ContactShadows
         position={[0, floorY, 0]}
         opacity={0.35}
