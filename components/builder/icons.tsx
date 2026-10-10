@@ -46,9 +46,6 @@ export const RedoIcon = (p: IconProps) => (
 export const ShareIcon = (p: IconProps) => (
   <Svg {...p}><path d="M12 15V4m0 0L8 8m4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" /></Svg>
 );
-export const DownloadIcon = (p: IconProps) => (
-  <Svg {...p}><path d="M12 4v11m0 0-4-4m4 4 4-4M5 19h14" /></Svg>
-);
 export const ArrowRightIcon = (p: IconProps) => (
   <Svg {...p}><path d="M5 12h14m-6-6 6 6-6 6" /></Svg>
 );

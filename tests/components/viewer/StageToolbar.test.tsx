@@ -1,11 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { act, fireEvent, screen } from "@testing-library/react";
 import { renderWithDesign } from "../../helpers/render-with-design";
 import { StageToolbar } from "@/components/builder/viewer/StageToolbar";
 
 describe("StageToolbar", () => {
   it("disables undo/redo until there is history, then undoes and redoes", () => {
-    const { api } = renderWithDesign(<StageToolbar onDownload={() => {}} />);
+    const { api } = renderWithDesign(<StageToolbar />);
     expect(screen.getByRole("button", { name: "Deshacer" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Rehacer" })).toBeDisabled();
 
@@ -20,10 +20,8 @@ describe("StageToolbar", () => {
     expect(api.current!.state.bodyPatternId).toBe("plain-body");
   });
 
-  it("calls onDownload", () => {
-    const onDownload = vi.fn();
-    renderWithDesign(<StageToolbar onDownload={onDownload} />);
-    fireEvent.click(screen.getByRole("button", { name: "Descargar PNG" }));
-    expect(onDownload).toHaveBeenCalledTimes(1);
+  it("no longer offers a PNG download: sharing is the only way out", () => {
+    renderWithDesign(<StageToolbar />);
+    expect(screen.queryByRole("button", { name: "Descargar PNG" })).toBeNull();
   });
 });

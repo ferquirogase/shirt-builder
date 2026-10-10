@@ -1,7 +1,7 @@
 "use client";
 import type { ReactNode } from "react";
 import { useDesign } from "@/lib/builder/state/design-context";
-import { DownloadIcon, RedoIcon, UndoIcon } from "../icons";
+import { RedoIcon, UndoIcon } from "../icons";
 
 function RoundButton({
   label,
@@ -27,7 +27,7 @@ function RoundButton({
   );
 }
 
-export function StageToolbar({ onDownload }: { onDownload: () => void }) {
+export function StageToolbar() {
   const { dispatch, canUndo, canRedo } = useDesign();
   return (
     <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex items-center justify-center gap-3 px-4">
@@ -37,15 +37,6 @@ export function StageToolbar({ onDownload }: { onDownload: () => void }) {
       <RoundButton label="Rehacer" disabled={!canRedo} onClick={() => dispatch({ type: "REDO" })}>
         <RedoIcon className="h-5 w-5" />
       </RoundButton>
-      <button
-        type="button"
-        aria-label="Descargar PNG"
-        onClick={onDownload}
-        className="pointer-events-auto absolute right-4 top-0 flex h-11 items-center gap-2 rounded-full bg-white/80 px-3 text-sm font-semibold shadow-sm transition hover:bg-white md:px-4"
-      >
-        <DownloadIcon className="h-5 w-5" />
-        <span className="hidden md:inline">Descargar PNG</span>
-      </button>
     </div>
   );
 }

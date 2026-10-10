@@ -1,11 +1,9 @@
-import type { ViewSide } from "@/lib/builder/geometry/camera-math";
+import { VIEW_SETTLE_MS, captureViews, type CaptureViewsOptions } from "@/lib/builder/io/capture-views";
 import { paintStageBackground } from "@/lib/builder/io/export-image";
 import type { Thumbnails } from "./order";
 
+export { VIEW_SETTLE_MS };
 export const THUMBNAIL_WIDTH = 400;
-// How long the camera needs to finish turning before we read the canvas. The
-// rig eases 12% of the remaining angle per frame (~60 frames for a half turn).
-export const VIEW_SETTLE_MS = 1300;
 
 // A small JPEG of the WebGL canvas over the stage background, so the order
 // stays light enough for sessionStorage even with a big crest or sponsors.
@@ -24,27 +22,10 @@ export function thumbnailOf(
   return out.toDataURL("image/jpeg", 0.85);
 }
 
-type CaptureOptions = {
-  canvas: HTMLCanvasElement;
-  // Asks the viewer to turn to a side (from the default pose).
-  showView: (side: ViewSide) => void;
-  wait: (ms: number) => Promise<void>;
+type CaptureOptions = CaptureViewsOptions & {
   createCanvas?: () => HTMLCanvasElement;
 };
 
-export async function captureThumbnails({
-  canvas,
-  showView,
-  wait,
-  createCanvas,
-}: CaptureOptions): Promise<Thumbnails | null> {
-  showView("front");
-  await wait(VIEW_SETTLE_MS);
-  const front = thumbnailOf(canvas, createCanvas);
-
-  showView("back");
-  await wait(VIEW_SETTLE_MS);
-  const back = thumbnailOf(canvas, createCanvas);
-
-  return front && back ? { front, back } : null;
+export async function captureThumbnails({ createCanvas, ...options }: CaptureOptions): Promise<Thumbnails | null> {
+  return captureViews(options, (source) => thumbnailOf(source, createCanvas));
 }
