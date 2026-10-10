@@ -10,6 +10,9 @@ import { GarmentsPanel } from "@/components/builder/panels/GarmentsPanel";
 import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
 import { loadImage } from "@/lib/builder/texture/image-loader";
 import { initialDesignState } from "@/lib/builder/state/design-state";
+import { CREST_SHAPES } from "@/lib/builder/catalog/crest-shapes";
+import { crestDataUrl } from "@/lib/builder/crest/crest-svg";
+import { INITIAL_CREST } from "@/lib/builder/crest/crest-config";
 
 // jsdom never decodes images, so the crest's "can this actually be drawn?"
 // check is driven by this mock.
@@ -475,5 +478,67 @@ describe("keeper in the panels", () => {
     fireEvent.change(screen.getByLabelText("Color del texto (arquero)"), { target: { value: "#ff00ff" } });
     expect(api.current!.state.keeper.nameNumberFill).toBe("#ff00ff");
     expect(api.current!.state.nameNumberStyle.fill).toBe(initialDesignState.nameNumberStyle.fill);
+  });
+});
+
+describe("crest creator", () => {
+  it("puts a first crest on the shirt when there is none", () => {
+    const { api } = renderWithDesign(<CrestPanel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    expect(api.current!.state.crestConfig).toEqual(INITIAL_CREST);
+    expect(api.current!.state.logoDataUrl).toBe(crestDataUrl(INITIAL_CREST));
+  });
+
+  it("leaves an uploaded crest alone until the creator is used", () => {
+    const { api } = renderWithDesign(<CrestPanel />);
+    act(() => api.current!.dispatch({ type: "SET_LOGO", dataUrl: "data:image/png;base64,AAAA" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    expect(api.current!.state.logoDataUrl).toBe("data:image/png;base64,AAAA");
+    expect(api.current!.state.crestConfig).toBeNull();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Forma 3" }));
+    expect(api.current!.state.crestConfig?.shapeId).toBe(CREST_SHAPES[2].id);
+    expect(api.current!.state.logoDataUrl).toBe(crestDataUrl(api.current!.state.crestConfig!));
+  });
+
+  it("chooses shape, background, colors and symbol", () => {
+    const { api } = renderWithDesign(<CrestPanel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+
+    fireEvent.click(screen.getByRole("radio", { name: "Forma 7" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Mitad" }));
+    fireEvent.change(screen.getByLabelText("Color principal del escudo"), { target: { value: "#112233" } });
+    fireEvent.change(screen.getByLabelText("Color secundario del escudo"), { target: { value: "#ffcc00" } });
+    fireEvent.click(screen.getByRole("radio", { name: "Estrella" }));
+
+    expect(api.current!.state.crestConfig).toEqual({
+      shapeId: CREST_SHAPES[6].id,
+      divisionId: "half",
+      colors: { primary: "#112233", secondary: "#ffcc00" },
+      symbol: { kind: "icon", id: "star" },
+    });
+  });
+
+  it("takes initials, cleaned and limited to three", () => {
+    const { api } = renderWithDesign(<CrestPanel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Iniciales" }));
+    fireEvent.change(screen.getByLabelText("Iniciales"), { target: { value: "a b<c>d" } });
+    expect(api.current!.state.crestConfig?.symbol).toEqual({ kind: "initials", text: "ABC" });
+    fireEvent.click(screen.getByRole("radio", { name: "Sin símbolo" }));
+    expect(api.current!.state.crestConfig?.symbol).toBeNull();
+  });
+
+  it("removes the made crest", () => {
+    const { api } = renderWithDesign(<CrestPanel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Quitar escudo" }));
+    expect(api.current!.state.crestConfig).toBeNull();
+    expect(api.current!.state.logoDataUrl).toBeNull();
+  });
+
+  it("opens on the upload tab by default", () => {
+    renderWithDesign(<CrestPanel />);
+    expect(screen.getByRole("tab", { name: "Subir el mío" })).toHaveAttribute("aria-selected", "true");
   });
 });
