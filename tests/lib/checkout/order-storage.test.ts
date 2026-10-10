@@ -26,7 +26,7 @@ const confirmation: Confirmation = {
   projectName: "Mi diseño",
   shirts: 2,
   total: 70,
-  roster: [createPlayerLine("a", { name: "Leo", number: "10", quantity: 2 })],
+  roster: [createPlayerLine("a", { name: "Leo", number: "10" })],
 };
 
 beforeEach(() => {
@@ -63,9 +63,21 @@ describe("order storage", () => {
     expect(loadOrder()).toBeNull();
     sessionStorage.setItem(
       ORDER_KEY,
-      JSON.stringify({ design: {}, thumbnails: null, roster: [{ id: "a", name: "x", number: "1", size: "XXXL", quantity: 1 }] })
+      JSON.stringify({ design: {}, thumbnails: null, roster: [{ id: "a", name: "x", number: "1", size: "XXXL" }] })
     );
     expect(loadOrder()).toBeNull();
+  });
+
+  it("opens an order whose lines have no quantity", () => {
+    const lines = { ...makeOrder(), roster: [{ id: "a", name: "Leo", number: "10", size: "M" }] };
+    sessionStorage.setItem(ORDER_KEY, JSON.stringify(lines));
+    expect(loadOrder()?.roster[0]).toEqual({ id: "a", name: "Leo", number: "10", size: "M" });
+  });
+
+  it("opens an order saved before quantities were removed, ignoring the old field", () => {
+    const old = { ...makeOrder(), roster: [{ id: "a", name: "Leo", number: "10", size: "M", quantity: 2 }] };
+    sessionStorage.setItem(ORDER_KEY, JSON.stringify(old));
+    expect(loadOrder()?.roster[0]).toMatchObject({ id: "a", name: "Leo", number: "10", size: "M" });
   });
 
   it("keeps working in memory when sessionStorage is full, and reports it", () => {

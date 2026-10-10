@@ -18,7 +18,8 @@ import { createPlayerLine } from "@/lib/checkout/order";
 import { orderTotals } from "@/lib/checkout/pricing";
 import { emptyContact } from "@/lib/checkout/validation";
 
-const roster = [createPlayerLine("a", { name: "Leo", number: "10", quantity: 12 })];
+// 12 players = 12 shirts, enough for the 10% discount.
+const roster = Array.from({ length: 12 }, (_, i) => createPlayerLine(`p${i}`, { name: `J${i}`, number: String(i) }));
 
 describe("DesignPreview", () => {
   it("shows the front and back thumbnails, the project name and a link back to the builder", () => {

@@ -16,7 +16,7 @@ const contact: ContactInfo = {
 const order: Order = {
   design: { ...initialDesignState, projectName: "Los del viernes" },
   thumbnails: null,
-  roster: [createPlayerLine("a", { name: "Leo", number: "10", quantity: 2 }), createPlayerLine("b", { name: "Dibu", number: "1" })],
+  roster: [createPlayerLine("a", { name: "Leo", number: "10" }), createPlayerLine("b", { name: "Dibu", number: "1" })],
 };
 
 describe("orderNumber", () => {
@@ -37,7 +37,7 @@ describe("payWithRipple", () => {
     expect(confirmation).toMatchObject({
       email: "leo@club.com",
       projectName: "Los del viernes",
-      shirts: 3,
+      shirts: 2,
       total: orderTotals(order.roster).total,
       roster: order.roster,
     });

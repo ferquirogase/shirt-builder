@@ -23,7 +23,7 @@ const confirmation: Confirmation = {
   shirts: 3,
   total: 105,
   roster: [
-    createPlayerLine("a", { name: "Leo", number: "10", size: "L", quantity: 2 }),
+    createPlayerLine("a", { name: "Leo", number: "10", size: "L" }),
     createPlayerLine("b", { name: "Dibu", number: "1" }),
   ],
 };
@@ -41,6 +41,8 @@ describe("ConfirmationPage", () => {
     expect(screen.getByText(/leo@club\.com/)).toBeInTheDocument();
     expect(screen.getByText("Leo")).toBeInTheDocument();
     expect(screen.getByText("Dibu")).toBeInTheDocument();
+    // One shirt per line: no per-line quantity.
+    expect(screen.queryByText(/·\s*x\d+/)).toBeNull();
     expect(screen.getByText(/Demo: no se realizó ningún cobro/)).toBeInTheDocument();
     expect(screen.getByText("Total").nextElementSibling).toHaveTextContent("105");
     expect(replace).not.toHaveBeenCalled();

@@ -4,9 +4,9 @@ export const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 export type Size = (typeof SIZES)[number];
 
 export const MAX_NAME_LENGTH = 12;
-export const MAX_QUANTITY = 99;
 
-export type PlayerLine = { id: string; name: string; number: string; size: Size; quantity: number };
+// One line is one shirt.
+export type PlayerLine = { id: string; name: string; number: string; size: Size };
 export type Thumbnails = { front: string; back: string };
 
 // A frozen design plus the roster that wears it. Plain JSON on purpose: this
@@ -36,12 +36,7 @@ export function newLineId(): string {
 }
 
 export function createPlayerLine(id: string, patch: Partial<Omit<PlayerLine, "id">> = {}): PlayerLine {
-  return { id, name: "", number: "", size: "M", quantity: 1, ...patch };
-}
-
-export function clampQuantity(value: number): number {
-  if (!Number.isFinite(value)) return 1;
-  return Math.min(MAX_QUANTITY, Math.max(1, Math.trunc(value)));
+  return { id, name: "", number: "", size: "M", ...patch };
 }
 
 function cleanNumber(value: string): string {
@@ -53,14 +48,12 @@ function cleanPatch(patch: Partial<Omit<PlayerLine, "id">>): Partial<Omit<Player
   if (patch.name !== undefined) clean.name = patch.name.slice(0, MAX_NAME_LENGTH);
   if (patch.number !== undefined) clean.number = cleanNumber(patch.number);
   if (patch.size !== undefined && (SIZES as readonly string[]).includes(patch.size)) clean.size = patch.size;
-  if (patch.quantity !== undefined) clean.quantity = clampQuantity(patch.quantity);
   return clean;
 }
 
 export type OrderAction =
   | { type: "ADD_PLAYER"; id: string }
   | { type: "REMOVE_PLAYER"; id: string }
-  | { type: "DUPLICATE_PLAYER"; id: string; newId: string }
   | { type: "UPDATE_PLAYER"; id: string; patch: Partial<Omit<PlayerLine, "id">> };
 
 export function orderReducer(order: Order, action: OrderAction): Order {
@@ -70,13 +63,6 @@ export function orderReducer(order: Order, action: OrderAction): Order {
     case "REMOVE_PLAYER":
       if (order.roster.length <= 1) return order;
       return { ...order, roster: order.roster.filter((line) => line.id !== action.id) };
-    case "DUPLICATE_PLAYER": {
-      const index = order.roster.findIndex((line) => line.id === action.id);
-      if (index === -1) return order;
-      const roster = [...order.roster];
-      roster.splice(index + 1, 0, { ...order.roster[index], id: action.newId });
-      return { ...order, roster };
-    }
     case "UPDATE_PLAYER": {
       if (!order.roster.some((line) => line.id === action.id)) return order;
       const patch = cleanPatch(action.patch);

@@ -41,7 +41,7 @@ function SavedConfirmation() {
               <li key={line.id} className="flex items-center justify-between gap-3 py-2">
                 <span className="min-w-0 truncate font-semibold">{line.name}</span>
                 <span className="shrink-0 text-muted">
-                  N° {line.number} · {line.size} · x{line.quantity}
+                  N° {line.number} · {line.size}
                 </span>
               </li>
             ))}

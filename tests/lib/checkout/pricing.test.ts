@@ -2,13 +2,14 @@ import { describe, it, expect } from "vitest";
 import { createPlayerLine } from "@/lib/checkout/order";
 import { PRICE_PER_SHIRT, formatMoney, orderTotals } from "@/lib/checkout/pricing";
 
-function lines(...quantities: number[]) {
-  return quantities.map((quantity, i) => createPlayerLine(`l${i}`, { quantity }));
+// Each roster line is one shirt.
+function players(count: number) {
+  return Array.from({ length: count }, (_, i) => createPlayerLine(`l${i}`));
 }
 
 describe("orderTotals", () => {
   it("charges the unit price with no discount for a small order", () => {
-    expect(orderTotals(lines(1))).toEqual({
+    expect(orderTotals(players(1))).toEqual({
       shirts: 1,
       subtotal: PRICE_PER_SHIRT,
       discountRate: 0,
@@ -17,14 +18,14 @@ describe("orderTotals", () => {
     });
   });
 
-  it("counts quantities, not lines", () => {
-    expect(orderTotals(lines(3, 2)).shirts).toBe(5);
-    expect(orderTotals(lines(10)).shirts).toBe(10);
+  it("counts one shirt per player", () => {
+    expect(orderTotals(players(5)).shirts).toBe(5);
+    expect(orderTotals(players(12)).shirts).toBe(12);
   });
 
   it("applies 10% from 10 shirts and not before", () => {
-    expect(orderTotals(lines(9)).discountRate).toBe(0);
-    const ten = orderTotals(lines(5, 5));
+    expect(orderTotals(players(9)).discountRate).toBe(0);
+    const ten = orderTotals(players(10));
     expect(ten.discountRate).toBe(0.1);
     expect(ten.subtotal).toBe(10 * PRICE_PER_SHIRT);
     expect(ten.discount).toBe(10 * PRICE_PER_SHIRT * 0.1);
@@ -32,12 +33,12 @@ describe("orderTotals", () => {
   });
 
   it("applies 15% from 20 shirts", () => {
-    expect(orderTotals(lines(19)).discountRate).toBe(0.1);
-    expect(orderTotals(lines(20)).discountRate).toBe(0.15);
+    expect(orderTotals(players(19)).discountRate).toBe(0.1);
+    expect(orderTotals(players(20)).discountRate).toBe(0.15);
   });
 
   it("rounds money to cents", () => {
-    const totals = orderTotals(lines(13));
+    const totals = orderTotals(players(13));
     expect(Number.isInteger(totals.discount * 100)).toBe(true);
     expect(Number.isInteger(totals.total * 100)).toBe(true);
   });

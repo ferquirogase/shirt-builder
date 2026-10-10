@@ -77,16 +77,17 @@ describe("CheckoutPage", () => {
 });
 
 describe("CheckoutView", () => {
-  it("updates the summary as players are added and quantities change, and saves the order", () => {
+  it("updates the summary as players are added and removed, and saves the order", () => {
     render(<CheckoutView initial={makeOrder()} />);
     expect(screen.getByText("Camisetas").nextElementSibling).toHaveTextContent("1");
 
     fireEvent.click(screen.getByRole("button", { name: "Agregar jugador" }));
-    fireEvent.click(screen.getByRole("button", { name: "Más camisetas del jugador 2" }));
-
-    expect(screen.getByText("Camisetas").nextElementSibling).toHaveTextContent("3");
+    expect(screen.getByText("Camisetas").nextElementSibling).toHaveTextContent("2");
     expect(loadOrder()!.roster).toHaveLength(2);
-    expect(loadOrder()!.roster[1].quantity).toBe(2);
+
+    fireEvent.click(screen.getByRole("button", { name: "Quitar jugador 2" }));
+    expect(screen.getByText("Camisetas").nextElementSibling).toHaveTextContent("1");
+    expect(loadOrder()!.roster).toHaveLength(1);
   });
 
   it("does not show errors until the user tries to pay, then shows them and focuses the first one", async () => {
@@ -188,7 +189,15 @@ describe("CheckoutView", () => {
   });
 
   it("shows the total in the bar fixed to the bottom on mobile", () => {
-    render(<CheckoutView initial={makeOrder(createPlayerLine("a", { name: "Leo", number: "10", quantity: 3 }))} />);
+    render(
+      <CheckoutView
+        initial={makeOrder(
+          createPlayerLine("a", { name: "Leo", number: "10" }),
+          createPlayerLine("b", { name: "Dibu", number: "1" }),
+          createPlayerLine("c", { name: "Otro", number: "9" })
+        )}
+      />
+    );
     const bar = screen.getByTestId("mobile-total-bar");
     expect(bar).toHaveTextContent("3 camisetas");
     expect(bar.className).toContain("md:hidden");

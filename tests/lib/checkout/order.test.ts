@@ -2,8 +2,6 @@ import { describe, it, expect } from "vitest";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import {
   MAX_NAME_LENGTH,
-  MAX_QUANTITY,
-  clampQuantity,
   createPlayerLine,
   orderFromDesign,
   orderReducer,
@@ -16,11 +14,11 @@ function orderWith(...roster: PlayerLine[]): Order {
 }
 
 describe("orderReducer", () => {
-  it("adds a blank size M, quantity 1 player at the end", () => {
+  it("adds a blank size M player at the end", () => {
     const order = orderWith(createPlayerLine("a", { name: "Leo", number: "10" }));
     const next = orderReducer(order, { type: "ADD_PLAYER", id: "b" });
     expect(next.roster).toHaveLength(2);
-    expect(next.roster[1]).toEqual({ id: "b", name: "", number: "", size: "M", quantity: 1 });
+    expect(next.roster[1]).toEqual({ id: "b", name: "", number: "", size: "M" });
   });
 
   it("removes a player but never the last one", () => {
@@ -30,16 +28,6 @@ describe("orderReducer", () => {
     expect(orderReducer(one, { type: "REMOVE_PLAYER", id: "b" })).toBe(one);
   });
 
-  it("duplicates a player right after the original with the new id", () => {
-    const order = orderWith(
-      createPlayerLine("a", { name: "Leo", number: "10", size: "L", quantity: 2 }),
-      createPlayerLine("z")
-    );
-    const next = orderReducer(order, { type: "DUPLICATE_PLAYER", id: "a", newId: "a2" });
-    expect(next.roster.map((l) => l.id)).toEqual(["a", "a2", "z"]);
-    expect(next.roster[1]).toEqual({ id: "a2", name: "Leo", number: "10", size: "L", quantity: 2 });
-  });
-
   it("updates only the targeted player", () => {
     const order = orderWith(createPlayerLine("a"), createPlayerLine("b"));
     const next = orderReducer(order, { type: "UPDATE_PLAYER", id: "b", patch: { name: "Dibu", size: "XL" } });
@@ -47,33 +35,21 @@ describe("orderReducer", () => {
     expect(next.roster[1]).toMatchObject({ name: "Dibu", size: "XL" });
   });
 
-  it("cleans the patch: name capped, number digits only and 2 max, quantity clamped, unknown size ignored", () => {
+  it("cleans the patch: name capped, number digits only and 2 max, unknown size ignored", () => {
     const order = orderWith(createPlayerLine("a"));
     const next = orderReducer(order, {
       type: "UPDATE_PLAYER",
       id: "a",
-      patch: { name: "Nombre demasiado largo", number: "1a0b9", quantity: 500, size: "XXXL" as never },
+      patch: { name: "Nombre demasiado largo", number: "1a0b9", size: "XXXL" as never },
     });
     expect(next.roster[0].name).toBe("Nombre demasiado largo".slice(0, MAX_NAME_LENGTH));
     expect(next.roster[0].number).toBe("10");
-    expect(next.roster[0].quantity).toBe(MAX_QUANTITY);
     expect(next.roster[0].size).toBe("M");
   });
 
   it("returns the same order for an unknown id", () => {
     const order = orderWith(createPlayerLine("a"));
     expect(orderReducer(order, { type: "UPDATE_PLAYER", id: "nope", patch: { name: "x" } })).toBe(order);
-    expect(orderReducer(order, { type: "DUPLICATE_PLAYER", id: "nope", newId: "n" })).toBe(order);
-  });
-});
-
-describe("clampQuantity", () => {
-  it("keeps whole numbers between 1 and 99", () => {
-    expect(clampQuantity(0)).toBe(1);
-    expect(clampQuantity(-4)).toBe(1);
-    expect(clampQuantity(3.9)).toBe(3);
-    expect(clampQuantity(100)).toBe(99);
-    expect(clampQuantity(Number.NaN)).toBe(1);
   });
 });
 
@@ -86,7 +62,7 @@ describe("orderFromDesign", () => {
     expect(order.design).toBe(design);
     expect(order.thumbnails).toBe(thumbs);
     expect(order.roster).toHaveLength(1);
-    expect(order.roster[0]).toMatchObject({ name: "MESSI", number: "10", size: "M", quantity: 1 });
+    expect(order.roster[0]).toMatchObject({ name: "MESSI", number: "10", size: "M" });
   });
 
   it("starts with one blank player when the builder has no name or number", () => {

@@ -14,8 +14,7 @@ function isPlayerLine(value: unknown): boolean {
     typeof value.name === "string" &&
     typeof value.number === "string" &&
     typeof value.size === "string" &&
-    (SIZES as readonly string[]).includes(value.size) &&
-    typeof value.quantity === "number"
+    (SIZES as readonly string[]).includes(value.size)
   );
 }
 

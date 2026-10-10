@@ -24,7 +24,8 @@ function cents(amount: number): number {
 }
 
 export function orderTotals(roster: readonly PlayerLine[]): Totals {
-  const shirts = roster.reduce((sum, line) => sum + line.quantity, 0);
+  // One line is one shirt.
+  const shirts = roster.length;
   const subtotal = cents(shirts * PRICE_PER_SHIRT);
   const discountRate = DISCOUNT_TIERS.find((tier) => shirts >= tier.minShirts)?.rate ?? 0;
   const discount = cents(subtotal * discountRate);
