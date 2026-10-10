@@ -31,7 +31,9 @@ export const JERSEY_MODEL: JerseyModelConfig = {
   uvRegions: GEPE_UV_REGIONS,
 };
 
-// Middle of the shirt OBJ's vertical extent (y 167.17 .. 294.91). JerseyModel
-// re-centres the shirt on this; the shorts use the same offset so the two stay
-// aligned. A test checks it against the OBJ.
-export const JERSEY_CENTER_Y = 231.04;
+// Vertical extent of the shirt OBJ. JerseyModel re-centres the shirt on its
+// middle; the shorts and the camera framing use the same numbers so everything
+// stays aligned. A test checks them against the OBJ.
+export const JERSEY_BOTTOM_Y = 167.17;
+export const JERSEY_TOP_Y = 294.91;
+export const JERSEY_CENTER_Y = (JERSEY_BOTTOM_Y + JERSEY_TOP_Y) / 2;

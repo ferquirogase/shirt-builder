@@ -1,16 +1,22 @@
-// Everything is in the shirt OBJ's own units (the group is scaled 0.01).
+// The shorts OBJ is modelled in the shirt's own coordinate frame (units in the
+// hundreds, the group is scaled 0.01), so it needs no repositioning: its waist
+// sits inside the shirt, above the shirt's hem.
 export type ShortsModelConfig = {
-  /** The real shorts OBJ. Null while the placeholder shape is used. */
-  url: string | null;
+  url: string;
+  /** Tangent-space wrinkle map in the model's UV layout, like the shirt's. */
+  normalMapUrl: string;
+  /** The normal map's green channel points down (DirectX convention); flips it to OpenGL. */
+  normalMapFlipY: boolean;
+  /** Strength of the normal map (1 = as authored). */
+  normalMapStrength: number;
 };
 
-export const SHORTS_MODEL: ShortsModelConfig = { url: null };
+export const SHORTS_MODEL: ShortsModelConfig = {
+  url: "/models/gepe_shorts.obj",
+  normalMapUrl: "/textures/gepe-shorts-normal.png",
+  normalMapFlipY: true,
+  normalMapStrength: 1.5,
+};
 
-// Placeholder: two tapered legs under the shirt's hem (y 167).
-export const PLACEHOLDER_SHORTS = {
-  waistY: 166,
-  legHeight: 70,
-  legCenterX: 17,
-  topRadius: 18,
-  bottomRadius: 21,
-} as const;
+// Lowest point of the shorts OBJ (a test checks it against the file).
+export const SHORTS_BOTTOM_Y = 13.73;

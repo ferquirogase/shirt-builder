@@ -27,7 +27,7 @@ export const Viewer3D = forwardRef<HTMLCanvasElement, Props>(function Viewer3D(
   ref
 ) {
   const { state } = useDesign();
-  const { lift, floorY } = framingFor(state.shorts.included);
+  const { lift, floorY, shadowFar, cameraRadius, cameraHeight } = framingFor(state.shorts.included);
   return (
     <Canvas
       camera={{ position: [0, DEFAULT_CAMERA_HEIGHT, DEFAULT_CAMERA_RADIUS], fov: 45 }}
@@ -46,18 +46,29 @@ export const Viewer3D = forwardRef<HTMLCanvasElement, Props>(function Viewer3D(
         <Suspense fallback={null}>
           <JerseyModel />
         </Suspense>
-        {state.shorts.included && <ShortsModel />}
+        {state.shorts.included && (
+          <Suspense fallback={null}>
+            <ShortsModel />
+          </Suspense>
+        )}
       </group>
       <ContactShadows
         position={[0, floorY, 0]}
         opacity={0.35}
         scale={6}
         blur={3}
-        far={1.6}
+        far={shadowFar}
         resolution={512}
         color="#6b5a2e"
       />
-      <CameraRig view={view} viewToken={viewToken} resetPose={resetPose} onInteract={onInteract} />
+      <CameraRig
+        view={view}
+        viewToken={viewToken}
+        resetPose={resetPose}
+        defaultRadius={cameraRadius}
+        defaultHeight={cameraHeight}
+        onInteract={onInteract}
+      />
     </Canvas>
   );
 });
