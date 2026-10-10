@@ -24,6 +24,7 @@ import { ColorsPanel } from "./panels/ColorsPanel";
 import { CrestPanel } from "./panels/CrestPanel";
 import { DesignPanel } from "./panels/DesignPanel";
 import { SponsorPanel } from "./panels/SponsorPanel";
+import { ShortsPanel } from "./panels/ShortsPanel";
 import { TextPanel } from "./panels/TextPanel";
 
 function SectionPanel({ section }: { section: SectionId }) {
@@ -38,6 +39,8 @@ function SectionPanel({ section }: { section: SectionId }) {
       return <SponsorPanel />;
     case "texto":
       return <TextPanel />;
+    case "pantalon":
+      return <ShortsPanel />;
   }
 }
 

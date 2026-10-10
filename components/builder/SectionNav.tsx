@@ -1,8 +1,8 @@
 "use client";
 import type { ComponentType } from "react";
-import { DropIcon, NumberIcon, RegisteredIcon, ShieldIcon, ShirtIcon, type IconProps } from "./icons";
+import { DropIcon, NumberIcon, RegisteredIcon, ShieldIcon, ShirtIcon, ShortsIcon, type IconProps } from "./icons";
 
-export type SectionId = "diseno" | "colores" | "escudo" | "sponsor" | "texto";
+export type SectionId = "diseno" | "colores" | "escudo" | "sponsor" | "texto" | "pantalon";
 
 type SectionDef = { id: SectionId; label: string; shortLabel: string; Icon: ComponentType<IconProps> };
 
@@ -12,6 +12,7 @@ export const SECTIONS: SectionDef[] = [
   { id: "escudo", label: "Escudo", shortLabel: "Escudo", Icon: ShieldIcon },
   { id: "sponsor", label: "Sponsor", shortLabel: "Sponsor", Icon: RegisteredIcon },
   { id: "texto", label: "Nombre y número", shortLabel: "Texto", Icon: NumberIcon },
+  { id: "pantalon", label: "Pantalón", shortLabel: "Pantalón", Icon: ShortsIcon },
 ];
 
 type Props = { active: SectionId; onChange: (id: SectionId) => void };

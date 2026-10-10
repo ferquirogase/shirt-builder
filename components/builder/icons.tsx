@@ -37,6 +37,9 @@ export const NumberIcon = (p: IconProps) => (
     <text x="12" y="15.5" textAnchor="middle" fontSize="9" fontWeight="700" fill="currentColor" stroke="none">10</text>
   </Svg>
 );
+export const ShortsIcon = (p: IconProps) => (
+  <Svg {...p}><path d="M5 4h14l1.5 16h-6.2L12 11.5 9.7 20H3.5L5 4z" /></Svg>
+);
 export const UndoIcon = (p: IconProps) => (
   <Svg {...p}><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" /></Svg>
 );
