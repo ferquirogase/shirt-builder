@@ -19,4 +19,4 @@ export const SHORTS_MODEL: ShortsModelConfig = {
 };
 
 // Lowest point of the shorts OBJ (a test checks it against the file).
-export const SHORTS_BOTTOM_Y = 13.73;
+export const SHORTS_BOTTOM_Y = 113.74;

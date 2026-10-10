@@ -14,14 +14,14 @@ describe("framingFor", () => {
   });
 
   it("raises the set so the taller kit is centred on the origin", () => {
-    // Shirt top 294.91 and shorts bottom 13.73 are 0.01 units apart per OBJ unit.
-    expect(framingFor(true).lift).toBeCloseTo(0.767, 2);
+    // Shirt top 294.91 and shorts bottom 113.74: the kit is centred on 204.33, the shirt alone on 231.04.
+    expect(framingFor(true).lift).toBeCloseTo(0.267, 2);
   });
 
   it("puts the floor just under the shorts, lower than the shirt-only floor", () => {
     const withShorts = framingFor(true);
     expect(withShorts.floorY).toBeLessThan(-0.6);
-    expect(withShorts.floorY).toBeCloseTo(-1.366, 2);
+    expect(withShorts.floorY).toBeCloseTo(-0.867, 2);
   });
 
   it("pulls the camera back, keeping the same tilt", () => {
