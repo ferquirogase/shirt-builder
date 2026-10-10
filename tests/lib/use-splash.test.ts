@@ -4,13 +4,15 @@ import {
   SPLASH_FADE_MS,
   SPLASH_MAX_MS,
   SPLASH_MIN_MS,
-  SPLASH_SEEN_KEY,
+  forgetSplash,
+  hasSeenSplash,
+  markSplashSeen,
 } from "@/lib/builder/splash";
 import { useSplash } from "@/lib/builder/use-splash";
 
 beforeEach(() => {
   vi.useFakeTimers();
-  window.sessionStorage.clear();
+  forgetSplash();
 });
 
 afterEach(() => {
@@ -55,16 +57,16 @@ describe("useSplash", () => {
     const first = renderHook(() => useSplash(true));
     advance(SPLASH_MIN_MS);
     first.unmount();
-    expect(window.sessionStorage.getItem(SPLASH_SEEN_KEY)).toBeNull();
+    expect(hasSeenSplash()).toBe(false);
   });
 
-  it("is gone from the start when it was already seen in this session", () => {
-    window.sessionStorage.setItem(SPLASH_SEEN_KEY, "1");
+  it("is gone from the start when it was already seen in this page load", () => {
+    markSplashSeen();
     const { result } = renderHook(() => useSplash(false));
     expect(result.current).toBe("gone");
   });
 
-  it("remembers that it was seen, so coming back to the builder skips it", () => {
+  it("remembers that it was seen, so coming back to the builder (without reloading) skips it", () => {
     const first = renderHook(() => useSplash(true));
     advance(SPLASH_MIN_MS);
     advance(SPLASH_FADE_MS);
@@ -73,14 +75,5 @@ describe("useSplash", () => {
 
     const second = renderHook(() => useSplash(true));
     expect(second.result.current).toBe("gone");
-  });
-
-  it("still shows when sessionStorage is unavailable", () => {
-    const spy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
-    const { result } = renderHook(() => useSplash(true));
-    expect(result.current).toBe("showing");
-    spy.mockRestore();
   });
 });

@@ -9,21 +9,20 @@ export const SPLASH_MAX_MS = 8000;
 // Matches the fade-out duration of SplashScreen.
 export const SPLASH_FADE_MS = 500;
 
-export const SPLASH_SEEN_KEY = "gepe:splash-seen";
+// Once per page load, not per session: a reload shows it again, but coming back from the
+// checkout ("Editar diseño") is a client-side navigation, which keeps this module alive and
+// goes straight to the builder.
+let seen = false;
 
-// Once per session: coming back from the checkout ("Editar diseño") goes straight to the builder.
 export function hasSeenSplash(): boolean {
-  try {
-    return window.sessionStorage.getItem(SPLASH_SEEN_KEY) !== null;
-  } catch {
-    return false;
-  }
+  return seen;
 }
 
 export function markSplashSeen(): void {
-  try {
-    window.sessionStorage.setItem(SPLASH_SEEN_KEY, "1");
-  } catch {
-    // Without storage the splash simply shows again next time.
-  }
+  seen = true;
+}
+
+// For tests: a fresh page load.
+export function forgetSplash(): void {
+  seen = false;
 }
