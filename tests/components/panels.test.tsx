@@ -9,6 +9,7 @@ import { TextPanel } from "@/components/builder/panels/TextPanel";
 import { GarmentsPanel } from "@/components/builder/panels/GarmentsPanel";
 import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
 import { loadImage } from "@/lib/builder/texture/image-loader";
+import { initialDesignState } from "@/lib/builder/state/design-state";
 
 // jsdom never decodes images, so the crest's "can this actually be drawn?"
 // check is driven by this mock.
@@ -425,5 +426,54 @@ describe("ColorsPanel shorts color", () => {
     act(() => api.current!.dispatch({ type: "SET_COLOR", slot: "secondary", value: "#123456" }));
     const swatch = screen.getByRole("radio", { name: /Color secundario/ }).querySelector("[data-swatch]") as HTMLElement;
     expect(swatch.style.backgroundColor).toBe("rgb(18, 52, 86)");
+  });
+});
+
+describe("keeper in the panels", () => {
+  it("adds the keeper from Prendas", () => {
+    const { api } = renderWithDesign(<GarmentsPanel />);
+    const toggle = screen.getByRole("switch", { name: "Sumar camiseta de arquero" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    fireEvent.click(toggle);
+    expect(api.current!.state.keeper.included).toBe(true);
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("Diseño and Colores edit the keeper's shirt while it is shown", () => {
+    const { api } = renderWithDesign(
+      <>
+        <DesignPanel />
+        <ColorsPanel />
+      </>
+    );
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    act(() => api.current!.setEditing("keeper"));
+    expect(screen.getAllByText("Editando la camiseta del arquero").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Diagonal" }));
+    expect(api.current!.state.keeper.look!.bodyPatternId).toBe("diagonal");
+    expect(api.current!.state.bodyPatternId).toBe(initialDesignState.bodyPatternId);
+
+    fireEvent.change(screen.getByLabelText("Color primario"), { target: { value: "#123456" } });
+    expect(api.current!.state.keeper.look!.colors.primary).toBe("#123456");
+    expect(api.current!.state.colors.primary).toBe(initialDesignState.colors.primary);
+  });
+
+  it("hides the shorts color while the keeper is shown, since the shorts follow the team", () => {
+    const { api } = renderWithDesign(<ColorsPanel />);
+    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    expect(screen.getByText("Color del short")).toBeInTheDocument();
+    act(() => api.current!.setEditing("keeper"));
+    expect(screen.queryByText("Color del short")).toBeNull();
+  });
+
+  it("gives the keeper its own text color in Texto", () => {
+    const { api } = renderWithDesign(<TextPanel />);
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    act(() => api.current!.setEditing("keeper"));
+    fireEvent.change(screen.getByLabelText("Color del texto (arquero)"), { target: { value: "#ff00ff" } });
+    expect(api.current!.state.keeper.nameNumberFill).toBe("#ff00ff");
+    expect(api.current!.state.nameNumberStyle.fill).toBe(initialDesignState.nameNumberStyle.fill);
   });
 });

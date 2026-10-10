@@ -1,5 +1,5 @@
 "use client";
-import { useDesign } from "@/lib/builder/state/design-context";
+import { useDesign, useEditedLook } from "@/lib/builder/state/design-context";
 import { NAME_NUMBER_PRESETS, OUTLINE_COLOR, OUTLINE_WIDTH, getNameNumberPreset } from "@/lib/builder/catalog/name-number-presets";
 import { CheckIcon } from "../icons";
 import { PanelShell } from "./PanelShell";
@@ -11,6 +11,7 @@ const THUMB_FONT_PX = 28;
 
 export function TextPanel() {
   const { state, dispatch } = useDesign();
+  const { view, editing, dispatchLook } = useEditedLook();
   const style = state.nameNumberStyle;
   const selectedId = getNameNumberPreset(style.presetId).id;
 
@@ -57,8 +58,8 @@ export function TextPanel() {
                   aria-hidden="true"
                   className="flex aspect-square w-full items-center justify-center rounded-xl"
                   style={{
-                    background: state.colors.primary,
-                    color: style.fill,
+                    background: view.colors.primary,
+                    color: view.nameNumberStyle.fill,
                     fontFamily: `var(${preset.cssVar}), sans-serif`,
                     fontWeight: preset.weight,
                     fontSize: THUMB_FONT_PX,
@@ -80,11 +81,11 @@ export function TextPanel() {
         </div>
 
         <label className="flex items-center justify-between rounded-2xl bg-white/70 p-3 text-sm font-medium">
-          Color del texto
+          {editing === "keeper" ? "Color del texto (arquero)" : "Color del texto"}
           <input
             type="color"
-            value={style.fill}
-            onChange={(e) => dispatch({ type: "SET_NN_FILL", value: e.target.value })}
+            value={view.nameNumberStyle.fill}
+            onChange={(e) => dispatchLook({ type: "SET_NN_FILL", value: e.target.value })}
             className={COLOR_INPUT}
           />
         </label>

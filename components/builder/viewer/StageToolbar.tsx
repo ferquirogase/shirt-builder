@@ -3,14 +3,41 @@ import { useState } from "react";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { UndoIcon } from "../icons";
 
+const SHIRTS = [
+  { target: "player", label: "Jugador" },
+  { target: "keeper", label: "Arquero" },
+] as const;
+
 export function StageToolbar() {
-  const { dispatch, canReset } = useDesign();
+  const { state, dispatch, canReset, editing, setEditing } = useDesign();
   // A reset throws the design away and the page has no undo, so it takes two clicks.
   const [confirming, setConfirming] = useState(false);
   const armed = confirming && canReset;
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex items-center justify-center px-4">
+    <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex flex-wrap items-center justify-center gap-2 px-4">
+      {state.keeper.included && (
+        <div
+          role="radiogroup"
+          aria-label="Camiseta"
+          className="pointer-events-auto flex h-11 rounded-full bg-white/80 p-1 shadow-sm"
+        >
+          {SHIRTS.map(({ target, label }) => (
+            <button
+              key={target}
+              type="button"
+              role="radio"
+              aria-checked={editing === target}
+              onClick={() => setEditing(target)}
+              className={`rounded-full px-4 text-sm font-semibold transition ${
+                editing === target ? "bg-foreground text-white" : "text-muted hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       <button
         type="button"
         disabled={!canReset}

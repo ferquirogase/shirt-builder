@@ -179,7 +179,8 @@ describe("orders saved before the made crest", () => {
   beforeEach(() => clearOrder());
 
   it("load with no crest", () => {
-    const { crestConfig: _drop, ...oldDesign } = initialDesignState;
+    const oldDesign: Partial<typeof initialDesignState> = { ...initialDesignState };
+    delete oldDesign.crestConfig;
     window.sessionStorage.setItem(
       ORDER_KEY,
       JSON.stringify({ design: oldDesign, thumbnails: null, roster: [createPlayerLine("a")] })
