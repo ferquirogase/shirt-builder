@@ -54,7 +54,7 @@ export function OrderSummary({ totals, paying, error, payButtonRef }: Props) {
         form={CHECKOUT_FORM_ID}
         disabled={paying}
         aria-busy={paying}
-        className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-accent px-6 text-base font-bold disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-accent px-6 text-base font-bold transition-colors enabled:hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
       >
         {paying ? "Procesando pago…" : "Pagar"}
       </button>

@@ -58,7 +58,7 @@ function SavedConfirmation() {
             href="/"
             transitionTypes={["nav-back"]}
             onClick={clearConfirmation}
-            className="inline-flex h-11 items-center rounded-full bg-accent px-6 text-sm font-bold"
+            className="inline-flex h-11 items-center rounded-full bg-accent px-6 text-sm font-bold transition-colors hover:bg-accent-strong"
           >
             Diseñar otra camiseta
           </Link>
