@@ -72,7 +72,7 @@ body {
   }
   27%,
   50% {
-    fill: #ffffff;
+    fill: #f5b700;
   }
   55%,
   78% {
@@ -138,6 +138,10 @@ body {
 }
 
 .splash-body {
+  /* A faint outline, so the white parts of a design do not melt into the light background. */
+  stroke: rgb(28 25 23 / 0.2);
+  stroke-width: 5px;
+  stroke-linejoin: round;
   fill: #b9233e;
   animation: splash-body-colors 2200ms ease-in-out 500ms both;
 }
