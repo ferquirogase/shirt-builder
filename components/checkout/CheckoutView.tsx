@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { orderReducer, type Order, type OrderAction } from "@/lib/checkout/order";
-import { clearOrder, saveConfirmation, saveOrder } from "@/lib/checkout/order-storage";
+import { clearDesignImages, clearOrder, saveConfirmation, saveOrder } from "@/lib/checkout/order-storage";
 import { payWithRipple } from "@/lib/checkout/payment";
 import { formatMoney, orderTotals } from "@/lib/checkout/pricing";
 import { useInView } from "@/lib/checkout/use-in-view";
@@ -63,6 +63,7 @@ export function CheckoutView({ initial }: { initial: Order }) {
       const confirmation = await payWithRipple(order, contact);
       saveConfirmation(confirmation);
       clearOrder();
+      clearDesignImages();
       router.push("/checkout/confirmacion");
     } catch {
       locked.current = false;

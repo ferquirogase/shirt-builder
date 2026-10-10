@@ -3,12 +3,16 @@ import { initialDesignState } from "@/lib/builder/state/design-state";
 import { createPlayerLine, type Confirmation, type Order } from "@/lib/checkout/order";
 import {
   CONFIRMATION_KEY,
+  DESIGN_IMAGES_KEY,
   ORDER_KEY,
   clearConfirmation,
+  clearDesignImages,
   clearOrder,
   loadConfirmation,
+  loadDesignImages,
   loadOrder,
   saveConfirmation,
+  saveDesignImages,
   saveOrder,
 } from "@/lib/checkout/order-storage";
 
@@ -140,5 +144,33 @@ describe("confirmation storage", () => {
   it("ignores a damaged confirmation", () => {
     sessionStorage.setItem(CONFIRMATION_KEY, JSON.stringify({ number: 5 }));
     expect(loadConfirmation()).toBeNull();
+  });
+});
+
+describe("design images", () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+    clearDesignImages();
+  });
+
+  it("saves and loads the big images apart from the order", () => {
+    const images = { front: "data:image/jpeg;base64,FF", back: "data:image/jpeg;base64,BB" };
+    expect(loadDesignImages()).toBeNull();
+    expect(saveDesignImages(images)).toBe(true);
+    expect(loadDesignImages()).toEqual(images);
+    expect(window.sessionStorage.getItem(ORDER_KEY)).toBeNull();
+  });
+
+  it("clears them", () => {
+    saveDesignImages({ front: "F", back: "B" });
+    clearDesignImages();
+    expect(loadDesignImages()).toBeNull();
+    expect(window.sessionStorage.getItem(DESIGN_IMAGES_KEY)).toBeNull();
+  });
+
+  it("ignores stored data that is not a pair of images", () => {
+    clearDesignImages();
+    window.sessionStorage.setItem(DESIGN_IMAGES_KEY, JSON.stringify({ front: 1 }));
+    expect(loadDesignImages()).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Order } from "@/lib/checkout/order";
 import { ShirtIcon } from "@/components/builder/icons";
+import { AiTryOn } from "./AiTryOn";
 import { CARD } from "./styles";
 
 export function DesignPreview({ order }: { order: Order }) {
@@ -31,6 +32,8 @@ export function DesignPreview({ order }: { order: Order }) {
           <span className="text-sm">Sin vista previa</span>
         </div>
       )}
+
+      <AiTryOn order={order} />
     </section>
   );
 }

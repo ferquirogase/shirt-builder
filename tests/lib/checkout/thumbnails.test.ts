@@ -1,5 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
-import { THUMBNAIL_WIDTH, VIEW_SETTLE_MS, captureThumbnails, thumbnailOf } from "@/lib/checkout/thumbnails";
+import {
+  LARGE_IMAGE_WIDTH,
+  THUMBNAIL_WIDTH,
+  VIEW_SETTLE_MS,
+  captureDesignImages,
+  captureThumbnails,
+  largeImageOf,
+  thumbnailOf,
+} from "@/lib/checkout/thumbnails";
 
 function mockCtx() {
   const gradient = { addColorStop: vi.fn() };
@@ -77,6 +85,58 @@ describe("captureThumbnails", () => {
 
   it("returns null when a capture fails", async () => {
     const result = await captureThumbnails({
+      canvas: source,
+      showView: () => {},
+      wait: async () => {},
+      createCanvas: () => fakeCanvas(null),
+    });
+    expect(result).toBeNull();
+  });
+});
+
+describe("largeImageOf", () => {
+  it("is a sharper JPEG at the large width, to hand to an AI", () => {
+    const out = fakeCanvas(mockCtx());
+    const wide = { width: 2000, height: 1000 } as HTMLCanvasElement;
+    largeImageOf(wide, () => out);
+    expect(out.width).toBe(LARGE_IMAGE_WIDTH);
+    expect(out.height).toBe(512);
+    expect(out.toDataURL).toHaveBeenCalledWith("image/jpeg", 0.92);
+  });
+
+  it("never enlarges a canvas that is already smaller", () => {
+    const out = fakeCanvas(mockCtx());
+    largeImageOf(source, () => out);
+    expect(out.width).toBe(1000);
+    expect(out.height).toBe(500);
+  });
+});
+
+describe("captureDesignImages", () => {
+  it("takes the small and the large image of each side in the same pass", async () => {
+    const log: string[] = [];
+    const sizes: number[] = [];
+    const createCanvas = () => {
+      const canvas = fakeCanvas(mockCtx(), `IMG-${sizes.length}`);
+      sizes.push(0);
+      return canvas;
+    };
+    const result = await captureDesignImages({
+      canvas: source,
+      showView: (side) => log.push(`show-${side}`),
+      wait: async () => {},
+      createCanvas,
+    });
+
+    expect(log).toEqual(["show-front", "show-back"]);
+    expect(result).toEqual({
+      thumbnails: { front: "IMG-0", back: "IMG-2" },
+      images: { front: "IMG-1", back: "IMG-3" },
+    });
+  });
+
+  it("returns null when a capture fails", async () => {
+    const result = await captureDesignImages({
       canvas: source,
       showView: () => {},
       wait: async () => {},
