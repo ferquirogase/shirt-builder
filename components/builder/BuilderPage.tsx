@@ -1,10 +1,17 @@
 "use client";
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DesignProvider } from "@/lib/builder/state/design-context";
+import type { DesignState } from "@/lib/builder/state/design-state";
 import { exportStagePng } from "@/lib/builder/io/export-image";
+import { orderFromDesign } from "@/lib/checkout/order";
+import { loadOrder, saveOrder } from "@/lib/checkout/order-storage";
+import { pause } from "@/lib/checkout/pause";
+import { captureThumbnails } from "@/lib/checkout/thumbnails";
 import { stageBaseCss, stageGlowCss } from "@/lib/builder/stage-style";
 import type { ViewSide } from "@/lib/builder/geometry/camera-math";
 import { Header } from "./Header";
+import { RestoreOrderDesign } from "./RestoreOrderDesign";
 import { SectionNav, type SectionId } from "./SectionNav";
 import { StageToolbar } from "./viewer/StageToolbar";
 import { Viewer3D } from "./viewer/Viewer3D";
@@ -40,6 +47,8 @@ export function BuilderPage() {
   // Mobile only: the section panel is a bottom sheet that can be folded to give
   // the viewer the screen. The desktop column is never folded.
   const [panelOpen, setPanelOpen] = useState(true);
+  const router = useRouter();
+  const [reviewing, setReviewing] = useState(false);
 
   function requestView(side: ViewSide, reset = false) {
     setView(side);
@@ -68,14 +77,38 @@ export function BuilderPage() {
     link.click();
   }
 
+  // "Revisar diseño": freeze the design, photograph both sides from the 3D
+  // viewer (the camera visibly turns while we do), keep it as an order and go
+  // to the checkout. A failed capture only costs the thumbnails.
+  async function handleReview(design: DesignState) {
+    if (reviewing) return;
+    setReviewing(true);
+    let thumbnails = null;
+    const canvas = canvasRef.current;
+    if (canvas) {
+      try {
+        thumbnails = await captureThumbnails({
+          canvas,
+          showView: (side) => requestView(side, true),
+          wait: pause,
+        });
+      } catch {
+        thumbnails = null;
+      }
+    }
+    saveOrder(orderFromDesign(design, thumbnails, loadOrder()));
+    router.push("/checkout");
+  }
+
   return (
     <DesignProvider>
+      <RestoreOrderDesign />
       <div className="min-h-dvh">
         <main
           className="flex h-dvh flex-col overflow-hidden"
           style={{ background: stageBaseCss() }}
         >
-          <Header />
+          <Header onReview={handleReview} reviewing={reviewing} />
           <div className="flex min-h-0 flex-1 flex-col md:flex-row">
             {/* Stage: first on mobile, last on desktop. */}
             <div className="relative order-1 min-h-[14rem] flex-1 md:order-3" style={{ background: stageGlowCss() }}>
@@ -126,6 +159,14 @@ export function BuilderPage() {
             </div>
           </div>
         </main>
+        {reviewing && (
+          <div
+            role="status"
+            className="fixed inset-x-0 bottom-6 z-20 mx-auto w-fit rounded-full bg-foreground px-5 py-2 text-sm font-semibold text-white shadow-lg"
+          >
+            Preparando tu pedido…
+          </div>
+        )}
       </div>
     </DesignProvider>
   );

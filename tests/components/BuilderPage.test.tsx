@@ -1,6 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
+import { initialDesignState } from "@/lib/builder/state/design-state";
+import { createPlayerLine } from "@/lib/checkout/order";
+import { clearOrder, loadOrder, saveOrder } from "@/lib/checkout/order-storage";
+
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+
+const captureThumbnails = vi.fn();
+vi.mock("@/lib/checkout/thumbnails", () => ({
+  captureThumbnails: (options: unknown) => captureThumbnails(options),
+}));
 
 // jsdom has no WebGL: replace the 3D stage with a stub that exposes its props.
 vi.mock("@/components/builder/viewer/Viewer3D", async () => {
@@ -21,6 +32,9 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="prim
 
 describe("BuilderPage", () => {
   beforeEach(() => {
+    clearOrder();
+    push.mockReset();
+    captureThumbnails.mockReset();
     clearPatternMarkupCache();
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => SVG })));
   });
@@ -117,6 +131,51 @@ describe("BuilderPage", () => {
       expect(panelOpen()).toBe("false");
       expect(screen.getByRole("heading", { name: "Colores" })).toBeInTheDocument();
     });
+  });
+
+  it("'Revisar diseño' captures both sides, saves the order and goes to the checkout", async () => {
+    captureThumbnails.mockImplementation(async ({ showView }: { showView: (side: "front" | "back") => void }) => {
+      showView("back");
+      return { front: "F", back: "B" };
+    });
+    render(<BuilderPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Revisar diseño" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout"));
+    expect(screen.getByTestId("viewer")).toHaveAttribute("data-view", "back");
+    expect(loadOrder()?.thumbnails).toEqual({ front: "F", back: "B" });
+    expect(loadOrder()?.roster).toHaveLength(1);
+  });
+
+  it("still goes to the checkout, without thumbnails, when the capture fails", async () => {
+    captureThumbnails.mockRejectedValue(new Error("tainted canvas"));
+    render(<BuilderPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Revisar diseño" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout"));
+    expect(loadOrder()?.thumbnails).toBeNull();
+  });
+
+  it("comes back from the checkout with its design and keeps the roster when reviewing again", async () => {
+    captureThumbnails.mockResolvedValue({ front: "F2", back: "B2" });
+    // The user already reviewed once, filled in a roster in the checkout, and
+    // pressed "Editar diseño": the builder opens with that order saved.
+    saveOrder({
+      design: { ...initialDesignState, projectName: "Los del viernes" },
+      thumbnails: { front: "F", back: "B" },
+      roster: [createPlayerLine("a", { name: "Leo", number: "10" }), createPlayerLine("b", { name: "Dibu", number: "1" })],
+    });
+    render(<BuilderPage />);
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Nombre del diseño" })).toHaveValue("Los del viernes"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Revisar diseño" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout"));
+    expect(loadOrder()!.roster.map((l) => l.name)).toEqual(["Leo", "Dibu"]);
+    expect(loadOrder()!.thumbnails).toEqual({ front: "F2", back: "B2" });
+    expect(loadOrder()!.design.projectName).toBe("Los del viernes");
   });
 
   it("does not offer a saved indicator or the old form controls", () => {
