@@ -94,6 +94,15 @@ describe("which shirt is shown", () => {
     expect(result.current.design.viewed).toBe(result.current.design.state);
   });
 
+  it("does not jump to the keeper when it is added back later", () => {
+    const { result } = mountBoth();
+    act(() => result.current.design.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    act(() => result.current.design.setEditing("keeper"));
+    act(() => result.current.design.dispatch({ type: "SET_KEEPER_INCLUDED", value: false }));
+    act(() => result.current.design.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    expect(result.current.design.editing).toBe("player");
+  });
+
   it("edits the shirt being shown", () => {
     const { result } = mountBoth();
     act(() => result.current.design.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));

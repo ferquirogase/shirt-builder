@@ -1,5 +1,5 @@
 "use client";
-import { useId, type ReactNode } from "react";
+import { useId, useMemo, type ReactNode } from "react";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { CREST_SHAPES } from "@/lib/builder/catalog/crest-shapes";
 import { CREST_SYMBOLS } from "@/lib/builder/catalog/crest-symbols";
@@ -48,6 +48,17 @@ export function CrestCreator() {
   const update = (patch: Partial<CrestConfig>) =>
     dispatch({ type: "SET_CREST_CONFIG", config: { ...config, ...patch } });
   const symbol = config.symbol;
+  // Drawn once per change of the crest, not on every render.
+  const previewUrl = useMemo(() => crestDataUrl(config), [config]);
+  const { shapeId, colors } = config;
+  const divisionUrls = useMemo(
+    () =>
+      CREST_DIVISIONS.map((division) => ({
+        id: division.id,
+        url: crestDataUrl({ shapeId, colors, divisionId: division.id, symbol: null }),
+      })),
+    [shapeId, colors]
+  );
   const symbolChoice = symbol === null ? "none" : symbol.kind === "icon" ? symbol.id : "initials";
 
   return (
@@ -55,7 +66,7 @@ export function CrestCreator() {
       {/* The result and its two colors side by side: the panel scrolls inside a short sheet on a phone. */}
       <div className="flex items-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element -- a data URL made in the browser, nothing to optimize */}
-        <img src={crestDataUrl(config)} alt="Vista previa del escudo" className="h-24 w-24 shrink-0 rounded-2xl bg-white/70 p-2" />
+        <img src={previewUrl} alt="Vista previa del escudo" className="h-24 w-24 shrink-0 rounded-2xl bg-white/70 p-2" />
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <ColorRow
             label="Color principal del escudo"
@@ -112,7 +123,7 @@ export function CrestCreator() {
             >
               {/* Each background drawn on the shape and colors chosen so far. */}
               {/* eslint-disable-next-line @next/next/no-img-element -- a data URL made in the browser, nothing to optimize */}
-              <img src={crestDataUrl({ ...config, divisionId: division.id, symbol: null })} alt="" className="h-11 w-11" />
+              <img src={divisionUrls.find((d) => d.id === division.id)?.url} alt="" className="h-11 w-11" />
               <span aria-hidden="true">{division.label}</span>
             </button>
           );

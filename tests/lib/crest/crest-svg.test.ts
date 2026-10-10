@@ -64,6 +64,13 @@ describe("crestToSvg", () => {
     expect(doc.querySelector("text")?.textContent).toBe("ABC");
   });
 
+  it("cannot be broken by hostile colors, such as a tampered saved order", () => {
+    const svg = crestToSvg(withConfig({ colors: { primary: '"/><script>x</script>', secondary: "red" } }));
+    expect(parse(svg).querySelector("parsererror")).toBeNull();
+    expect(svg).not.toContain("script");
+    expect(svg).toContain(`fill="${INITIAL_CREST.colors.primary}"`);
+  });
+
   it("cannot be broken by hostile initials", () => {
     const doc = parse(crestToSvg(withConfig({ symbol: { kind: "initials", text: '<&">' } })));
     expect(doc.querySelector("parsererror")).toBeNull();

@@ -1,7 +1,7 @@
 import { CREST_SHAPES, findCrestShape, type CrestShape } from "../catalog/crest-shapes";
 import { findCrestSymbol } from "../catalog/crest-symbols";
 import { contrastColor } from "../color/contrast";
-import type { CrestConfig, CrestDivisionId } from "./crest-config";
+import { INITIAL_CREST, type CrestConfig, type CrestDivisionId } from "./crest-config";
 
 const VIEW = 100;
 const MARGIN = 4;
@@ -10,6 +10,11 @@ const BORDER = 3.2;
 const RENDER_SIZE = 512;
 
 const num = (value: number) => Number(value.toFixed(3));
+
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+// Colors go straight into attributes: anything that is not #rrggbb (a tampered saved order) is replaced.
+const safeColor = (value: string, fallback: string) => (HEX_COLOR.test(value) ? value : fallback);
 
 function escapeXml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -40,10 +45,10 @@ function divisionMarkup(id: CrestDivisionId, box: CrestShape["box"], fill: strin
 
 // Fill is black or white, whichever reads on the primary color, with the opposite as an outline
 // so it also reads over the secondary color.
-function symbolMarkup(config: CrestConfig, box: CrestShape["box"]): string {
+function symbolMarkup(config: CrestConfig, box: CrestShape["box"], primary: string): string {
   const { symbol } = config;
   if (!symbol) return "";
-  const fill = contrastColor(config.colors.primary);
+  const fill = contrastColor(primary);
   const outline = contrastColor(fill);
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height * 0.46;
@@ -72,7 +77,8 @@ function symbolMarkup(config: CrestConfig, box: CrestShape["box"]): string {
 export function crestToSvg(config: CrestConfig): string {
   const shape = findCrestShape(config.shapeId) ?? CREST_SHAPES[0];
   const { box, d } = shape;
-  const { primary, secondary } = config.colors;
+  const primary = safeColor(config.colors.primary, INITIAL_CREST.colors.primary);
+  const secondary = safeColor(config.colors.secondary, INITIAL_CREST.colors.secondary);
   const scale = (VIEW - 2 * MARGIN) / Math.max(box.width, box.height);
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
@@ -86,7 +92,7 @@ export function crestToSvg(config: CrestConfig): string {
     `<path d="${d}" fill="${primary}"/>` +
     `<g clip-path="url(#crest-clip)">${divisionMarkup(config.divisionId, box, secondary)}` +
     `<path d="${d}" fill="none" stroke="${secondary}" stroke-width="${num(border)}"/></g>` +
-    symbolMarkup(config, box) +
+    symbolMarkup(config, box, primary) +
     `</g></svg>`
   );
 }

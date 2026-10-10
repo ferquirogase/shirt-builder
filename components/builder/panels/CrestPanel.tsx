@@ -17,6 +17,13 @@ export function CrestPanel() {
   const { state, dispatch } = useDesign();
   const { error, handleFile, cancelPending } = useImageUpload((dataUrl) => dispatch({ type: "SET_LOGO", dataUrl }));
   const [mode, setMode] = useState<Mode>(state.crestConfig ? "create" : "upload");
+  // The made crest changing from outside the creator (an undo, a removal) moves the panel to where
+  // it can be seen: a made crest lives in the creator, anything else in the upload.
+  const [seenCrest, setSeenCrest] = useState(state.crestConfig);
+  if (seenCrest !== state.crestConfig) {
+    setSeenCrest(state.crestConfig);
+    setMode(state.crestConfig ? "create" : "upload");
+  }
 
   // Opening the creator with no crest at all shows a first one at once; an uploaded crest is
   // only replaced when the user actually picks something in the creator.
@@ -80,6 +87,8 @@ export function CrestPanel() {
           onClick={() => {
             cancelPending();
             dispatch({ type: "SET_LOGO", dataUrl: null });
+            // With no crest left the creator has nothing to show.
+            setMode("upload");
           }}
           className="mt-3 self-start rounded-xl border border-line px-3 py-2 text-sm font-medium hover:bg-black/5"
         >

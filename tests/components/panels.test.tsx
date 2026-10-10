@@ -537,6 +537,32 @@ describe("crest creator", () => {
     expect(api.current!.state.logoDataUrl).toBeNull();
   });
 
+  it("goes back to the upload tab when the crest is removed from the creator", () => {
+    renderWithDesign(<CrestPanel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Quitar escudo" }));
+    expect(screen.getByRole("tab", { name: "Subir el mío" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("goes back to the upload tab when the uploaded crest is removed while the creator is open", () => {
+    const { api } = renderWithDesign(<CrestPanel />);
+    act(() => api.current!.dispatch({ type: "SET_LOGO", dataUrl: "data:image/png;base64,AAAA" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Quitar escudo" }));
+    expect(screen.getByRole("tab", { name: "Subir el mío" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("opens the creator again when an undo brings the made crest back", () => {
+    const { api } = renderWithDesign(<CrestPanel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Subir el mío" }));
+    act(() => api.current!.dispatch({ type: "SET_LOGO", dataUrl: "data:image/png;base64,AAAA" }));
+    expect(screen.getByRole("tab", { name: "Subir el mío" })).toHaveAttribute("aria-selected", "true");
+
+    act(() => api.current!.dispatch({ type: "UNDO" }));
+    expect(screen.getByRole("tab", { name: "Crear escudo" })).toHaveAttribute("aria-selected", "true");
+  });
+
   it("opens on the upload tab by default", () => {
     renderWithDesign(<CrestPanel />);
     expect(screen.getByRole("tab", { name: "Subir el mío" })).toHaveAttribute("aria-selected", "true");

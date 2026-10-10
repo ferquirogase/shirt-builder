@@ -32,7 +32,10 @@ export function DesignProvider({ children }: { children: ReactNode }) {
 
   // UI state, not part of the design: it is not undone and is not saved with an order.
   const [wanted, setEditing] = useState<LookTarget>("player");
-  const editing: LookTarget = history.present.keeper.included ? wanted : "player";
+  const keeperIn = history.present.keeper.included;
+  // Taking the keeper out also forgets the choice: adding it back later starts on the player shirt.
+  if (!keeperIn && wanted !== "player") setEditing("player");
+  const editing: LookTarget = keeperIn ? wanted : "player";
 
   const value = useMemo<DesignContextValue>(
     () => ({
