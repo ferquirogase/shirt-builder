@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { SHORTS_BOTTOM_Y } from "./shorts-model";
 
 // A cheap stand-in for cloth: the sleeves and the hem swing a little behind the
 // camera when it orbits. Each vertex gets a weight (0 = fixed to the body, 1 =
@@ -24,6 +25,13 @@ const DAMPING = 7.5;
 const MAX_FRAME = 0.1;
 const SUBSTEP = 1 / 120;
 
+// The shorts' legs swing a little too. Their waist never moves: the shirt's hem is kept
+// out of it by a collider built from the shorts at rest (see shorts-collider.ts), which
+// covers everything from just under that hem up, so the legs must stay put down to here.
+export const SHORTS_FIXED_Y = 150;
+// How freely the bottom edge of the legs swings (the shirt's free edge is 1): heavier cloth.
+export const SHORTS_HEM_WEIGHT = 0.8;
+
 export const SWAY_ATTRIBUTE = "swayWeight";
 
 function smoothstep(edge0: number, edge1: number, x: number): number {
@@ -35,6 +43,19 @@ export function swayWeight(x: number, y: number): number {
   const hem = smoothstep(HEM_FIXED_Y, HEM_FREE_Y, y);
   const sleeve = smoothstep(SLEEVE_FIXED_X, SLEEVE_FREE_X, Math.abs(x));
   return Math.max(hem, sleeve);
+}
+
+/** Fixed down to SHORTS_FIXED_Y, then more and more free toward the legs' bottom edge. */
+export function shortsSwayWeight(y: number): number {
+  return SHORTS_HEM_WEIGHT * smoothstep(SHORTS_FIXED_Y, SHORTS_BOTTOM_Y, y);
+}
+
+/** Adds the per-vertex `swayWeight` attribute to the shorts, from each vertex's height. */
+export function addShortsSwayWeights(geometry: THREE.BufferGeometry): void {
+  const position = geometry.getAttribute("position");
+  const weights = new Float32Array(position.count);
+  for (let i = 0; i < position.count; i++) weights[i] = shortsSwayWeight(position.getY(i));
+  geometry.setAttribute(SWAY_ATTRIBUTE, new THREE.BufferAttribute(weights, 1));
 }
 
 /** Adds the per-vertex `swayWeight` attribute, computed from the positions. */

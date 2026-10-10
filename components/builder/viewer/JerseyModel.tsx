@@ -14,14 +14,11 @@ import {
   type SpringState,
 } from "@/lib/builder/geometry/cloth-sway";
 import { prepareJerseyGeometry } from "@/lib/builder/geometry/jersey-geometry";
-import { applyClothSway, createClothSwayUniforms, updateClothSway } from "./cloth-sway-shader";
+import { applyClothSway, updateClothSway } from "./cloth-sway-shader";
+import { useClothSway } from "./ClothSwayProvider";
+import { FABRIC_REPEAT, LINING_COLOR, WEAVE_STRENGTH } from "./fabric-look";
 import { useJerseyTexture } from "./use-jersey-texture";
 
-// The weave has to be coarse enough to survive at the on-screen size of the shirt.
-const JERSEY_FABRIC_REPEAT = 11;
-const WEAVE_STRENGTH = 0.22; // how much of the weave's tilt is added to the wrinkles
-// The interior of the garment, seen through the neck, hem and sleeve openings.
-const LINING_COLOR = "#c9c3b6";
 
 export function JerseyModel() {
   const [obj, collarObj] = useLoader(OBJLoader, [JERSEY_MODEL.url, JERSEY_MODEL.collarUrl]);
@@ -33,14 +30,14 @@ export function JerseyModel() {
 
   const texture = useJerseyTexture();
 
-  const fabricNormal = useMemo(() => createFabricNormalTexture(JERSEY_FABRIC_REPEAT), []);
+  const fabricNormal = useMemo(() => createFabricNormalTexture(FABRIC_REPEAT), []);
   // The model's wrinkle normal map with the fine knit blended in. Both maps
   // share the one normal-map slot (three.js ignores bump maps when a normal
   // map is present), so they are combined here.
   const wrinkleNormal = useMemo(() => {
     if (!wrinkleSource) return null;
     return createBlendedNormalTexture(wrinkleSource.image as CanvasImageSource, {
-      repeat: JERSEY_FABRIC_REPEAT,
+      repeat: FABRIC_REPEAT,
       flipBaseY: JERSEY_MODEL.normalMapFlipY,
       detailStrength: WEAVE_STRENGTH,
     });
@@ -79,7 +76,7 @@ export function JerseyModel() {
   } = useMemo(() => prepareJerseyGeometry(obj, collarObj), [obj, collarObj]);
 
   // Sleeves and hem swing behind the camera as it orbits (see cloth-sway.ts).
-  const sway = useMemo(() => createClothSwayUniforms(), []);
+  const sway = useClothSway();
   const liningMaterial = useMemo(
     () => new THREE.MeshStandardMaterial({ color: LINING_COLOR, roughness: 0.9, side: THREE.BackSide }),
     []

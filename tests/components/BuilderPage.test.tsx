@@ -54,8 +54,11 @@ describe("BuilderPage", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("shows the Diseño panel first and switches sections", () => {
+  it("opens on Prendas, where what to buy is chosen, and switches sections", () => {
     render(<BuilderPage />);
+    expect(screen.getByRole("heading", { name: "Prendas" })).toBeInTheDocument();
+    expect(screen.getByText("¿Qué querés comprar?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Diseño" }));
     expect(screen.getByRole("heading", { name: "Diseño" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Colores" }));
     expect(screen.getByRole("heading", { name: "Colores" })).toBeInTheDocument();
@@ -123,7 +126,7 @@ describe("BuilderPage", () => {
       expect(panel.className).toContain("max-md:invisible");
       expect(panel.className).toContain("max-md:max-h-0");
       // Still mounted, so what the user typed is not lost.
-      expect(screen.getByRole("heading", { name: "Diseño" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Prendas" })).toBeInTheDocument();
 
       fireEvent.click(handle);
       expect(screen.getByRole("button", { name: "Plegar panel" })).toHaveAttribute("aria-expanded", "true");
@@ -134,7 +137,7 @@ describe("BuilderPage", () => {
       render(<BuilderPage />);
       const panelOpen = () => screen.getByRole("button", { name: /(Plegar|Desplegar) panel/ }).getAttribute("aria-expanded");
 
-      fireEvent.click(screen.getByRole("button", { name: "Diseño" })); // the active one
+      fireEvent.click(screen.getByRole("button", { name: "Prendas" })); // the active one
       expect(panelOpen()).toBe("false");
 
       fireEvent.click(screen.getByRole("button", { name: "Colores" })); // another one

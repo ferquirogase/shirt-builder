@@ -3,9 +3,9 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { SectionNav } from "@/components/builder/SectionNav";
 
 describe("SectionNav", () => {
-  it("renders the five sections and marks the active one", () => {
+  it("renders the six sections, Prendas first and marks the active one", () => {
     render(<SectionNav active="colores" onChange={() => {}} />);
-    for (const name of ["Diseño", "Colores", "Escudo", "Sponsor", "Nombre y número"]) {
+    for (const name of ["Prendas", "Diseño", "Colores", "Escudo", "Sponsor", "Nombre y número"]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     }
     expect(screen.getByRole("button", { name: "Colores" })).toHaveAttribute("aria-current", "true");
@@ -20,6 +20,19 @@ describe("SectionNav", () => {
     expect(active.className).toContain("bg-accent-soft");
     expect(active.className).not.toContain("md:bg-accent-soft");
     expect(active.className).not.toContain("text-accent-strong");
+  });
+
+  it("puts Prendas first, because what to buy is chosen before the design is built", () => {
+    render(<SectionNav active="prendas" onChange={() => {}} />);
+    const names = screen.getAllByRole("button").map((button) => button.getAttribute("aria-label"));
+    expect(names).toEqual(["Prendas", "Diseño", "Colores", "Escudo", "Sponsor", "Nombre y número"]);
+  });
+
+  it("reports the Prendas section", () => {
+    const onChange = vi.fn();
+    render(<SectionNav active="diseno" onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Prendas" }));
+    expect(onChange).toHaveBeenCalledWith("prendas");
   });
 
   it("reports the clicked section", () => {

@@ -6,9 +6,17 @@ import { initialDesignState } from "@/lib/builder/state/design-state";
 import { createPlayerLine, orderReducer, type Order } from "@/lib/checkout/order";
 import type { PlayerErrors } from "@/lib/checkout/validation";
 
-function Harness({ initial, errors = {} }: { initial: Order; errors?: Record<string, PlayerErrors> }) {
+function Harness({
+  initial,
+  errors = {},
+  withShorts = false,
+}: {
+  initial: Order;
+  errors?: Record<string, PlayerErrors>;
+  withShorts?: boolean;
+}) {
   const [order, dispatch] = useReducer(orderReducer, initial);
-  return <RosterTable roster={order.roster} errors={errors} dispatch={dispatch} />;
+  return <RosterTable roster={order.roster} errors={errors} dispatch={dispatch} withShorts={withShorts} />;
 }
 
 function order(...lines: ReturnType<typeof createPlayerLine>[]): Order {
@@ -28,6 +36,18 @@ describe("RosterTable", () => {
     render(<Harness initial={order(createPlayerLine("a"))} />);
     fireEvent.change(screen.getByLabelText("Talle del jugador 1"), { target: { value: "XL" } });
     expect(screen.getByLabelText("Talle del jugador 1")).toHaveValue("XL");
+  });
+
+  it("has no shorts size column for a shirt-only order", () => {
+    render(<Harness initial={order(createPlayerLine("a"))} />);
+    expect(screen.queryByLabelText("Talle del short del jugador 1")).toBeNull();
+  });
+
+  it("lets each player pick a shorts size apart from the shirt size", () => {
+    render(<Harness initial={order(createPlayerLine("a"))} withShorts />);
+    fireEvent.change(screen.getByLabelText("Talle del short del jugador 1"), { target: { value: "L" } });
+    expect(screen.getByLabelText("Talle del short del jugador 1")).toHaveValue("L");
+    expect(screen.getByLabelText("Talle del jugador 1")).toHaveValue("M");
   });
 
   it("adds and removes players, never leaving the roster empty", () => {

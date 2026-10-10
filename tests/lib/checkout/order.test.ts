@@ -18,7 +18,19 @@ describe("orderReducer", () => {
     const order = orderWith(createPlayerLine("a", { name: "Leo", number: "10" }));
     const next = orderReducer(order, { type: "ADD_PLAYER", id: "b" });
     expect(next.roster).toHaveLength(2);
-    expect(next.roster[1]).toEqual({ id: "b", name: "", number: "", size: "M" });
+    expect(next.roster[1]).toEqual({ id: "b", name: "", number: "", size: "M", shortsSize: "M" });
+  });
+
+  it("updates the shorts size on its own, without touching the shirt size", () => {
+    const order = orderWith(createPlayerLine("a", { size: "S" }));
+    const next = orderReducer(order, { type: "UPDATE_PLAYER", id: "a", patch: { shortsSize: "XL" } });
+    expect(next.roster[0]).toMatchObject({ size: "S", shortsSize: "XL" });
+  });
+
+  it("ignores a shorts size that does not exist", () => {
+    const order = orderWith(createPlayerLine("a"));
+    const next = orderReducer(order, { type: "UPDATE_PLAYER", id: "a", patch: { shortsSize: "XXXL" as never } });
+    expect(next.roster[0].shortsSize).toBe("M");
   });
 
   it("removes a player but never the last one", () => {

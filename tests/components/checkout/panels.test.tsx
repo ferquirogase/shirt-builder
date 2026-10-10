@@ -54,6 +54,13 @@ describe("OrderSummary", () => {
     expect(screen.getByText("Total").nextElementSibling).toHaveTextContent("378");
   });
 
+  it("shows the shorts row only for a full kit", () => {
+    const { rerender } = render(<OrderSummary totals={orderTotals(roster)} paying={false} />);
+    expect(screen.queryByText("Shorts")).toBeNull();
+    rerender(<OrderSummary totals={orderTotals(roster, true)} paying={false} />);
+    expect(screen.getByText("Shorts").nextElementSibling).toHaveTextContent("12");
+  });
+
   it("hides the discount row when there is none", () => {
     render(<OrderSummary totals={orderTotals([createPlayerLine("a")])} paying={false} />);
     expect(screen.queryByText(/Descuento/)).toBeNull();

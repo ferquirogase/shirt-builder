@@ -25,6 +25,7 @@ const confirmation: Confirmation = {
   email: "leo@club.com",
   projectName: "Mi diseño",
   shirts: 2,
+  shorts: 0,
   total: 70,
   roster: [createPlayerLine("a", { name: "Leo", number: "10" })],
 };
@@ -36,6 +37,26 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("order storage", () => {
+  it("reads an order saved before the shorts existed, filling in the defaults", () => {
+    const old = makeOrder();
+    const oldDesign: Record<string, unknown> = { ...old.design };
+    delete oldDesign.shorts;
+    const oldLine = { id: "a", name: "Leo", number: "10", size: "L" };
+    sessionStorage.setItem(ORDER_KEY, JSON.stringify({ ...old, design: oldDesign, roster: [oldLine] }));
+    const loaded = loadOrder()!;
+    expect(loaded.design.shorts).toEqual({ included: false, colorSource: "primary" });
+    expect(loaded.roster[0]).toEqual({ ...oldLine, shortsSize: "M" });
+  });
+
+  it("rejects an order whose shorts size is not a real size", () => {
+    const order = makeOrder();
+    sessionStorage.setItem(
+      ORDER_KEY,
+      JSON.stringify({ ...order, roster: [{ ...order.roster[0], shortsSize: "XXXL" }] })
+    );
+    expect(loadOrder()).toBeNull();
+  });
+
   it("returns null when nothing was saved", () => {
     expect(loadOrder()).toBeNull();
   });
@@ -71,7 +92,7 @@ describe("order storage", () => {
   it("opens an order whose lines have no quantity", () => {
     const lines = { ...makeOrder(), roster: [{ id: "a", name: "Leo", number: "10", size: "M" }] };
     sessionStorage.setItem(ORDER_KEY, JSON.stringify(lines));
-    expect(loadOrder()?.roster[0]).toEqual({ id: "a", name: "Leo", number: "10", size: "M" });
+    expect(loadOrder()?.roster[0]).toEqual({ id: "a", name: "Leo", number: "10", size: "M", shortsSize: "M" });
   });
 
   it("opens an order saved before quantities were removed, ignoring the old field", () => {

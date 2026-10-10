@@ -20,6 +20,12 @@ export function OrderSummary({ totals, paying, error, payButtonRef }: Props) {
           <dt>Camisetas</dt>
           <dd className="tabular-nums">{totals.shirts}</dd>
         </div>
+        {totals.shorts > 0 && (
+          <div className="flex justify-between">
+            <dt>Shorts</dt>
+            <dd className="tabular-nums">{totals.shorts}</dd>
+          </div>
+        )}
         <div className="flex justify-between">
           <dt>Subtotal</dt>
           <dd className="tabular-nums">{formatMoney(totals.subtotal)}</dd>

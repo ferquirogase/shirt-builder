@@ -23,11 +23,14 @@ import { ViewerControls } from "./viewer/ViewerControls";
 import { ColorsPanel } from "./panels/ColorsPanel";
 import { CrestPanel } from "./panels/CrestPanel";
 import { DesignPanel } from "./panels/DesignPanel";
+import { GarmentsPanel } from "./panels/GarmentsPanel";
 import { SponsorPanel } from "./panels/SponsorPanel";
 import { TextPanel } from "./panels/TextPanel";
 
 function SectionPanel({ section }: { section: SectionId }) {
   switch (section) {
+    case "prendas":
+      return <GarmentsPanel />;
     case "diseno":
       return <DesignPanel />;
     case "colores":
@@ -43,7 +46,7 @@ function SectionPanel({ section }: { section: SectionId }) {
 
 export function BuilderPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [section, setSection] = useState<SectionId>("diseno");
+  const [section, setSection] = useState<SectionId>("prendas");
   const [view, setView] = useState<ViewSide>("front");
   const [viewToken, setViewToken] = useState(0);
   const [resetPose, setResetPose] = useState(false);

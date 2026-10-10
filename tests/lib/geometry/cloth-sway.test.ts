@@ -1,8 +1,15 @@
 import { describe, it, expect } from "vitest";
 import * as THREE from "three";
+import { JERSEY_BOTTOM_Y } from "@/lib/builder/geometry/jersey-model";
+import { COLLIDER_LEAD } from "@/lib/builder/geometry/shorts-collider";
+import { SHORTS_BOTTOM_Y } from "@/lib/builder/geometry/shorts-model";
 import {
   MAX_SWAY,
+  SHORTS_FIXED_Y,
+  SHORTS_HEM_WEIGHT,
+  addShortsSwayWeights,
   addSwayWeights,
+  shortsSwayWeight,
   stepSpring,
   swayTarget,
   swayWeight,
@@ -27,6 +34,56 @@ describe("swayWeight", () => {
     expect(swayWeight(60, 250)).toBeGreaterThan(swayWeight(50, 250));
     expect(swayWeight(66, 250)).toBe(1);
     expect(swayWeight(-60, 250)).toBe(swayWeight(60, 250));
+  });
+});
+
+describe("shortsSwayWeight", () => {
+  it("is zero everywhere the shirt's hem collides with the shorts, so the collider stays valid", () => {
+    // The collider is built from the shorts at rest from just under the shirt's hem upwards.
+    for (let y = JERSEY_BOTTOM_Y - COLLIDER_LEAD; y <= 230; y += 1) {
+      expect(shortsSwayWeight(y)).toBe(0);
+    }
+    expect(SHORTS_FIXED_Y).toBeLessThan(JERSEY_BOTTOM_Y - COLLIDER_LEAD);
+  });
+
+  it("is zero from the waist down to SHORTS_FIXED_Y and picks up below it", () => {
+    expect(shortsSwayWeight(SHORTS_FIXED_Y)).toBe(0);
+    expect(shortsSwayWeight(SHORTS_FIXED_Y - 5)).toBeGreaterThan(0);
+  });
+
+  it("is largest at the legs' bottom edge, SHORTS_HEM_WEIGHT, and stays there below it", () => {
+    expect(shortsSwayWeight(SHORTS_BOTTOM_Y)).toBeCloseTo(SHORTS_HEM_WEIGHT, 10);
+    expect(shortsSwayWeight(SHORTS_BOTTOM_Y - 10)).toBeCloseTo(SHORTS_HEM_WEIGHT, 10);
+    expect(SHORTS_HEM_WEIGHT).toBeLessThanOrEqual(1);
+  });
+
+  it("only grows going down", () => {
+    let previous = 0;
+    for (let y = SHORTS_FIXED_Y; y >= SHORTS_BOTTOM_Y; y -= 1) {
+      const weight = shortsSwayWeight(y);
+      expect(weight).toBeGreaterThanOrEqual(previous - 1e-12);
+      previous = weight;
+    }
+  });
+});
+
+describe("addShortsSwayWeights", () => {
+  it("adds one weight per vertex from its height alone, leaving the positions alone", () => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute([40, 205, 0, -40, SHORTS_FIXED_Y, 0, 0, SHORTS_BOTTOM_Y, 0, 10, 130, 5], 3)
+    );
+    addShortsSwayWeights(geometry);
+    const weights = geometry.getAttribute("swayWeight");
+    expect(weights.count).toBe(4);
+    expect(weights.itemSize).toBe(1);
+    expect(weights.getX(0)).toBe(0);
+    expect(weights.getX(1)).toBe(0);
+    expect(weights.getX(2)).toBeCloseTo(SHORTS_HEM_WEIGHT, 5);
+    expect(weights.getX(3)).toBeGreaterThan(0);
+    expect(weights.getX(3)).toBeLessThan(SHORTS_HEM_WEIGHT);
+    expect(geometry.getAttribute("position").getY(3)).toBe(130);
   });
 });
 

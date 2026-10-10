@@ -7,11 +7,15 @@ type Props = {
   roster: PlayerLine[];
   errors: Record<string, PlayerErrors>;
   dispatch: (action: OrderAction) => void;
+  // A full kit asks for a shorts size per player next to the shirt size.
+  withShorts: boolean;
 };
 
 // One line per shirt: name, number, size and remove. The narrow number, size
 // and remove columns on mobile keep every player to a single compact line.
 const COLUMNS = "grid-cols-[minmax(0,1fr)_3rem_3.75rem_2.25rem] md:grid-cols-[minmax(0,1fr)_5rem_5.5rem_2.5rem]";
+const COLUMNS_WITH_SHORTS =
+  "grid-cols-[minmax(0,1fr)_3rem_3.75rem_3.75rem_2.25rem] md:grid-cols-[minmax(0,1fr)_5rem_5.5rem_6.5rem_2.5rem]";
 
 function borderFor(error?: string) {
   return error ? "border-red-600" : "border-line";
@@ -23,15 +27,16 @@ type RowProps = {
   error: PlayerErrors;
   canRemove: boolean;
   dispatch: (action: OrderAction) => void;
+  withShorts: boolean;
 };
 
-function PlayerRow({ line, n, error, canRemove, dispatch }: RowProps) {
+function PlayerRow({ line, n, error, canRemove, dispatch, withShorts }: RowProps) {
   const nameErrorId = `${line.id}-name-error`;
   const numberErrorId = `${line.id}-number-error`;
 
   return (
     <li
-      className={`grid ${COLUMNS} items-center gap-1.5 rounded-2xl bg-white/70 p-1.5 md:gap-2 md:bg-transparent md:p-0`}
+      className={`grid ${withShorts ? COLUMNS_WITH_SHORTS : COLUMNS} items-center gap-1.5 rounded-2xl bg-white/70 p-1.5 md:gap-2 md:bg-transparent md:p-0`}
     >
       <input
         type="text"
@@ -74,6 +79,27 @@ function PlayerRow({ line, n, error, canRemove, dispatch }: RowProps) {
         ))}
       </select>
 
+      {withShorts && (
+        <select
+          aria-label={`Talle del short del jugador ${n}`}
+          value={line.shortsSize}
+          onChange={(e) =>
+            dispatch({
+              type: "UPDATE_PLAYER",
+              id: line.id,
+              patch: { shortsSize: e.target.value as PlayerLine["shortsSize"] },
+            })
+          }
+          className={`${INPUT_CLASS} border-line max-md:px-1`}
+        >
+          {SIZES.map((size) => (
+            <option key={size} value={size}>
+              {size}
+            </option>
+          ))}
+        </select>
+      )}
+
       <button
         type="button"
         aria-label={`Quitar jugador ${n}`}
@@ -95,16 +121,17 @@ function PlayerRow({ line, n, error, canRemove, dispatch }: RowProps) {
   );
 }
 
-export function RosterTable({ roster, errors, dispatch }: Props) {
+export function RosterTable({ roster, errors, dispatch, withShorts }: Props) {
   return (
     <div>
       <div
         aria-hidden="true"
-        className={`mb-1 hidden gap-2 text-xs font-semibold text-muted md:grid ${COLUMNS}`}
+        className={`mb-1 hidden gap-2 text-xs font-semibold text-muted md:grid ${withShorts ? COLUMNS_WITH_SHORTS : COLUMNS}`}
       >
         <span>Nombre</span>
         <span>Número</span>
         <span>Talle</span>
+        {withShorts && <span>Talle short</span>}
         <span />
       </div>
 
@@ -117,6 +144,7 @@ export function RosterTable({ roster, errors, dispatch }: Props) {
             error={errors[line.id] ?? {}}
             canRemove={roster.length > 1}
             dispatch={dispatch}
+            withShorts={withShorts}
           />
         ))}
       </ul>

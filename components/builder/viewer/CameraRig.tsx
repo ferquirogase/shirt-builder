@@ -3,8 +3,6 @@ import { useEffect, useRef, type ComponentRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import {
-  DEFAULT_CAMERA_HEIGHT,
-  DEFAULT_CAMERA_RADIUS,
   VIEW_AZIMUTH,
   azimuthOf,
   offsetAt,
@@ -22,16 +20,27 @@ type Props = {
   // When true the animation also eases zoom and tilt back to the default pose
   // (the "restablecer vista" button), not just the left/right angle.
   resetPose: boolean;
+  // The pose "restablecer vista" goes back to. It changes when the garment
+  // changes size (a kit is taller than a shirt), and the camera follows.
+  defaultRadius: number;
+  defaultHeight: number;
   onInteract: () => void;
 };
 
-export function CameraRig({ view, viewToken, resetPose, onInteract }: Props) {
+export function CameraRig({ view, viewToken, resetPose, defaultRadius, defaultHeight, onInteract }: Props) {
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
   const animating = useRef(false);
+  // The default pose moved: ease zoom and tilt to it even without a reset.
+  const refit = useRef(false);
 
   useEffect(() => {
     animating.current = true;
   }, [view, viewToken, resetPose]);
+
+  useEffect(() => {
+    animating.current = true;
+    refit.current = true;
+  }, [defaultRadius, defaultHeight]);
 
   useFrame(({ camera }) => {
     const ctl = controls.current;
@@ -45,16 +54,20 @@ export function CameraRig({ view, viewToken, resetPose, onInteract }: Props) {
     const goal = VIEW_AZIMUTH[view];
 
     const nextAzimuth = stepAzimuth(azimuthOf(dx, dz), goal, 0.12);
-    const nextRadius = resetPose ? stepToward(radius, DEFAULT_CAMERA_RADIUS, 0.12) : radius;
-    const nextHeight = resetPose ? stepToward(height, DEFAULT_CAMERA_HEIGHT, 0.12) : height;
+    const easePose = resetPose || refit.current;
+    const nextRadius = easePose ? stepToward(radius, defaultRadius, 0.12) : radius;
+    const nextHeight = easePose ? stepToward(height, defaultHeight, 0.12) : height;
     const offset = offsetAt(nextRadius, nextAzimuth);
     camera.position.set(target.x + offset.x, target.y + nextHeight, target.z + offset.z);
     ctl.update();
 
     const settled =
       Math.abs(shortestDelta(nextAzimuth, goal)) < 1e-6 &&
-      (!resetPose || (nextRadius === DEFAULT_CAMERA_RADIUS && nextHeight === DEFAULT_CAMERA_HEIGHT));
-    if (settled) animating.current = false;
+      (!easePose || (nextRadius === defaultRadius && nextHeight === defaultHeight));
+    if (settled) {
+      animating.current = false;
+      refit.current = false;
+    }
   });
 
   return (
@@ -66,6 +79,7 @@ export function CameraRig({ view, viewToken, resetPose, onInteract }: Props) {
       maxDistance={6}
       onStart={() => {
         animating.current = false;
+        refit.current = false;
         onInteract();
       }}
     />

@@ -1,12 +1,14 @@
 "use client";
 import type { ComponentType } from "react";
-import { DropIcon, NumberIcon, RegisteredIcon, ShieldIcon, ShirtIcon, type IconProps } from "./icons";
+import { DropIcon, HangerIcon, NumberIcon, RegisteredIcon, ShieldIcon, ShirtIcon, type IconProps } from "./icons";
 
-export type SectionId = "diseno" | "colores" | "escudo" | "sponsor" | "texto";
+export type SectionId = "prendas" | "diseno" | "colores" | "escudo" | "sponsor" | "texto";
 
 type SectionDef = { id: SectionId; label: string; shortLabel: string; Icon: ComponentType<IconProps> };
 
 export const SECTIONS: SectionDef[] = [
+  // What to buy is the first choice; the design is built after it.
+  { id: "prendas", label: "Prendas", shortLabel: "Prendas", Icon: HangerIcon },
   { id: "diseno", label: "Diseño", shortLabel: "Diseño", Icon: ShirtIcon },
   { id: "colores", label: "Colores", shortLabel: "Colores", Icon: DropIcon },
   { id: "escudo", label: "Escudo", shortLabel: "Escudo", Icon: ShieldIcon },

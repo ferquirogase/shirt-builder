@@ -1,3 +1,4 @@
+import { initialDesignState } from "@/lib/builder/state/design-state";
 import { SIZES, type Confirmation, type Order } from "./order";
 
 export const ORDER_KEY = "gepe:order";
@@ -7,14 +8,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isSize(value: unknown): boolean {
+  return typeof value === "string" && (SIZES as readonly string[]).includes(value);
+}
+
 function isPlayerLine(value: unknown): boolean {
   return (
     isRecord(value) &&
     typeof value.id === "string" &&
     typeof value.name === "string" &&
     typeof value.number === "string" &&
-    typeof value.size === "string" &&
-    (SIZES as readonly string[]).includes(value.size)
+    isSize(value.size) &&
+    // Orders saved before the shorts existed have no shorts size.
+    (value.shortsSize === undefined || isSize(value.shortsSize))
   );
 }
 
@@ -33,16 +39,30 @@ function isConfirmation(value: unknown): value is Confirmation {
     typeof value.email === "string" &&
     typeof value.projectName === "string" &&
     typeof value.shirts === "number" &&
+    typeof value.shorts === "number" &&
     typeof value.total === "number" &&
     Array.isArray(value.roster) &&
     value.roster.every(isPlayerLine)
   );
 }
 
+// Orders saved before the shorts existed lack their fields: fill in the defaults.
+function withShortsDefaults(order: Order): Order {
+  return {
+    ...order,
+    design: {
+      ...initialDesignState,
+      ...order.design,
+      shorts: { ...initialDesignState.shorts, ...order.design.shorts },
+    },
+    roster: order.roster.map((line) => ({ ...line, shortsSize: line.shortsSize ?? "M" })),
+  };
+}
+
 // The module-level `memory` always holds the latest value saved in this page
 // (it survives client-side navigation); sessionStorage only matters after a
 // refresh. If a write fails the key is removed so an older value cannot come back.
-function createSlot<T>(key: string, isValid: (value: unknown) => value is T) {
+function createSlot<T>(key: string, isValid: (value: unknown) => value is T, normalize: (value: T) => T = (v) => v) {
   let memory: T | null = null;
 
   return {
@@ -53,7 +73,7 @@ function createSlot<T>(key: string, isValid: (value: unknown) => value is T) {
         const raw = window.sessionStorage.getItem(key);
         if (raw === null) return null;
         const parsed: unknown = JSON.parse(raw);
-        return isValid(parsed) ? parsed : null;
+        return isValid(parsed) ? normalize(parsed) : null;
       } catch {
         return null;
       }
@@ -83,7 +103,7 @@ function createSlot<T>(key: string, isValid: (value: unknown) => value is T) {
   };
 }
 
-const orderSlot = createSlot(ORDER_KEY, isOrder);
+const orderSlot = createSlot(ORDER_KEY, isOrder, withShortsDefaults);
 const confirmationSlot = createSlot(CONFIRMATION_KEY, isConfirmation);
 
 export const loadOrder = orderSlot.load;

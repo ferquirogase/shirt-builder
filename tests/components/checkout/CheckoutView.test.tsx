@@ -55,6 +55,7 @@ const confirmation: Confirmation = {
   email: "leo@club.com",
   projectName: "Los del viernes",
   shirts: 1,
+  shorts: 0,
   total: 35,
   roster: [createPlayerLine("a", { name: "Leo", number: "10" })],
 };
@@ -99,6 +100,27 @@ describe("CheckoutPage", () => {
 });
 
 describe("CheckoutView", () => {
+  it("asks for a shorts size per player only when the order is a full kit", () => {
+    const kit = makeOrder();
+    const { unmount } = render(
+      <CheckoutView initial={{ ...kit, design: { ...kit.design, shorts: { included: true, colorSource: "primary" } } }} />
+    );
+    expect(screen.getByLabelText("Talle del short del jugador 1")).toBeInTheDocument();
+    unmount();
+    render(<CheckoutView initial={makeOrder()} />);
+    expect(screen.queryByLabelText("Talle del short del jugador 1")).toBeNull();
+  });
+
+  it("charges the shorts in the total of a full kit", () => {
+    const kit = makeOrder();
+    render(
+      <CheckoutView initial={{ ...kit, design: { ...kit.design, shorts: { included: true, colorSource: "primary" } } }} />
+    );
+    const summary = within(screen.getByRole("region", { name: "Resumen del pedido" }));
+    expect(summary.getByText("Shorts").nextElementSibling).toHaveTextContent("1");
+    expect(summary.getByText("Total").nextElementSibling).toHaveTextContent("55");
+  });
+
   it("updates the summary as players are added and removed, and saves the order", () => {
     render(<CheckoutView initial={makeOrder()} />);
     expect(screen.getByText("Camisetas").nextElementSibling).toHaveTextContent("1");
