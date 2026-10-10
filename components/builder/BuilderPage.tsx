@@ -3,7 +3,11 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DesignProvider } from "@/lib/builder/state/design-context";
 import type { DesignState } from "@/lib/builder/state/design-state";
-import { exportStagePng } from "@/lib/builder/io/export-image";
+import { captureViews } from "@/lib/builder/io/capture-views";
+import type { ShirtViews } from "@/lib/share/compose-story";
+import { shirtImageOf } from "@/lib/share/shirt-image";
+import { useShareStory } from "@/lib/share/use-share-story";
+import { ShareStoryDialog } from "@/components/share/ShareStoryDialog";
 import { orderFromDesign } from "@/lib/checkout/order";
 import { loadOrder, saveOrder } from "@/lib/checkout/order-storage";
 import { pause } from "@/lib/checkout/pause";
@@ -66,22 +70,25 @@ export function BuilderPage() {
     setPanelOpen(true);
   }
 
-  function handleDownload() {
+  // The two sides of the shirt for the story image: the camera turns (visibly,
+  // behind the dialog) and each side is copied with its transparency.
+  async function captureShirts(): Promise<ShirtViews | null> {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const url = exportStagePng(canvas);
-    if (!url) return;
-    const link = document.createElement("a");
-    link.download = "mi-camiseta.png";
-    link.href = url;
-    link.click();
+    if (!canvas) return null;
+    return captureViews(
+      { canvas, showView: (side) => requestView(side, true), wait: pause },
+      (source) => shirtImageOf(source)
+    );
   }
+
+  const story = useShareStory(captureShirts);
+  const sharing = story.state.status !== "closed";
 
   // "Revisar diseño": freeze the design, photograph both sides from the 3D
   // viewer (the camera visibly turns while we do), keep it as an order and go
   // to the checkout. A failed capture only costs the thumbnails.
   async function handleReview(design: DesignState) {
-    if (reviewing) return;
+    if (reviewing || sharing) return;
     setReviewing(true);
     let thumbnails = null;
     const canvas = canvasRef.current;
@@ -108,7 +115,7 @@ export function BuilderPage() {
           className="flex h-dvh flex-col overflow-hidden"
           style={{ background: stageBaseCss() }}
         >
-          <Header onReview={handleReview} reviewing={reviewing} />
+          <Header onReview={handleReview} onShare={story.open} reviewing={reviewing} sharing={sharing} />
           <div className="flex min-h-0 flex-1 flex-col md:flex-row">
             {/* Stage: first on mobile, last on desktop. */}
             <div className="relative order-1 min-h-[14rem] flex-1 md:order-3" style={{ background: stageGlowCss() }}>
@@ -123,7 +130,7 @@ export function BuilderPage() {
                   onInteract={() => setInteracted(true)}
                 />
               </div>
-              <StageToolbar onDownload={handleDownload} />
+              <StageToolbar />
               <ViewerControls
                 view={view}
                 onViewChange={requestView}
@@ -159,6 +166,13 @@ export function BuilderPage() {
             </div>
           </div>
         </main>
+        <ShareStoryDialog
+          state={story.state}
+          onShare={story.share}
+          onAnother={story.anotherPhrase}
+          onRetry={story.retry}
+          onClose={story.close}
+        />
         {reviewing && (
           <div
             role="status"

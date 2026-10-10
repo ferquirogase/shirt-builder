@@ -4,9 +4,14 @@ import { useDesign } from "@/lib/builder/state/design-context";
 import type { DesignState } from "@/lib/builder/state/design-state";
 import { ArrowRightIcon, PencilIcon, ShareIcon } from "./icons";
 
-type HeaderProps = { onReview: (design: DesignState) => void; reviewing?: boolean };
+type HeaderProps = {
+  onReview: (design: DesignState) => void;
+  onShare: () => void;
+  reviewing?: boolean;
+  sharing?: boolean;
+};
 
-export function Header({ onReview, reviewing = false }: HeaderProps) {
+export function Header({ onReview, onShare, reviewing = false, sharing = false }: HeaderProps) {
   const { state, dispatch } = useDesign();
   const [draft, setDraft] = useState(state.projectName);
   // The name can change from outside the field (a design loaded from the
@@ -54,9 +59,10 @@ export function Header({ onReview, reviewing = false }: HeaderProps) {
       <div className="ml-auto flex items-center gap-2">
         <button
           type="button"
-          disabled
-          title="Próximamente"
+          disabled={reviewing || sharing}
+          aria-busy={sharing}
           aria-label="Compartir"
+          onClick={onShare}
           className="inline-flex h-10 items-center gap-2 rounded-full border border-foreground/80 bg-white/70 px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:px-5"
         >
           <ShareIcon className="h-5 w-5" />
@@ -64,7 +70,7 @@ export function Header({ onReview, reviewing = false }: HeaderProps) {
         </button>
         <button
           type="button"
-          disabled={reviewing}
+          disabled={reviewing || sharing}
           aria-busy={reviewing}
           onClick={() => onReview(state)}
           className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:px-5"
