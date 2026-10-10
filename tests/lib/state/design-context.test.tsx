@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { renderWithDesign } from "../../helpers/render-with-design";
-import { useDesign } from "@/lib/builder/state/design-context";
+import { DesignProvider, useDesign, useEditedLook } from "@/lib/builder/state/design-context";
+import type { ReactNode } from "react";
 
 describe("DesignProvider", () => {
   it("exposes state, dispatch and undo/redo availability", () => {
@@ -66,5 +67,43 @@ describe("DesignProvider", () => {
 
   it("throws when used outside a provider", () => {
     expect(() => renderHook(() => useDesign())).toThrow(/DesignProvider/);
+  });
+});
+
+const wrapper = ({ children }: { children: ReactNode }) => <DesignProvider>{children}</DesignProvider>;
+const mountBoth = () => renderHook(() => ({ design: useDesign(), look: useEditedLook() }), { wrapper });
+
+describe("which shirt is shown", () => {
+  it("shows the player shirt until the keeper is chosen", () => {
+    const { result } = mountBoth();
+    act(() => result.current.design.setEditing("keeper"));
+    expect(result.current.design.editing).toBe("player");
+
+    act(() => result.current.design.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    act(() => result.current.design.setEditing("keeper"));
+    expect(result.current.design.editing).toBe("keeper");
+    expect(result.current.design.viewed.colors.primary).toBe(result.current.design.state.keeper.look!.colors.primary);
+  });
+
+  it("goes back to the player shirt when the keeper is taken out", () => {
+    const { result } = mountBoth();
+    act(() => result.current.design.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    act(() => result.current.design.setEditing("keeper"));
+    act(() => result.current.design.dispatch({ type: "SET_KEEPER_INCLUDED", value: false }));
+    expect(result.current.design.editing).toBe("player");
+    expect(result.current.design.viewed).toBe(result.current.design.state);
+  });
+
+  it("edits the shirt being shown", () => {
+    const { result } = mountBoth();
+    act(() => result.current.design.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    act(() => result.current.look.dispatchLook({ type: "SET_COLOR", slot: "primary", value: "#111111" }));
+    expect(result.current.design.state.colors.primary).toBe("#111111");
+
+    act(() => result.current.design.setEditing("keeper"));
+    act(() => result.current.look.dispatchLook({ type: "SET_COLOR", slot: "primary", value: "#222222" }));
+    expect(result.current.design.state.colors.primary).toBe("#111111");
+    expect(result.current.design.state.keeper.look!.colors.primary).toBe("#222222");
+    expect(result.current.look.view.colors.primary).toBe("#222222");
   });
 });
