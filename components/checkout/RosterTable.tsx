@@ -9,13 +9,25 @@ type Props = {
   dispatch: (action: OrderAction) => void;
   // A full kit asks for a shorts size per player next to the shirt size.
   withShorts: boolean;
+  // Asks who plays in goal, when the design has a keeper shirt.
+  withKeeper?: boolean;
 };
 
 // One line per shirt: name, number, size and remove. The narrow number, size
 // and remove columns on mobile keep every player to a single compact line.
-const COLUMNS = "grid-cols-[minmax(0,1fr)_3rem_3.75rem_2.25rem] md:grid-cols-[minmax(0,1fr)_5rem_5.5rem_2.5rem]";
-const COLUMNS_WITH_SHORTS =
-  "grid-cols-[minmax(0,1fr)_3rem_3.75rem_3.75rem_2.25rem] md:grid-cols-[minmax(0,1fr)_5rem_5.5rem_6.5rem_2.5rem]";
+// Whole class strings, because Tailwind cannot see names built at run time.
+const COLUMNS = {
+  base: "grid-cols-[minmax(0,1fr)_3rem_3.75rem_2.25rem] md:grid-cols-[minmax(0,1fr)_5rem_5.5rem_2.5rem]",
+  shorts: "grid-cols-[minmax(0,1fr)_3rem_3.75rem_3.75rem_2.25rem] md:grid-cols-[minmax(0,1fr)_5rem_5.5rem_6.5rem_2.5rem]",
+  keeper: "grid-cols-[minmax(0,1fr)_3rem_3.75rem_3rem_2.25rem] md:grid-cols-[minmax(0,1fr)_5rem_5.5rem_4.5rem_2.5rem]",
+  both: "grid-cols-[minmax(0,1fr)_3rem_3.75rem_3.75rem_3rem_2.25rem] md:grid-cols-[minmax(0,1fr)_5rem_5.5rem_6.5rem_4.5rem_2.5rem]",
+};
+
+function columnsFor(withShorts: boolean, withKeeper: boolean): string {
+  if (withShorts && withKeeper) return COLUMNS.both;
+  if (withShorts) return COLUMNS.shorts;
+  return withKeeper ? COLUMNS.keeper : COLUMNS.base;
+}
 
 function borderFor(error?: string) {
   return error ? "border-red-600" : "border-line";
@@ -28,15 +40,16 @@ type RowProps = {
   canRemove: boolean;
   dispatch: (action: OrderAction) => void;
   withShorts: boolean;
+  withKeeper: boolean;
 };
 
-function PlayerRow({ line, n, error, canRemove, dispatch, withShorts }: RowProps) {
+function PlayerRow({ line, n, error, canRemove, dispatch, withShorts, withKeeper }: RowProps) {
   const nameErrorId = `${line.id}-name-error`;
   const numberErrorId = `${line.id}-number-error`;
 
   return (
     <li
-      className={`grid ${withShorts ? COLUMNS_WITH_SHORTS : COLUMNS} items-center gap-1.5 rounded-2xl bg-white/70 p-1.5 md:gap-2 md:bg-transparent md:p-0`}
+      className={`grid ${columnsFor(withShorts, withKeeper)} items-center gap-1.5 rounded-2xl bg-white/70 p-1.5 md:gap-2 md:bg-transparent md:p-0`}
     >
       <input
         type="text"
@@ -100,6 +113,18 @@ function PlayerRow({ line, n, error, canRemove, dispatch, withShorts }: RowProps
         </select>
       )}
 
+      {withKeeper && (
+        <label className="flex h-10 items-center justify-center">
+          <input
+            type="checkbox"
+            aria-label={`Arquero: jugador ${n}`}
+            checked={line.keeper}
+            onChange={(e) => dispatch({ type: "UPDATE_PLAYER", id: line.id, patch: { keeper: e.target.checked } })}
+            className="h-5 w-5"
+          />
+        </label>
+      )}
+
       <button
         type="button"
         aria-label={`Quitar jugador ${n}`}
@@ -121,17 +146,18 @@ function PlayerRow({ line, n, error, canRemove, dispatch, withShorts }: RowProps
   );
 }
 
-export function RosterTable({ roster, errors, dispatch, withShorts }: Props) {
+export function RosterTable({ roster, errors, dispatch, withShorts, withKeeper = false }: Props) {
   return (
     <div>
       <div
         aria-hidden="true"
-        className={`mb-1 hidden gap-2 text-xs font-semibold text-muted md:grid ${withShorts ? COLUMNS_WITH_SHORTS : COLUMNS}`}
+        className={`mb-1 hidden gap-2 text-xs font-semibold text-muted md:grid ${columnsFor(withShorts, withKeeper)}`}
       >
         <span>Nombre</span>
         <span>Número</span>
         <span>Talle</span>
         {withShorts && <span>Talle short</span>}
+        {withKeeper && <span>Arquero</span>}
         <span />
       </div>
 
@@ -145,9 +171,14 @@ export function RosterTable({ roster, errors, dispatch, withShorts }: Props) {
             canRemove={roster.length > 1}
             dispatch={dispatch}
             withShorts={withShorts}
+            withKeeper={withKeeper}
           />
         ))}
       </ul>
+
+      {withKeeper && !roster.some((line) => line.keeper) && (
+        <p className="mt-3 text-sm text-muted">Marcá quién es el arquero.</p>
+      )}
 
       <button
         type="button"

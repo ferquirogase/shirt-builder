@@ -18,7 +18,7 @@ describe("orderReducer", () => {
     const order = orderWith(createPlayerLine("a", { name: "Leo", number: "10" }));
     const next = orderReducer(order, { type: "ADD_PLAYER", id: "b" });
     expect(next.roster).toHaveLength(2);
-    expect(next.roster[1]).toEqual({ id: "b", name: "", number: "", size: "M", shortsSize: "M" });
+    expect(next.roster[1]).toEqual({ id: "b", name: "", number: "", size: "M", shortsSize: "M", keeper: false });
   });
 
   it("updates the shorts size on its own, without touching the shirt size", () => {
@@ -103,5 +103,23 @@ describe("orderFromDesign", () => {
   it("does not reuse old thumbnails when the new capture failed", () => {
     const previous = { ...orderWith(createPlayerLine("a", { name: "Leo", number: "10" })), thumbnails: thumbs };
     expect(orderFromDesign(initialDesignState, null, previous).thumbnails).toBeNull();
+  });
+});
+
+describe("keeper in the roster", () => {
+  it("marks and unmarks a keeper, ignoring anything that is not a boolean", () => {
+    const order = orderWith(createPlayerLine("a"));
+    const marked = orderReducer(order, { type: "UPDATE_PLAYER", id: "a", patch: { keeper: true } });
+    expect(marked.roster[0].keeper).toBe(true);
+    const junk = orderReducer(marked, { type: "UPDATE_PLAYER", id: "a", patch: { keeper: "yes" as unknown as boolean } });
+    expect(junk.roster[0].keeper).toBe(true);
+    expect(orderReducer(marked, { type: "UPDATE_PLAYER", id: "a", patch: { keeper: false } }).roster[0].keeper).toBe(false);
+  });
+
+  it("keeps the keeper's thumbnails when the order is made from the design", () => {
+    const keeperThumbnails = { front: "KF", back: "KB" };
+    const order = orderFromDesign(initialDesignState, null, null, keeperThumbnails);
+    expect(order.keeperThumbnails).toEqual(keeperThumbnails);
+    expect(orderFromDesign(initialDesignState, null, null).keeperThumbnails).toBeNull();
   });
 });

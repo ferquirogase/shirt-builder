@@ -56,3 +56,15 @@ describe("payWithRipple", () => {
     expect(confirmation.total).toBe(orderTotals(kit.roster, true).total);
   });
 });
+
+describe("payWithRipple keeper", () => {
+  it("only counts a roster line as keeper when the keeper is in the design", async () => {
+    const roster = [createPlayerLine("a", { keeper: true }), createPlayerLine("b")];
+    const without = await payWithRipple({ design: initialDesignState, thumbnails: null, roster }, contact, async () => {});
+    expect(without.roster.map((l) => l.keeper)).toEqual([false, false]);
+
+    const design = { ...initialDesignState, keeper: { ...initialDesignState.keeper, included: true } };
+    const withKeeper = await payWithRipple({ design, thumbnails: null, roster }, contact, async () => {});
+    expect(withKeeper.roster.map((l) => l.keeper)).toEqual([true, false]);
+  });
+});

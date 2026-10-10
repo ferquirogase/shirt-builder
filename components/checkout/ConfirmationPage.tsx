@@ -43,6 +43,7 @@ function SavedConfirmation() {
                 <span className="shrink-0 text-muted">
                   N° {line.number} · {line.size}
                   {confirmation.shorts > 0 && ` · Short ${line.shortsSize}`}
+                  {line.keeper && " · Arquero"}
                 </span>
               </li>
             ))}

@@ -6,7 +6,15 @@ export type Size = (typeof SIZES)[number];
 export const MAX_NAME_LENGTH = 12;
 
 // One line is one shirt.
-export type PlayerLine = { id: string; name: string; number: string; size: Size; shortsSize: Size };
+export type PlayerLine = {
+  id: string;
+  name: string;
+  number: string;
+  size: Size;
+  shortsSize: Size;
+  /** Wears the keeper's shirt. Only counts while the keeper is in the design. */
+  keeper: boolean;
+};
 export type Thumbnails = { front: string; back: string };
 
 // A frozen design plus the roster that wears it. Plain JSON on purpose: this
@@ -14,6 +22,8 @@ export type Thumbnails = { front: string; back: string };
 export type Order = {
   design: DesignState;
   thumbnails: Thumbnails | null;
+  /** The keeper's shirt, when the design has one. */
+  keeperThumbnails?: Thumbnails | null;
   roster: PlayerLine[];
 };
 
@@ -37,7 +47,7 @@ export function newLineId(): string {
 }
 
 export function createPlayerLine(id: string, patch: Partial<Omit<PlayerLine, "id">> = {}): PlayerLine {
-  return { id, name: "", number: "", size: "M", shortsSize: "M", ...patch };
+  return { id, name: "", number: "", size: "M", shortsSize: "M", keeper: false, ...patch };
 }
 
 function cleanNumber(value: string): string {
@@ -52,6 +62,7 @@ function cleanPatch(patch: Partial<Omit<PlayerLine, "id">>): Partial<Omit<Player
   if (patch.shortsSize !== undefined && (SIZES as readonly string[]).includes(patch.shortsSize)) {
     clean.shortsSize = patch.shortsSize;
   }
+  if (typeof patch.keeper === "boolean") clean.keeper = patch.keeper;
   return clean;
 }
 
@@ -80,19 +91,25 @@ export function orderReducer(order: Order, action: OrderAction): Order {
 
 // Called when the user taps "Revisar diseño". The builder's name and number
 // become the first player; a roster already loaded in a previous visit stays.
-export function orderFromDesign(design: DesignState, thumbnails: Thumbnails | null, previous: Order | null): Order {
+export function orderFromDesign(
+  design: DesignState,
+  thumbnails: Thumbnails | null,
+  previous: Order | null,
+  keeperThumbnails: Thumbnails | null = null
+): Order {
   const fromBuilder = {
     name: design.playerName.slice(0, MAX_NAME_LENGTH),
     number: cleanNumber(design.playerNumber),
   };
   if (!previous || previous.roster.length === 0) {
-    return { design, thumbnails, roster: [createPlayerLine(newLineId(), fromBuilder)] };
+    return { design, thumbnails, keeperThumbnails, roster: [createPlayerLine(newLineId(), fromBuilder)] };
   }
   const [first, ...rest] = previous.roster;
   const firstIsBlank = first.name.trim() === "" && first.number === "";
   return {
     design,
     thumbnails,
+    keeperThumbnails,
     roster: firstIsBlank ? [{ ...first, ...fromBuilder }, ...rest] : previous.roster,
   };
 }

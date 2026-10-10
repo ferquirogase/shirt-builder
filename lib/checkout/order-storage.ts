@@ -20,8 +20,9 @@ function isPlayerLine(value: unknown): boolean {
     typeof value.name === "string" &&
     typeof value.number === "string" &&
     isSize(value.size) &&
-    // Orders saved before the shorts existed have no shorts size.
-    (value.shortsSize === undefined || isSize(value.shortsSize))
+    // Orders saved before the shorts or the keeper existed lack those fields.
+    (value.shortsSize === undefined || isSize(value.shortsSize)) &&
+    (value.keeper === undefined || typeof value.keeper === "boolean")
   );
 }
 
@@ -30,7 +31,9 @@ function isOrder(value: unknown): value is Order {
   const thumbs = value.thumbnails;
   const thumbsOk =
     thumbs === null || (isRecord(thumbs) && typeof thumbs.front === "string" && typeof thumbs.back === "string");
-  return thumbsOk && Array.isArray(value.roster) && value.roster.length > 0 && value.roster.every(isPlayerLine);
+  const keeperOk =
+    value.keeperThumbnails === undefined || value.keeperThumbnails === null || isImagePair(value.keeperThumbnails);
+  return thumbsOk && keeperOk && Array.isArray(value.roster) && value.roster.length > 0 && value.roster.every(isPlayerLine);
 }
 
 function isConfirmation(value: unknown): value is Confirmation {
@@ -60,7 +63,7 @@ function withShortsDefaults(order: Order): Order {
       ...order.design,
       shorts: { ...initialDesignState.shorts, ...order.design.shorts },
     },
-    roster: order.roster.map((line) => ({ ...line, shortsSize: line.shortsSize ?? "M" })),
+    roster: order.roster.map((line) => ({ ...line, shortsSize: line.shortsSize ?? "M", keeper: line.keeper ?? false })),
   };
 }
 
