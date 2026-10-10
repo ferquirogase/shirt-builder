@@ -42,6 +42,7 @@ function SavedConfirmation() {
                 <span className="min-w-0 truncate font-semibold">{line.name}</span>
                 <span className="shrink-0 text-muted">
                   N° {line.number} · {line.size}
+                  {confirmation.shorts > 0 && ` · Pantalón ${line.shortsSize}`}
                 </span>
               </li>
             ))}

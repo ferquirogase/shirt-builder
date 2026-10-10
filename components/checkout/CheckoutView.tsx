@@ -40,7 +40,8 @@ export function CheckoutView({ initial }: { initial: Order }) {
     if (!locked.current) saveOrder(order);
   }, [order]);
 
-  const totals = orderTotals(order.roster);
+  const withShorts = order.design.shorts.included;
+  const totals = orderTotals(order.roster, withShorts);
   const errors = validateOrder(order.roster, contact);
   const shown = attempted ? errors : noErrors;
 
@@ -79,9 +80,13 @@ export function CheckoutView({ initial }: { initial: Order }) {
             <h2 id="roster-title" className="mb-1 text-lg font-bold">
               Plantel
             </h2>
-            <p className="mb-4 text-sm text-muted">Cada fila es una camiseta con este diseño. Agregá un jugador por cada integrante.</p>
+            <p className="mb-4 text-sm text-muted">
+              {withShorts
+                ? "Cada fila es una camiseta y un pantalón con este diseño. Agregá un jugador por cada integrante."
+                : "Cada fila es una camiseta con este diseño. Agregá un jugador por cada integrante."}
+            </p>
             <fieldset disabled={paying} className="min-w-0 border-0 p-0">
-              <RosterTable roster={order.roster} errors={shown.players} dispatch={dispatch} />
+              <RosterTable roster={order.roster} errors={shown.players} dispatch={dispatch} withShorts={withShorts} />
             </fieldset>
           </section>
         </div>
@@ -113,7 +118,9 @@ export function CheckoutView({ initial }: { initial: Order }) {
           className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-between gap-3 border-t border-line bg-white/95 px-4 py-3 md:hidden"
         >
           <div>
-            <p className="text-xs text-muted">{totals.shirts} camisetas</p>
+            <p className="text-xs text-muted">
+              {totals.shirts} camisetas{totals.shorts > 0 && ` · ${totals.shorts} pantalones`}
+            </p>
             <p className="text-lg font-bold tabular-nums">{formatMoney(totals.total)}</p>
           </div>
           <button
