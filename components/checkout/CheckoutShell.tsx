@@ -6,7 +6,7 @@ export function CheckoutShell({ title, children }: { title: string; children: Re
   return (
     <div className="min-h-dvh" style={{ background: stageBaseCss() }}>
       <header className="flex items-center gap-3 px-4 py-3 md:px-6 md:py-4">
-        <Link href="/" className="text-2xl font-black tracking-tight md:text-3xl">
+        <Link href="/" transitionTypes={["nav-back"]} className="text-2xl font-black tracking-tight md:text-3xl">
           GEPE<sup className="ml-0.5 align-super text-[0.4em] font-bold">®</sup>
         </Link>
         <div className="h-8 w-px bg-line" />

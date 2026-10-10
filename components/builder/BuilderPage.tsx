@@ -104,7 +104,7 @@ export function BuilderPage() {
       }
     }
     saveOrder(orderFromDesign(design, thumbnails, loadOrder()));
-    router.push("/checkout");
+    router.push("/checkout", { transitionTypes: ["nav-forward"] });
   }
 
   return (
@@ -173,14 +173,6 @@ export function BuilderPage() {
           onRetry={story.retry}
           onClose={story.close}
         />
-        {reviewing && (
-          <div
-            role="status"
-            className="fixed inset-x-0 bottom-6 z-20 mx-auto w-fit rounded-full bg-foreground px-5 py-2 text-sm font-semibold text-white shadow-lg"
-          >
-            Preparando tu pedido…
-          </div>
-        )}
       </div>
     </DesignProvider>
   );

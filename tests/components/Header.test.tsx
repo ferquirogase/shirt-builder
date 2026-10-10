@@ -38,7 +38,19 @@ describe("Header", () => {
 
   it("blocks double taps while reviewing", () => {
     renderWithDesign(<Header onReview={() => {}} onShare={() => {}} reviewing />);
-    expect(screen.getByRole("button", { name: "Hacer pedido" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Preparando…" })).toBeDisabled();
+  });
+
+  it("shows a spinner instead of the arrow, and 'Preparando…', while the order is being prepared", () => {
+    const { unmount } = renderWithDesign(<Header onReview={() => {}} onShare={() => {}} />);
+    expect(screen.queryByTestId("order-spinner")).toBeNull();
+    unmount();
+
+    renderWithDesign(<Header onReview={() => {}} onShare={() => {}} reviewing />);
+    const button = screen.getByRole("button", { name: "Preparando…" });
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toContainElement(screen.getByTestId("order-spinner"));
+    expect(screen.queryByRole("button", { name: "Hacer pedido" })).toBeNull();
   });
 
   it("keeps 'Hacer pedido' visible on mobile as an icon, with its text only on wide screens", () => {

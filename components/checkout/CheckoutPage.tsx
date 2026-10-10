@@ -17,6 +17,7 @@ function SavedOrder() {
           <p className="mb-4">No hay ningún pedido en curso.</p>
           <Link
             href="/"
+            transitionTypes={["nav-back"]}
             className="inline-flex h-10 items-center rounded-full bg-accent px-5 text-sm font-semibold"
           >
             Volver a diseñar
