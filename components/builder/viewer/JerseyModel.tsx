@@ -1,11 +1,20 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { useLoader } from "@react-three/fiber";
+import { useFrame, useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { JERSEY_MODEL } from "@/lib/builder/geometry/jersey-model";
 import { createBlendedNormalTexture, createFabricNormalTexture } from "@/lib/builder/texture/fabric-texture";
+import { azimuthOf, shortestDelta } from "@/lib/builder/geometry/camera-math";
+import {
+  SWAY_ATTRIBUTE,
+  addSwayWeights,
+  stepSpring,
+  swayTarget,
+  type SpringState,
+} from "@/lib/builder/geometry/cloth-sway";
 import { prepareJerseyGeometry } from "@/lib/builder/geometry/jersey-geometry";
+import { applyClothSway, createClothSwayUniforms, updateClothSway } from "./cloth-sway-shader";
 import { useJerseyTexture } from "./use-jersey-texture";
 
 // The weave has to be coarse enough to survive at the on-screen size of the shirt.
@@ -69,6 +78,29 @@ export function JerseyModel() {
     centerY,
   } = useMemo(() => prepareJerseyGeometry(obj, collarObj), [obj, collarObj]);
 
+  // Sleeves and hem swing behind the camera as it orbits (see cloth-sway.ts).
+  const sway = useMemo(() => createClothSwayUniforms(), []);
+  const liningMaterial = useMemo(
+    () => new THREE.MeshStandardMaterial({ color: LINING_COLOR, roughness: 0.9, side: THREE.BackSide }),
+    []
+  );
+  useEffect(() => {
+    if (bodyGeometry && !bodyGeometry.getAttribute(SWAY_ATTRIBUTE)) addSwayWeights(bodyGeometry);
+    applyClothSway(material, sway);
+    applyClothSway(liningMaterial, sway);
+  }, [bodyGeometry, material, liningMaterial, sway]);
+
+  const spring = useRef<SpringState>({ value: 0, velocity: 0 });
+  const lastAzimuth = useRef<number | null>(null);
+  useFrame(({ camera, clock }, delta) => {
+    const azimuth = azimuthOf(camera.position.x, camera.position.z);
+    const previous = lastAzimuth.current ?? azimuth;
+    lastAzimuth.current = azimuth;
+    const orbitSpeed = delta > 0 ? shortestDelta(previous, azimuth) / delta : 0;
+    spring.current = stepSpring(spring.current, swayTarget(orbitSpeed), delta);
+    updateClothSway(sway, azimuth, spring.current.value, clock.elapsedTime);
+  });
+
   // The OBJ's vertex coordinates are in the hundreds, so scale=0.01 brings the
   // model to roughly a metre, a reasonable size for the camera/OrbitControls
   // setup in Viewer3D. The mesh is re-centred vertically (centerY) so the camera
@@ -78,9 +110,7 @@ export function JerseyModel() {
       {bodyGeometry && (
         <>
           <mesh geometry={bodyGeometry} material={material} dispose={null} />
-          <mesh geometry={bodyGeometry} dispose={null}>
-            <meshStandardMaterial color={LINING_COLOR} roughness={0.9} side={THREE.BackSide} />
-          </mesh>
+          <mesh geometry={bodyGeometry} material={liningMaterial} dispose={null} />
         </>
       )}
       {modelCollarGeometry && (
