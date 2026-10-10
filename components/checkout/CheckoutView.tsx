@@ -82,7 +82,7 @@ export function CheckoutView({ initial }: { initial: Order }) {
             </h2>
             <p className="mb-4 text-sm text-muted">
               {withShorts
-                ? "Cada fila es una camiseta y un pantalón con este diseño. Agregá un jugador por cada integrante."
+                ? "Cada fila es una camiseta y un short con este diseño. Agregá un jugador por cada integrante."
                 : "Cada fila es una camiseta con este diseño. Agregá un jugador por cada integrante."}
             </p>
             <fieldset disabled={paying} className="min-w-0 border-0 p-0">
@@ -119,7 +119,7 @@ export function CheckoutView({ initial }: { initial: Order }) {
         >
           <div>
             <p className="text-xs text-muted">
-              {totals.shirts} camisetas{totals.shorts > 0 && ` · ${totals.shorts} pantalones`}
+              {totals.shirts} camisetas{totals.shorts > 0 && ` · ${totals.shorts} shorts`}
             </p>
             <p className="text-lg font-bold tabular-nums">{formatMoney(totals.total)}</p>
           </div>

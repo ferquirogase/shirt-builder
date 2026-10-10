@@ -38,11 +38,11 @@ describe("ConfirmationPage", () => {
   it("shows each player's shorts size for a full kit, and none for shirt only", () => {
     saveConfirmation({ ...confirmation, shorts: 2, roster: confirmation.roster.map((line) => ({ ...line, shortsSize: "L" as const })) });
     const { unmount } = render(<ConfirmationPage />);
-    expect(screen.getAllByText(/Pantalón L/)).toHaveLength(2);
+    expect(screen.getAllByText(/Short L/)).toHaveLength(2);
     unmount();
     saveConfirmation(confirmation);
     render(<ConfirmationPage />);
-    expect(screen.queryByText(/Pantalón/)).toBeNull();
+    expect(screen.queryByText(/Short/)).toBeNull();
   });
 
   it("shows the order number, the email, the roster and the total, and says nothing was charged", () => {

@@ -35,6 +35,11 @@ export function orderTotals(roster: readonly PlayerLine[], withShorts = false): 
   return { shirts, shorts, subtotal, discountRate, discount, total: cents(subtotal - discount) };
 }
 
+/** What one player costs: the shirt, plus the shorts when the order is a full kit (before any quantity discount). */
+export function pricePerPlayer(withShorts: boolean): number {
+  return withShorts ? PRICE_PER_SHIRT + PRICE_PER_SHORTS : PRICE_PER_SHIRT;
+}
+
 export function formatMoney(amount: number): string {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: CURRENCY }).format(amount);
 }

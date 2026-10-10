@@ -81,7 +81,7 @@ function PlayerRow({ line, n, error, canRemove, dispatch, withShorts }: RowProps
 
       {withShorts && (
         <select
-          aria-label={`Talle del pantalón del jugador ${n}`}
+          aria-label={`Talle del short del jugador ${n}`}
           value={line.shortsSize}
           onChange={(e) =>
             dispatch({
@@ -131,7 +131,7 @@ export function RosterTable({ roster, errors, dispatch, withShorts }: Props) {
         <span>Nombre</span>
         <span>Número</span>
         <span>Talle</span>
-        {withShorts && <span>Talle pantalón</span>}
+        {withShorts && <span>Talle short</span>}
         <span />
       </div>
 

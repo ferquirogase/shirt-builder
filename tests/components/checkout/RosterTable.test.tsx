@@ -40,13 +40,13 @@ describe("RosterTable", () => {
 
   it("has no shorts size column for a shirt-only order", () => {
     render(<Harness initial={order(createPlayerLine("a"))} />);
-    expect(screen.queryByLabelText("Talle del pantalón del jugador 1")).toBeNull();
+    expect(screen.queryByLabelText("Talle del short del jugador 1")).toBeNull();
   });
 
   it("lets each player pick a shorts size apart from the shirt size", () => {
     render(<Harness initial={order(createPlayerLine("a"))} withShorts />);
-    fireEvent.change(screen.getByLabelText("Talle del pantalón del jugador 1"), { target: { value: "L" } });
-    expect(screen.getByLabelText("Talle del pantalón del jugador 1")).toHaveValue("L");
+    fireEvent.change(screen.getByLabelText("Talle del short del jugador 1"), { target: { value: "L" } });
+    expect(screen.getByLabelText("Talle del short del jugador 1")).toHaveValue("L");
     expect(screen.getByLabelText("Talle del jugador 1")).toHaveValue("M");
   });
 

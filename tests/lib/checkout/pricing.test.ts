@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createPlayerLine } from "@/lib/checkout/order";
-import { PRICE_PER_SHIRT, PRICE_PER_SHORTS, formatMoney, orderTotals } from "@/lib/checkout/pricing";
+import { PRICE_PER_SHIRT, PRICE_PER_SHORTS, formatMoney, orderTotals, pricePerPlayer } from "@/lib/checkout/pricing";
 
 // Each roster line is one shirt.
 function players(count: number) {
@@ -64,6 +64,13 @@ describe("orderTotals", () => {
     const totals = orderTotals(players(13));
     expect(Number.isInteger(totals.discount * 100)).toBe(true);
     expect(Number.isInteger(totals.total * 100)).toBe(true);
+  });
+});
+
+describe("pricePerPlayer", () => {
+  it("is the shirt alone, or the shirt and the shorts", () => {
+    expect(pricePerPlayer(false)).toBe(PRICE_PER_SHIRT);
+    expect(pricePerPlayer(true)).toBe(PRICE_PER_SHIRT + PRICE_PER_SHORTS);
   });
 });
 

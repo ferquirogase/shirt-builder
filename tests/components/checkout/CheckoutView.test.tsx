@@ -105,10 +105,10 @@ describe("CheckoutView", () => {
     const { unmount } = render(
       <CheckoutView initial={{ ...kit, design: { ...kit.design, shorts: { included: true, colorSource: "primary" } } }} />
     );
-    expect(screen.getByLabelText("Talle del pantalón del jugador 1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Talle del short del jugador 1")).toBeInTheDocument();
     unmount();
     render(<CheckoutView initial={makeOrder()} />);
-    expect(screen.queryByLabelText("Talle del pantalón del jugador 1")).toBeNull();
+    expect(screen.queryByLabelText("Talle del short del jugador 1")).toBeNull();
   });
 
   it("charges the shorts in the total of a full kit", () => {
@@ -117,7 +117,7 @@ describe("CheckoutView", () => {
       <CheckoutView initial={{ ...kit, design: { ...kit.design, shorts: { included: true, colorSource: "primary" } } }} />
     );
     const summary = within(screen.getByRole("region", { name: "Resumen del pedido" }));
-    expect(summary.getByText("Pantalones").nextElementSibling).toHaveTextContent("1");
+    expect(summary.getByText("Shorts").nextElementSibling).toHaveTextContent("1");
     expect(summary.getByText("Total").nextElementSibling).toHaveTextContent("55");
   });
 

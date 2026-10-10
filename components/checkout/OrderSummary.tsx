@@ -22,7 +22,7 @@ export function OrderSummary({ totals, paying, error, payButtonRef }: Props) {
         </div>
         {totals.shorts > 0 && (
           <div className="flex justify-between">
-            <dt>Pantalones</dt>
+            <dt>Shorts</dt>
             <dd className="tabular-nums">{totals.shorts}</dd>
           </div>
         )}
