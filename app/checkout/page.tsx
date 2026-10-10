@@ -6,10 +6,10 @@ export const metadata: Metadata = { title: "GEPE — Tu pedido" };
 
 export default function Page() {
   return (
-    <main>
-      <PageTransition>
+    <PageTransition>
+      <main>
         <CheckoutPage />
-      </PageTransition>
-    </main>
+      </main>
+    </PageTransition>
   );
 }

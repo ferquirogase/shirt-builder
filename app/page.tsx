@@ -3,10 +3,10 @@ import { BuilderPage } from "@/components/builder/BuilderPage";
 
 export default function Home() {
   return (
-    <main>
-      <PageTransition>
+    <PageTransition>
+      <main>
         <BuilderPage />
-      </PageTransition>
-    </main>
+      </main>
+    </PageTransition>
   );
 }
