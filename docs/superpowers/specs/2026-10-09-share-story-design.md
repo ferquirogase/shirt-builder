@@ -32,11 +32,44 @@ Fuera de alcance: video o imagen animada, publicar directo en Instagram o WhatsA
 
 ## La imagen (`lib/share/`)
 - **`story-layout.ts`:** constantes con nombre: tamaño (1080×1920), un rectángulo para el frente, uno para la espalda, y la posición, el ancho máximo, la fuente, el color y la alineación de la frase y del texto del enlace. Son provisorias hasta tener el diseño de fondo; se calibran con capturas del usuario, como se hizo con el escudo y los sponsors.
-- **Fondo:** archivo en `public/share/` provisto por el equipo.
+- **Fondo:** `public/share/story-background.png` (provisto por el equipo).
 - **Captura de las camisetas:** reutiliza la secuencia del checkout (pedir una vista, esperar a que la cámara termine de girar, leer el canvas), pero lee el canvas **completo, con transparencia** (el WebGL es transparente) y lo copia enseguida a otro canvas, porque el búfer cambia con el siguiente giro. Cada copia se **recorta al contenido visible** (rectángulo de píxeles no transparentes) para que la camiseta ocupe siempre el mismo espacio sin importar el tamaño de la pantalla, y se ajusta dentro de su rectángulo del diseño conservando proporción.
 - **`phrases.ts`:** lista de frases cortas en español rioplatense. `nextPhrase(current, random)` devuelve una distinta de la actual (con `random` inyectable para probar).
 - **`compose-story.ts`:** dibuja en orden fondo, camiseta de frente, camiseta de espalda, frase y enlace; espera a que las fuentes estén cargadas antes de dibujar texto; reduce el tamaño de la fuente de la frase hasta que entre en su ancho máximo.
 - **Dirección del enlace:** una constante (`SHARE_URL`) en un solo lugar.
+
+## Propuesta inicial de la imagen (para la demo; se mejora después)
+Fondo provisto: `public/share/story-background.png`, un estadio nocturno en carbón y dorado de 941×1672 (9:16 casi exacto), que se escala a 1080×1920 llenando el lienzo. Todo lo que sigue son valores iniciales en `story-layout.ts`, a calibrar con capturas.
+
+**Zona segura:** Instagram tapa con su interfaz unos 250 px arriba y abajo, así que el logo, la frase y el enlace quedan entre y = 270 y y = 1670.
+
+| Elemento | Posición (lienzo 1080×1920) | Estilo |
+|---|---|---|
+| Logo GEPE (`public/brand/gepe-logo-white.png`) | centrado, ancho 220, y = 270 | blanco, sobre el cielo oscuro |
+| Frase | centrada, y ≈ 450 a 600, máximo 2 líneas, ancho máximo 860 | Oswald 700, mayúsculas, dorado `#f5b400` (el acento de la app), 72 px que se achican hasta entrar, sombra suave |
+| Camiseta de frente | rectángulo x 60, y 640, 560×520 | ajustada al rectángulo conservando proporción |
+| Camiseta de espalda | rectángulo x 460, y 1000, 560×520 | ídem, dibujada encima de la de frente |
+| Halo detrás de cada camiseta | centrado en su rectángulo, radio ≈ 0,62 del ancho | degradado radial crema `rgba(255,232,160,0.22)` a transparente, para que se lean las camisetas oscuras sobre el fondo negro |
+| "Diseñá la tuya en" | centrado, y ≈ 1590 | Montserrat 600, 36 px, blanco 85 % |
+| Dirección (`SHARE_URL`) | centrada, y ≈ 1650 | Montserrat 800, 54 px, dorado |
+
+Las dos camisetas van **escalonadas en diagonal** (frente arriba a la izquierda, espalda abajo a la derecha, con un leve cruce de esquinas): aprovechan el alto del formato y se sienten más dinámicas que dos camisetas alineadas.
+
+**Dirección del enlace:** valor inicial `gepe.com`, **provisorio**; se cambia en la constante `SHARE_URL` cuando se sepa la dirección real.
+
+**Frases iniciales** (una se elige al azar; "Otra frase" cicla sin repetir la actual):
+1. Esta camiseta es para ganar
+2. Se viene el campeón
+3. Así se ve ganar
+4. Hoy se juega con estilo
+5. El once más lindo de la liga
+6. Con esta no se pierde
+7. Presentando a los nuevos campeones
+8. Ya hay camiseta, faltan los goles
+9. La del barrio, la del tercer tiempo
+10. Para salir campeones
+
+Las fuentes ya están cargadas por la app (Oswald y Montserrat, vía `resolveFontFamily`); como se cargan bajo demanda, se espera a `document.fonts.load` antes de dibujar el texto.
 
 ## Compartir (`lib/share/share-image.ts`)
 - `canShareFile(file)` usa `navigator.canShare({ files })`. `shareImage(blob, { name, text })`: si se puede, llama a `navigator.share({ files, text })`; si el usuario cancela (`AbortError`) devuelve "cancelado" sin error; si no se puede compartir archivos, descarga el archivo y devuelve "descargado".
@@ -57,7 +90,8 @@ Con TDD (ver cada test fallar primero): `nextPhrase` (nunca repite), recorte al 
 - Instagram no recibe imágenes por enlace: aparece como destino en el menú nativo del teléfono, no hay botón directo.
 - Las fuentes del texto sobre el canvas deben estar cargadas antes de dibujar, o sale con la fuente de reemplazo.
 
-## Datos que faltan del equipo (antes de implementar)
-1. La imagen de fondo y las zonas donde van las camisetas, la frase y el enlace.
-2. La dirección real del enlace.
-3. Aprobar o ajustar la primera lista de frases que propongo.
+## Pendientes después de la demo
+- Dirección real del enlace (hoy `gepe.com`, provisoria).
+- Revisar las frases con el equipo y sumar las que quieran.
+- Afinar posiciones, tamaños y tipografías con la imagen ya compuesta.
+- Evaluar más fondos para elegir y un código QR.
