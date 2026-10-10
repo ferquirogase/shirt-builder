@@ -64,11 +64,3 @@ body {
   animation: confetti-fall 2s ease-in both;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .story-in {
-    animation: none;
-  }
-  .confetti-piece {
-    display: none;
-  }
-}

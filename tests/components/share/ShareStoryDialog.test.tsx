@@ -124,11 +124,9 @@ describe("ShareStoryDialog", () => {
   });
 });
 
-describe("reduced motion", () => {
-  it("turns the entrance animation and the confetti off in the stylesheet", () => {
+describe("motion", () => {
+  it("plays the entrance animation and the confetti on every device, whatever the system motion setting", () => {
     const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
-    const block = /@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
-    expect(block).toContain(".story-in");
-    expect(block).toContain(".confetti-piece");
+    expect(css).not.toContain("prefers-reduced-motion");
   });
 });
