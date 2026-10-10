@@ -6,8 +6,16 @@ export const HISTORY_LIMIT = 100;
 export const GROUP_WINDOW_MS = 500;
 
 export type TimedDesignAction = DesignAction & { at?: number };
-export type DesignDispatchAction = DesignAction | { type: "UNDO" } | { type: "REDO" };
-export type HistoryAction = TimedDesignAction | { type: "UNDO" } | { type: "REDO" };
+export type DesignDispatchAction =
+  | DesignAction
+  | { type: "UNDO" }
+  | { type: "REDO" }
+  | { type: "LOAD_DESIGN"; design: DesignState };
+export type HistoryAction =
+  | TimedDesignAction
+  | { type: "UNDO" }
+  | { type: "REDO" }
+  | { type: "LOAD_DESIGN"; design: DesignState };
 
 export type HistoryState = {
   past: DesignState[];
@@ -64,6 +72,9 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
 }
 
 export function historyReducer(state: HistoryState, action: HistoryAction): HistoryState {
+  // Opening a saved design starts a clean history: it is not an edit to undo.
+  if (action.type === "LOAD_DESIGN") return createHistory(action.design);
+
   if (action.type === "UNDO") {
     if (state.past.length === 0) return state;
     const previous = state.past[state.past.length - 1];

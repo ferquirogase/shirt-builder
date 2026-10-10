@@ -21,6 +21,20 @@ describe("DesignProvider", () => {
     expect(api.current!.state.bodyPatternId).toBe("plain-body");
   });
 
+  it("loads a whole design without making it undoable", () => {
+    const { api } = renderWithDesign(<div />);
+    act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "plain-body" }));
+    act(() =>
+      api.current!.dispatch({
+        type: "LOAD_DESIGN",
+        design: { ...api.current!.state, projectName: "Cargado", bodyPatternId: "stripes-v1" },
+      })
+    );
+    expect(api.current!.state.projectName).toBe("Cargado");
+    expect(api.current!.state.bodyPatternId).toBe("stripes-v1");
+    expect(api.current!.canUndo).toBe(false);
+  });
+
   describe("grouping uses real timestamps from the provider", () => {
     beforeEach(() => {
       vi.useFakeTimers();

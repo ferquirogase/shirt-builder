@@ -1,11 +1,21 @@
 "use client";
 import { useState } from "react";
 import { useDesign } from "@/lib/builder/state/design-context";
+import type { DesignState } from "@/lib/builder/state/design-state";
 import { ArrowRightIcon, PencilIcon, ShareIcon } from "./icons";
 
-export function Header() {
+type HeaderProps = { onReview: (design: DesignState) => void; reviewing?: boolean };
+
+export function Header({ onReview, reviewing = false }: HeaderProps) {
   const { state, dispatch } = useDesign();
   const [draft, setDraft] = useState(state.projectName);
+  // The name can change from outside the field (a design loaded from the
+  // checkout): when it does, the draft follows it.
+  const [seenName, setSeenName] = useState(state.projectName);
+  if (seenName !== state.projectName) {
+    setSeenName(state.projectName);
+    setDraft(state.projectName);
+  }
 
   function commit() {
     const next = draft.trim();
@@ -54,8 +64,9 @@ export function Header() {
         </button>
         <button
           type="button"
-          disabled
-          title="Próximamente"
+          disabled={reviewing}
+          aria-busy={reviewing}
+          onClick={() => onReview(state)}
           className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:px-5"
         >
           <span className="sr-only md:not-sr-only">Revisar diseño</span>

@@ -207,3 +207,17 @@ describe("sponsor history", () => {
     expect(again).toBe(s);
   });
 });
+
+describe("LOAD_DESIGN", () => {
+  it("replaces the design and starts a fresh history", () => {
+    const edited = historyReducer(createHistory(), { type: "SET_BODY_PATTERN", id: "plain-body" });
+    expect(edited.past).toHaveLength(1);
+
+    const design = { ...initialDesignState, projectName: "Cargado", playerName: "LEO" };
+    const loaded = historyReducer(edited, { type: "LOAD_DESIGN", design });
+
+    expect(loaded.present).toBe(design);
+    expect(loaded.past).toEqual([]);
+    expect(loaded.future).toEqual([]);
+  });
+});
