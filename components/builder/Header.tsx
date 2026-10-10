@@ -75,7 +75,7 @@ export function Header({ onReview, onShare, reviewing = false, sharing = false }
           onClick={() => onReview(state)}
           className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 md:px-5"
         >
-          <span className="sr-only md:not-sr-only">Revisar diseño</span>
+          <span className="sr-only md:not-sr-only">Hacer pedido</span>
           <ArrowRightIcon className="h-5 w-5" />
         </button>
       </div>

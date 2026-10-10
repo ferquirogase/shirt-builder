@@ -97,9 +97,9 @@ describe("BuilderPage", () => {
       expect(wrapper.className).not.toContain("bottom-24");
     });
 
-    it("has a single 'Revisar diseño' button, in the header, and no extra row for it at the bottom", () => {
+    it("has a single 'Hacer pedido' button, in the header, and no extra row for it at the bottom", () => {
       render(<BuilderPage />);
-      const buttons = screen.getAllByRole("button", { name: "Revisar diseño" });
+      const buttons = screen.getAllByRole("button", { name: "Hacer pedido" });
       expect(buttons).toHaveLength(1);
       expect(screen.getByRole("banner")).toContainElement(buttons[0]);
     });
@@ -147,14 +147,14 @@ describe("BuilderPage", () => {
     });
   });
 
-  it("'Revisar diseño' captures both sides, saves the order and goes to the checkout", async () => {
+  it("'Hacer pedido' captures both sides, saves the order and goes to the checkout", async () => {
     captureThumbnails.mockImplementation(async ({ showView }: { showView: (side: "front" | "back") => void }) => {
       showView("back");
       return { front: "F", back: "B" };
     });
     render(<BuilderPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Revisar diseño" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout"));
     expect(screen.getByTestId("viewer")).toHaveAttribute("data-view", "back");
@@ -166,7 +166,7 @@ describe("BuilderPage", () => {
     captureThumbnails.mockRejectedValue(new Error("tainted canvas"));
     render(<BuilderPage />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Revisar diseño" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout"));
     expect(loadOrder()?.thumbnails).toBeNull();
@@ -184,7 +184,7 @@ describe("BuilderPage", () => {
     render(<BuilderPage />);
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Nombre del diseño" })).toHaveValue("Los del viernes"));
 
-    fireEvent.click(screen.getByRole("button", { name: "Revisar diseño" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout"));
     expect(loadOrder()!.roster.map((l) => l.name)).toEqual(["Leo", "Dibu"]);
@@ -232,20 +232,20 @@ describe("BuilderPage", () => {
     expect(signal!.aborted).toBe(true);
   });
 
-  it("blocks Revisar diseño while the share dialog is open", async () => {
+  it("blocks Hacer pedido while the share dialog is open", async () => {
     captureViews.mockResolvedValue({ front: {}, back: {} });
     renderStory.mockResolvedValue(new Blob(["png"], { type: "image/png" }));
     render(<BuilderPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Compartir" }));
     await screen.findByRole("dialog");
-    expect(screen.getByRole("button", { name: "Revisar diseño" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Hacer pedido" })).toBeDisabled();
   });
 
   it("blocks Compartir while the design is being reviewed", async () => {
     captureThumbnails.mockReturnValue(new Promise(() => {}));
     render(<BuilderPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Revisar diseño" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Compartir" })).toBeDisabled());
   });
 
