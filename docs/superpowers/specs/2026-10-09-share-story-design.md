@@ -33,7 +33,7 @@ Fuera de alcance: video o imagen animada, publicar directo en Instagram o WhatsA
 ## La imagen (`lib/share/`)
 - **`story-layout.ts`:** constantes con nombre: tamaño (1080×1920), un rectángulo para el frente, uno para la espalda, y la posición, el ancho máximo, la fuente, el color y la alineación de la frase y del texto del enlace. Son provisorias hasta tener el diseño de fondo; se calibran con capturas del usuario, como se hizo con el escudo y los sponsors.
 - **Fondo:** `public/share/story-background.png` (provisto por el equipo).
-- **Captura de las camisetas:** reutiliza la secuencia del checkout (pedir una vista, esperar a que la cámara termine de girar, leer el canvas), pero lee el canvas **completo, con transparencia** (el WebGL es transparente) y lo copia enseguida a otro canvas, porque el búfer cambia con el siguiente giro. Cada copia se **recorta al contenido visible** (rectángulo de píxeles no transparentes) para que la camiseta ocupe siempre el mismo espacio sin importar el tamaño de la pantalla, y se ajusta dentro de su rectángulo del diseño conservando proporción.
+- **Captura de las camisetas:** la secuencia "pedir una vista, esperar a que la cámara termine de girar, leer el canvas" se extrajo a `lib/builder/io/capture-views.ts` y la comparten las miniaturas del checkout y la historia. La historia lee el canvas **completo, con transparencia** (el WebGL es transparente) y lo copia enseguida a otro canvas, porque el búfer cambia con el siguiente giro. Cada copia se **recorta al contenido visible** (rectángulo de píxeles no transparentes) para que la camiseta ocupe siempre el mismo espacio sin importar el tamaño de la pantalla, y se ajusta dentro de su rectángulo del diseño conservando proporción.
 - **`phrases.ts`:** lista de frases cortas en español rioplatense. `nextPhrase(current, random)` devuelve una distinta de la actual (con `random` inyectable para probar).
 - **`compose-story.ts`:** dibuja en orden fondo, camiseta de frente, camiseta de espalda, frase y enlace; espera a que las fuentes estén cargadas antes de dibujar texto; reduce el tamaño de la fuente de la frase hasta que entre en su ancho máximo.
 - **Dirección del enlace:** una constante (`SHARE_URL`) en un solo lugar.
@@ -77,6 +77,7 @@ Las fuentes ya están cargadas por la app (Oswald y Montserrat, vía `resolveFon
 
 ## Fallas
 - Si falla la captura de alguna cara, el diálogo muestra el error con **Reintentar** (no se muestra una imagen incompleta).
+- Si la captura devuelve una imagen vacía (el modelo todavía no cargó), se trata como falla de captura: error con **Reintentar**.
 - Si no carga el fondo, mismo error con **Reintentar**.
 - Si falla `navigator.share` por algo distinto de cancelar, se ofrece la descarga.
 
