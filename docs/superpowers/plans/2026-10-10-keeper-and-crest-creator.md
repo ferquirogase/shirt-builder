@@ -216,7 +216,7 @@ const svg = readFileSync(source, "utf8");
 if (/transform=/.test(svg)) throw new Error("the sheet uses transforms; flatten them first");
 
 const paths = [];
-for (const [tag, kind] of svg.matchAll(/<(path|polygon)\b[^>]*>/g).map((m) => [m[0], m[1]])) {
+for (const [tag, kind] of [...svg.matchAll(/<(path|polygon)\b[^>]*>/g)].map((m) => [m[0], m[1]])) {
   if (kind === "path") {
     paths.push(/\sd="([^"]+)"/.exec(tag)[1]);
   } else {
@@ -283,8 +283,7 @@ export function findCrestShape(id: string): CrestShape | undefined {
 - [ ] **Step 4: Generate the catalog**
 
 Run: `node scripts/build-crest-shapes.mjs "C:\Users\FERNANDO\Downloads\5548488_20807.svg" lib/builder/catalog/crest-shapes.ts`
-Expected: no output, the file exists with 25 entries. If Node reports `matchAll(...).map is not a function`, wrap it as `[...svg.matchAll(...)].map(...)`.
-
+Expected: no output, the file exists with 25 entries.
 - [ ] **Step 5: Run the test to see it pass, then commit**
 
 Run: `npx vitest run tests/lib/catalog/crest-shapes.test.ts`
@@ -1527,17 +1526,12 @@ describe("crest creator", () => {
     expect(api.current!.state.logoDataUrl).toBeNull();
   });
 
-  it("opens on the creator when the crest was made, and on the upload otherwise", () => {
-    const first = renderWithDesign(<CrestPanel />);
+  it("opens on the upload tab by default", () => {
+    renderWithDesign(<CrestPanel />);
     expect(screen.getByRole("tab", { name: "Subir el mío" })).toHaveAttribute("aria-selected", "true");
-    first.unmount();
-
-    const { api } = renderWithDesign(<CrestPanel />);
-    act(() => api.current!.dispatch({ type: "SET_CREST_CONFIG", config: INITIAL_CREST }));
   });
 });
 ```
-The last test's final render does not reopen the panel; replace it with a `DesignProvider`-seeded check only if the existing helper can start from a state. If it cannot, drop the second half and keep the first assertion (the default tab), since the "opens on the creator when made" branch is a one-line initial state.
 
 The existing upload tests in this file use the label "Subir escudo" for the file input; with the default tab being upload they must keep passing unchanged.
 
