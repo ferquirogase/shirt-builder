@@ -220,4 +220,21 @@ describe("LOAD_DESIGN", () => {
     expect(loaded.past).toEqual([]);
     expect(loaded.future).toEqual([]);
   });
+
+  it("records including the shorts as an undoable step", () => {
+    const changed = run([{ type: "SET_SHORTS_INCLUDED", value: true }]);
+    expect(changed.present.shorts.included).toBe(true);
+    expect(changed.past).toHaveLength(1);
+    const undone = historyReducer(changed, { type: "UNDO" });
+    expect(undone.present.shorts.included).toBe(false);
+  });
+
+  it("records switching the shorts color source as an undoable step", () => {
+    const changed = run([
+      { type: "SET_SHORTS_INCLUDED", value: true },
+      { type: "SET_SHORTS_COLOR_SOURCE", value: "secondary" },
+    ]);
+    expect(changed.past).toHaveLength(2);
+    expect(historyReducer(changed, { type: "UNDO" }).present.shorts.colorSource).toBe("primary");
+  });
 });

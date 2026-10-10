@@ -67,6 +67,8 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
     a.nameNumberStyle.presetId === b.nameNumberStyle.presetId &&
     a.nameNumberStyle.fill === b.nameNumberStyle.fill &&
     a.nameNumberStyle.outline === b.nameNumberStyle.outline &&
+    a.shorts.included === b.shorts.included &&
+    a.shorts.colorSource === b.shorts.colorSource &&
     a.projectName === b.projectName
   );
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { colorsAfterPatternChange, designReducer, initialDesignState } from "@/lib/builder/state/design-state";
+import { colorsAfterPatternChange, designReducer, initialDesignState, shortsColor } from "@/lib/builder/state/design-state";
 
 describe("designReducer", () => {
   it("sets a color for the given slot", () => {
@@ -229,5 +229,48 @@ describe("sponsors", () => {
     expect(designReducer(initialDesignState, { type: "SET_SPONSOR", slot: bad, dataUrl: IMG })).toBe(initialDesignState);
     expect(designReducer(initialDesignState, { type: "SET_SPONSOR_SCALE", slot: bad, value: 1 })).toBe(initialDesignState);
     expect(designReducer(initialDesignState, { type: "REMOVE_SPONSOR", slot: bad })).toBe(initialDesignState);
+  });
+});
+
+describe("shorts", () => {
+  it("starts as shirt only, with the primary color", () => {
+    expect(initialDesignState.shorts).toEqual({ included: false, colorSource: "primary" });
+  });
+
+  it("includes and drops the shorts", () => {
+    const set = designReducer(initialDesignState, { type: "SET_SHORTS_INCLUDED", value: true });
+    expect(set.shorts.included).toBe(true);
+    expect(designReducer(set, { type: "SET_SHORTS_INCLUDED", value: false }).shorts.included).toBe(false);
+  });
+
+  it("picks the secondary color and keeps the rest of the shorts config", () => {
+    const set = designReducer(
+      designReducer(initialDesignState, { type: "SET_SHORTS_INCLUDED", value: true }),
+      { type: "SET_SHORTS_COLOR_SOURCE", value: "secondary" }
+    );
+    expect(set.shorts).toEqual({ included: true, colorSource: "secondary" });
+  });
+
+  it("ignores a color source that is not primary or secondary", () => {
+    const next = designReducer(initialDesignState, { type: "SET_SHORTS_COLOR_SOURCE", value: "accent" as never });
+    expect(next).toBe(initialDesignState);
+  });
+
+  it("does not mutate the previous state", () => {
+    designReducer(initialDesignState, { type: "SET_SHORTS_INCLUDED", value: true });
+    expect(initialDesignState.shorts.included).toBe(false);
+  });
+});
+
+describe("shortsColor", () => {
+  it("follows the shirt's primary or secondary color", () => {
+    const base = { ...initialDesignState, colors: { ...initialDesignState.colors, primary: "#112233", secondary: "#aabbcc" } };
+    expect(shortsColor({ ...base, shorts: { included: true, colorSource: "primary" } })).toBe("#112233");
+    expect(shortsColor({ ...base, shorts: { included: true, colorSource: "secondary" } })).toBe("#aabbcc");
+  });
+
+  it("changes when the shirt's color changes", () => {
+    const next = designReducer(initialDesignState, { type: "SET_COLOR", slot: "primary", value: "#ff0000" });
+    expect(shortsColor(next)).toBe("#ff0000");
   });
 });

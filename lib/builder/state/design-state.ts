@@ -3,6 +3,10 @@ import { findPattern, visibleColors } from "../catalog/patterns";
 import { clampSponsorScale, isSponsorSlotId, type SponsorMap, type SponsorSlotId } from "../catalog/sponsor-slots";
 import { findNameNumberPreset, initialNameNumberStyle, type NameNumberStyle } from "../catalog/name-number-presets";
 
+export type ShortsColorSource = "primary" | "secondary";
+export type ShortsConfig = { included: boolean; colorSource: ShortsColorSource };
+const SHORTS_COLOR_SOURCES: readonly ShortsColorSource[] = ["primary", "secondary"];
+
 export type DesignState = {
   bodyPatternId: string;
   sleevePatternId: string;
@@ -13,6 +17,7 @@ export type DesignState = {
   playerNumber: string;
   nameNumberStyle: NameNumberStyle;
   projectName: string;
+  shorts: ShortsConfig;
 };
 
 export type DesignAction =
@@ -28,7 +33,9 @@ export type DesignAction =
   | { type: "SET_NN_PRESET"; id: string }
   | { type: "SET_NN_FILL"; value: string }
   | { type: "SET_NN_OUTLINE"; value: boolean }
-  | { type: "SET_PROJECT_NAME"; value: string };
+  | { type: "SET_PROJECT_NAME"; value: string }
+  | { type: "SET_SHORTS_INCLUDED"; value: boolean }
+  | { type: "SET_SHORTS_COLOR_SOURCE"; value: ShortsColorSource };
 
 export const initialDesignState: DesignState = {
   bodyPatternId: "stripes-v1",
@@ -40,7 +47,13 @@ export const initialDesignState: DesignState = {
   playerNumber: "",
   nameNumberStyle: initialNameNumberStyle(),
   projectName: "Mi diseño",
+  shorts: { included: false, colorSource: "primary" },
 };
+
+// The shorts have no color of their own: they wear one of the shirt's.
+export function shortsColor(state: Pick<DesignState, "colors" | "shorts">): string {
+  return state.colors[state.shorts.colorSource];
+}
 
 // Switching pattern: roles the new pattern uses that were not already visible
 // take the pattern's defaults; roles already visible keep the user's choice.
@@ -108,6 +121,14 @@ export function designReducer(state: DesignState, action: DesignAction): DesignS
       return { ...state, nameNumberStyle: { ...state.nameNumberStyle, outline: action.value } };
     case "SET_PROJECT_NAME":
       return { ...state, projectName: action.value };
+    case "SET_SHORTS_INCLUDED":
+      return state.shorts.included === action.value
+        ? state
+        : { ...state, shorts: { ...state.shorts, included: action.value } };
+    case "SET_SHORTS_COLOR_SOURCE":
+      return SHORTS_COLOR_SOURCES.includes(action.value)
+        ? { ...state, shorts: { ...state.shorts, colorSource: action.value } }
+        : state;
     default:
       return state;
   }
