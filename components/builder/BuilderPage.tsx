@@ -9,9 +9,9 @@ import { shirtImageOf } from "@/lib/share/shirt-image";
 import { useShareStory } from "@/lib/share/use-share-story";
 import { ShareStoryDialog } from "@/components/share/ShareStoryDialog";
 import { orderFromDesign } from "@/lib/checkout/order";
-import { loadOrder, saveOrder } from "@/lib/checkout/order-storage";
+import { clearDesignImages, loadOrder, saveDesignImages, saveOrder } from "@/lib/checkout/order-storage";
 import { pause } from "@/lib/checkout/pause";
-import { captureThumbnails } from "@/lib/checkout/thumbnails";
+import { captureDesignImages } from "@/lib/checkout/thumbnails";
 import { stageBaseCss, stageGlowCss } from "@/lib/builder/stage-style";
 import type { ViewSide } from "@/lib/builder/geometry/camera-math";
 import { Header } from "./Header";
@@ -89,24 +89,27 @@ export function BuilderPage() {
 
   // "Revisar diseño": freeze the design, photograph both sides from the 3D
   // viewer (the camera visibly turns while we do), keep it as an order and go
-  // to the checkout. A failed capture only costs the thumbnails.
+  // to the checkout. A failed capture only costs the images.
   async function handleReview(design: DesignState) {
     if (reviewing || sharing) return;
     setReviewing(true);
-    let thumbnails = null;
+    let captured = null;
     const canvas = canvasRef.current;
     if (canvas) {
       try {
-        thumbnails = await captureThumbnails({
+        captured = await captureDesignImages({
           canvas,
           showView: (side) => requestView(side, true),
           wait: pause,
         });
       } catch {
-        thumbnails = null;
+        captured = null;
       }
     }
-    saveOrder(orderFromDesign(design, thumbnails, loadOrder()));
+    // The big images (for the AI try-on) are kept apart; stale ones must not outlive a failed capture.
+    if (captured) saveDesignImages(captured.images);
+    else clearDesignImages();
+    saveOrder(orderFromDesign(design, captured?.thumbnails ?? null, loadOrder()));
     router.push("/checkout", { transitionTypes: ["nav-forward"] });
   }
 

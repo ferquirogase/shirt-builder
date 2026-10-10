@@ -3,14 +3,14 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import { createPlayerLine } from "@/lib/checkout/order";
-import { clearOrder, loadOrder, saveOrder } from "@/lib/checkout/order-storage";
+import { clearDesignImages, clearOrder, loadDesignImages, loadOrder, saveDesignImages, saveOrder } from "@/lib/checkout/order-storage";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
-const captureThumbnails = vi.fn();
+const captureDesignImages = vi.fn();
 vi.mock("@/lib/checkout/thumbnails", () => ({
-  captureThumbnails: (options: unknown) => captureThumbnails(options),
+  captureDesignImages: (options: unknown) => captureDesignImages(options),
 }));
 
 const captureViews = vi.fn();
@@ -43,8 +43,9 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="prim
 describe("BuilderPage", () => {
   beforeEach(() => {
     clearOrder();
+    clearDesignImages();
     push.mockReset();
-    captureThumbnails.mockReset();
+    captureDesignImages.mockReset();
     captureViews.mockReset();
     renderStory.mockReset();
     URL.createObjectURL = vi.fn(() => "blob:story");
@@ -151,9 +152,9 @@ describe("BuilderPage", () => {
   });
 
   it("'Hacer pedido' captures both sides, saves the order and goes to the checkout", async () => {
-    captureThumbnails.mockImplementation(async ({ showView }: { showView: (side: "front" | "back") => void }) => {
+    captureDesignImages.mockImplementation(async ({ showView }: { showView: (side: "front" | "back") => void }) => {
       showView("back");
-      return { front: "F", back: "B" };
+      return { thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } };
     });
     render(<BuilderPage />);
 
@@ -162,12 +163,13 @@ describe("BuilderPage", () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
     expect(screen.getByTestId("viewer")).toHaveAttribute("data-view", "back");
     expect(loadOrder()?.thumbnails).toEqual({ front: "F", back: "B" });
+    expect(loadDesignImages()).toEqual({ front: "FF", back: "BB" });
     expect(loadOrder()?.roster).toHaveLength(1);
   });
 
   it("shows the progress on the button itself, with no extra message at the bottom", async () => {
-    let finish!: (value: { front: string; back: string }) => void;
-    captureThumbnails.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+    let finish!: (value: unknown) => void;
+    captureDesignImages.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
     render(<BuilderPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
@@ -176,22 +178,24 @@ describe("BuilderPage", () => {
     expect(screen.queryByText("Preparando tu pedido…")).toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
 
-    finish({ front: "F", back: "B" });
+    finish({ thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } });
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
   });
 
-  it("still goes to the checkout, without thumbnails, when the capture fails", async () => {
-    captureThumbnails.mockRejectedValue(new Error("tainted canvas"));
+  it("still goes to the checkout, without images, when the capture fails, dropping old big images", async () => {
+    saveDesignImages({ front: "OLD", back: "OLD" });
+    captureDesignImages.mockRejectedValue(new Error("tainted canvas"));
     render(<BuilderPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
     expect(loadOrder()?.thumbnails).toBeNull();
+    expect(loadDesignImages()).toBeNull();
   });
 
   it("comes back from the checkout with its design and keeps the roster when reviewing again", async () => {
-    captureThumbnails.mockResolvedValue({ front: "F2", back: "B2" });
+    captureDesignImages.mockResolvedValue({ thumbnails: { front: "F2", back: "B2" }, images: { front: "FF2", back: "BB2" } });
     // The user already reviewed once, filled in a roster in the checkout, and
     // pressed "Editar diseño": the builder opens with that order saved.
     saveOrder({
@@ -261,7 +265,7 @@ describe("BuilderPage", () => {
   });
 
   it("blocks Compartir while the design is being reviewed", async () => {
-    captureThumbnails.mockReturnValue(new Promise(() => {}));
+    captureDesignImages.mockReturnValue(new Promise(() => {}));
     render(<BuilderPage />);
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Compartir" })).toBeDisabled());

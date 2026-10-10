@@ -1,8 +1,9 @@
 import { initialDesignState } from "@/lib/builder/state/design-state";
-import { SIZES, type Confirmation, type Order } from "./order";
+import { SIZES, type Confirmation, type Order, type Thumbnails } from "./order";
 
 export const ORDER_KEY = "gepe:order";
 export const CONFIRMATION_KEY = "gepe:confirmation";
+export const DESIGN_IMAGES_KEY = "gepe:design-images";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -44,6 +45,10 @@ function isConfirmation(value: unknown): value is Confirmation {
     Array.isArray(value.roster) &&
     value.roster.every(isPlayerLine)
   );
+}
+
+function isImagePair(value: unknown): value is Thumbnails {
+  return isRecord(value) && typeof value.front === "string" && typeof value.back === "string";
 }
 
 // Orders saved before the shorts existed lack their fields: fill in the defaults.
@@ -105,6 +110,9 @@ function createSlot<T>(key: string, isValid: (value: unknown) => value is T, nor
 
 const orderSlot = createSlot(ORDER_KEY, isOrder, withShortsDefaults);
 const confirmationSlot = createSlot(CONFIRMATION_KEY, isConfirmation);
+// The big images live apart from the order: they are heavy, and if they do not fit in
+// sessionStorage the order itself must still be saved.
+const designImagesSlot = createSlot(DESIGN_IMAGES_KEY, isImagePair);
 
 export const loadOrder = orderSlot.load;
 export const saveOrder = orderSlot.save;
@@ -112,3 +120,6 @@ export const clearOrder = orderSlot.clear;
 export const loadConfirmation = confirmationSlot.load;
 export const saveConfirmation = confirmationSlot.save;
 export const clearConfirmation = confirmationSlot.clear;
+export const loadDesignImages = designImagesSlot.load;
+export const saveDesignImages = designImagesSlot.save;
+export const clearDesignImages = designImagesSlot.clear;

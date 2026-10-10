@@ -5,15 +5,20 @@ export type ShareNavigator = {
   canShare?: (data: ShareData) => boolean;
 };
 
-// "Los del Viernes" -> "los-del-viernes-historia.png"
-export function storyFileName(projectName: string): string {
+// "Los del Viernes" -> "los-del-viernes"
+export function fileSlug(projectName: string): string {
   const slug = projectName
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return `${slug || "mi-camiseta"}-historia.png`;
+  return slug || "mi-camiseta";
+}
+
+// "Los del Viernes" -> "los-del-viernes-historia.png"
+export function storyFileName(projectName: string): string {
+  return `${fileSlug(projectName)}-historia.png`;
 }
 
 export function shareText(url: string): string {
