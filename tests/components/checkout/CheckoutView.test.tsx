@@ -149,6 +149,44 @@ describe("CheckoutView", () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout/confirmacion"));
   });
 
+  it("locks the roster and contact fields while the payment is in progress", async () => {
+    let finish!: (c: Confirmation) => void;
+    payWithRipple.mockReturnValue(new Promise<Confirmation>((resolve) => (finish = resolve)));
+    render(<CheckoutView initial={makeOrder()} />);
+    fillContact();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pagar con Ripple" }));
+
+    // Disabled for the user...
+    await waitFor(() => expect(screen.getByRole("button", { name: "Agregar jugador" })).toBeDisabled());
+    expect(screen.getByLabelText("Nombre del jugador 1")).toBeDisabled();
+    expect(screen.getByLabelText("Email")).toBeDisabled();
+    // ...and ignored even if an edit sneaks through: what is charged is what was validated.
+    fireEvent.click(screen.getByRole("button", { name: "Agregar jugador" }));
+    fireEvent.change(screen.getByLabelText("Nombre del jugador 1"), { target: { value: "Otro" } });
+    expect(screen.getByText("Camisetas").nextElementSibling).toHaveTextContent("1");
+    expect(screen.getByLabelText("Nombre del jugador 1")).toHaveValue("Leo");
+    expect(loadOrder()!.roster).toHaveLength(1);
+    expect(loadOrder()!.roster[0].name).toBe("Leo");
+
+    finish(confirmation);
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout/confirmacion"));
+  });
+
+  it("does not save a paid order again if the form is touched before the navigation finishes", async () => {
+    payWithRipple.mockResolvedValue(confirmation);
+    render(<CheckoutView initial={makeOrder()} />);
+    fillContact();
+
+    fireEvent.click(screen.getByRole("button", { name: "Pagar con Ripple" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout/confirmacion"));
+    expect(loadOrder()).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Nombre del jugador 1"), { target: { value: "Otro" } });
+    fireEvent.click(screen.getByRole("button", { name: "Agregar jugador" }));
+    expect(loadOrder()).toBeNull();
+  });
+
   it("shows the total in the bar fixed to the bottom on mobile", () => {
     render(<CheckoutView initial={makeOrder(createPlayerLine("a", { name: "Leo", number: "10", quantity: 3 }))} />);
     const bar = screen.getByTestId("mobile-total-bar");

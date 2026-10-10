@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useReducer, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { orderReducer, type Order } from "@/lib/checkout/order";
+import { orderReducer, type Order, type OrderAction } from "@/lib/checkout/order";
 import { clearOrder, saveConfirmation, saveOrder } from "@/lib/checkout/order-storage";
 import { payWithRipple } from "@/lib/checkout/payment";
 import { formatMoney, orderTotals } from "@/lib/checkout/pricing";
@@ -17,15 +17,21 @@ const PAYMENT_ERROR = "No pudimos procesar el pago. Probá de nuevo.";
 
 export function CheckoutView({ initial }: { initial: Order }) {
   const router = useRouter();
-  const [order, dispatch] = useReducer(orderReducer, initial);
+  const [order, rawDispatch] = useReducer(orderReducer, initial);
   const [contact, setContact] = useState<ContactInfo>(emptyContact);
+  // Once the payment starts the order is what was validated: edits are ignored
+  // (the fields are also disabled) and a paid order is never saved again.
+  const locked = useRef(false);
+  const dispatch = useCallback((action: OrderAction) => {
+    if (!locked.current) rawDispatch(action);
+  }, []);
   // Errors are computed live but only shown after the first attempt to pay.
   const [attempted, setAttempted] = useState(false);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | undefined>();
 
   useEffect(() => {
-    saveOrder(order);
+    if (!locked.current) saveOrder(order);
   }, [order]);
 
   const totals = orderTotals(order.roster);
@@ -43,6 +49,7 @@ export function CheckoutView({ initial }: { initial: Order }) {
       return;
     }
 
+    locked.current = true;
     setPaying(true);
     setPayError(undefined);
     try {
@@ -51,6 +58,7 @@ export function CheckoutView({ initial }: { initial: Order }) {
       clearOrder();
       router.push("/checkout/confirmacion");
     } catch {
+      locked.current = false;
       setPayError(PAYMENT_ERROR);
       setPaying(false);
     }
@@ -66,7 +74,9 @@ export function CheckoutView({ initial }: { initial: Order }) {
               Plantel
             </h2>
             <p className="mb-4 text-sm text-muted">Cada fila es una camiseta con este diseño. Agregá un jugador por cada integrante.</p>
-            <RosterTable roster={order.roster} errors={shown.players} dispatch={dispatch} />
+            <fieldset disabled={paying} className="min-w-0 border-0 p-0">
+              <RosterTable roster={order.roster} errors={shown.players} dispatch={dispatch} />
+            </fieldset>
           </section>
         </div>
 
@@ -75,12 +85,16 @@ export function CheckoutView({ initial }: { initial: Order }) {
             <h2 id="contact-title" className="mb-4 text-lg font-bold">
               Contacto y envío
             </h2>
-            <ContactForm
-              contact={contact}
-              errors={shown.contact}
-              onChange={(field, value) => setContact((current) => ({ ...current, [field]: value }))}
-              onSubmit={handleSubmit}
-            />
+            <fieldset disabled={paying} className="min-w-0 border-0 p-0">
+              <ContactForm
+                contact={contact}
+                errors={shown.contact}
+                onChange={(field, value) => {
+                  if (!locked.current) setContact((current) => ({ ...current, [field]: value }));
+                }}
+                onSubmit={handleSubmit}
+              />
+            </fieldset>
           </section>
           <OrderSummary totals={totals} paying={paying} error={payError} />
         </div>
