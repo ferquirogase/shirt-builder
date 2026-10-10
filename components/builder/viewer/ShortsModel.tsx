@@ -1,14 +1,17 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { addShortsSwayWeights } from "@/lib/builder/geometry/cloth-sway";
 import { JERSEY_CENTER_Y } from "@/lib/builder/geometry/jersey-model";
 import { firstMeshGeometry } from "@/lib/builder/geometry/jersey-geometry";
 import { SHORTS_MODEL } from "@/lib/builder/geometry/shorts-model";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { shortsColor } from "@/lib/builder/state/design-state";
 import { createBlendedNormalTexture } from "@/lib/builder/texture/fabric-texture";
+import { applyClothSway } from "./cloth-sway-shader";
+import { useClothSway } from "./ClothSwayProvider";
 import { FABRIC_REPEAT, LINING_COLOR, WEAVE_STRENGTH } from "./fabric-look";
 
 // The shorts wear one of the shirt's colors, with the model's wrinkle normal map
@@ -20,7 +23,14 @@ export function ShortsModel() {
   const obj = useLoader(OBJLoader, SHORTS_MODEL.url);
   const [wrinkleSource] = useLoader(THREE.TextureLoader, [SHORTS_MODEL.normalMapUrl]);
 
-  const geometry = useMemo(() => firstMeshGeometry(obj), [obj]);
+  // A copy, so the cached OBJ is never touched; its waist swings with the shirt's hem.
+  const geometry = useMemo(() => {
+    const source = firstMeshGeometry(obj);
+    if (!source) return null;
+    const copy = source.clone();
+    addShortsSwayWeights(copy);
+    return copy;
+  }, [obj]);
   const wrinkleNormal = useMemo(
     () =>
       createBlendedNormalTexture(wrinkleSource.image as CanvasImageSource, {
@@ -49,6 +59,13 @@ export function ShortsModel() {
     () => new THREE.MeshStandardMaterial({ color: LINING_COLOR, roughness: 0.9, side: THREE.BackSide }),
     []
   );
+
+  // Same sway as the shirt (no ripple: the waist is flush against the shirt's hem).
+  const sway = useClothSway();
+  useEffect(() => {
+    applyClothSway(material, sway, { ripple: false });
+    applyClothSway(liningMaterial, sway, { ripple: false });
+  }, [material, liningMaterial, sway]);
 
   if (!geometry) return null;
   return (

@@ -16,8 +16,16 @@ export function createClothSwayUniforms(): ClothSwayUniforms {
   return { uSway: { value: new THREE.Vector3() }, uTime: { value: 0 } };
 }
 
-/** Makes `material` displace its vertices by their `swayWeight`. Safe to call once per material. */
-export function applyClothSway(material: THREE.Material, uniforms: ClothSwayUniforms): void {
+/**
+ * Makes `material` displace its vertices by their `swayWeight`. Safe to call
+ * once per material. `ripple: false` keeps only the sway, for a garment that
+ * has to stay flush against another (the shorts under the shirt's hem).
+ */
+export function applyClothSway(
+  material: THREE.Material,
+  uniforms: ClothSwayUniforms,
+  { ripple = true }: { ripple?: boolean } = {}
+): void {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uSway = uniforms.uSway;
     shader.uniforms.uTime = uniforms.uTime;
@@ -35,10 +43,10 @@ uniform float uTime;`
 float swayW = ${SWAY_ATTRIBUTE};
 // Squared so the part near the body barely moves and the free edge swings most.
 transformed += uSway * (swayW * swayW);
-transformed += normal * sin(position.y * 0.12 + position.x * 0.09 + uTime * ${RIPPLE_SPEED.toFixed(2)}) * ${RIPPLE_AMPLITUDE.toFixed(2)} * swayW;`
+transformed += normal * sin(position.y * 0.12 + position.x * 0.09 + uTime * ${RIPPLE_SPEED.toFixed(2)}) * ${(ripple ? RIPPLE_AMPLITUDE : 0).toFixed(2)} * swayW;`
       );
   };
-  material.customProgramCacheKey = () => "cloth-sway";
+  material.customProgramCacheKey = () => (ripple ? "cloth-sway" : "cloth-sway-still");
   material.needsUpdate = true;
 }
 
