@@ -295,6 +295,18 @@ describe("CheckoutView keeper", () => {
     expect(screen.queryByAltText("Camiseta del arquero de frente")).toBeNull();
   });
 
+  it("labels the two pairs of photos only when there is a keeper", () => {
+    const { unmount } = render(<CheckoutView initial={makeOrder()} />);
+    expect(screen.queryByRole("heading", { name: "Jugador" })).toBeNull();
+    unmount();
+
+    const order = withKeeper({ ...makeOrder(), keeperThumbnails: { front: "data:image/jpeg;base64,KF", back: "data:image/jpeg;base64,KB" } });
+    render(<CheckoutView initial={order} />);
+    const photos = screen.getByRole("region", { name: "Tu diseño" });
+    expect(within(photos).getByRole("heading", { name: "Jugador" })).toBeInTheDocument();
+    expect(within(photos).getByRole("heading", { name: "Arquero" })).toBeInTheDocument();
+  });
+
   it("asks who plays in goal in the roster", () => {
     render(<CheckoutView initial={withKeeper(makeOrder())} />);
     expect(screen.getByLabelText("Arquero: jugador 1")).toBeInTheDocument();

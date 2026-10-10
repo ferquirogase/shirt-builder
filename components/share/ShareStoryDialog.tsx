@@ -21,7 +21,7 @@ const PRIMARY_BUTTON =
 const FOCUSABLE = "button:not([disabled]), [href], [tabindex]:not([tabindex='-1'])";
 
 export function ShareStoryDialog({ state, onShare, onAnother, onRetry, onClose }: Props) {
-  const { state: design } = useDesign();
+  const { state: design, editing } = useDesign();
   const dialog = useRef<HTMLDivElement>(null);
   const [sharing, setSharing] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -119,6 +119,12 @@ export function ShareStoryDialog({ state, onShare, onAnother, onRetry, onClose }
               alt="Tu camiseta, lista para compartir"
               className="story-in max-h-[68dvh] w-auto rounded-2xl shadow-2xl"
             />
+            {/* The picture is of the shirt the viewer was showing: with a keeper in the order, say which. */}
+            {design.keeper.included && (
+              <p className="text-sm font-semibold text-white/90">
+                {editing === "keeper" ? "Camiseta de arquero" : "Camiseta de jugador"}
+              </p>
+            )}
             <div className="flex flex-wrap items-center justify-center gap-3">
               <button type="button" onClick={onAnother} className={SECONDARY_BUTTON}>
                 Otra frase

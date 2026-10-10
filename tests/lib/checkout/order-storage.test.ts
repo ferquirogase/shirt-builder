@@ -7,6 +7,9 @@ import {
   ORDER_KEY,
   clearConfirmation,
   clearDesignImages,
+  clearKeeperDesignImages,
+  loadKeeperDesignImages,
+  saveKeeperDesignImages,
   clearOrder,
   loadConfirmation,
   loadDesignImages,
@@ -210,5 +213,19 @@ describe("orders saved before the keeper", () => {
       JSON.stringify({ design: initialDesignState, thumbnails: null, keeperThumbnails: { front: 1 }, roster: [createPlayerLine("a")] })
     );
     expect(loadOrder()).toBeNull();
+  });
+});
+
+describe("keeper design images", () => {
+  beforeEach(() => clearKeeperDesignImages());
+
+  it("are kept apart from the player's", () => {
+    saveDesignImages({ front: "PF", back: "PB" });
+    saveKeeperDesignImages({ front: "KF", back: "KB" });
+    expect(loadKeeperDesignImages()).toEqual({ front: "KF", back: "KB" });
+    expect(loadDesignImages()).toEqual({ front: "PF", back: "PB" });
+    clearKeeperDesignImages();
+    expect(loadKeeperDesignImages()).toBeNull();
+    expect(loadDesignImages()).toEqual({ front: "PF", back: "PB" });
   });
 });

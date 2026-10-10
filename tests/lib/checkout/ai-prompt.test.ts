@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { initialDesignState, type DesignState } from "@/lib/builder/state/design-state";
+import { designReducer, initialDesignState, type DesignState } from "@/lib/builder/state/design-state";
 import { createPlayerLine } from "@/lib/checkout/order";
 import { buildAiPrompt } from "@/lib/checkout/ai-prompt";
 
@@ -53,5 +53,44 @@ describe("buildAiPrompt", () => {
     expect(full).toMatch(/escudo/);
     expect(full).toMatch(/sponsor/i);
     expect(full).toMatch(/short blanco/);
+  });
+});
+
+describe("buildAiPrompt for the keeper", () => {
+  const withKeeper = designReducer(initialDesignState, { type: "SET_KEEPER_INCLUDED", value: true });
+  const roster = [
+    createPlayerLine("a", { name: "LEO", number: "10" }),
+    createPlayerLine("b", { name: "DIBU", number: "1", keeper: true }),
+  ];
+
+  it("describes the keeper's own look and says it is a goalkeeper's shirt", () => {
+    const prompt = buildAiPrompt({ design: withKeeper, roster }, "keeper");
+    expect(prompt).toMatch(/arquero/i);
+    expect(prompt).not.toContain("franjas");
+    expect(prompt).not.toContain("verde oscuro");
+  });
+
+  it("takes the name and number of the first player marked as keeper", () => {
+    const prompt = buildAiPrompt({ design: withKeeper, roster }, "keeper");
+    expect(prompt).toContain("DIBU");
+    expect(prompt).not.toContain("LEO");
+  });
+
+  it("leaves the back out when nobody is marked as keeper", () => {
+    const prompt = buildAiPrompt({ design: withKeeper, roster: [roster[0]] }, "keeper");
+    expect(prompt).not.toMatch(/espalda dice/);
+  });
+
+  it("the player prompt skips the keeper and does not mention one", () => {
+    const prompt = buildAiPrompt({ design: withKeeper, roster: [roster[1], roster[0]] });
+    expect(prompt).toContain("LEO");
+    expect(prompt).not.toContain("DIBU");
+    expect(prompt).not.toMatch(/arquero/i);
+    expect(prompt).toContain("franjas");
+  });
+
+  it("treats a marked line as a player when the keeper is not in the design", () => {
+    const prompt = buildAiPrompt({ design: initialDesignState, roster: [roster[1], roster[0]] });
+    expect(prompt).toContain("DIBU");
   });
 });

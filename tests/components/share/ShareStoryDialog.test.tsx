@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { renderWithDesign } from "../../helpers/render-with-design";
 import { DesignProvider } from "@/lib/builder/state/design-context";
 import { ShareStoryDialog } from "@/components/share/ShareStoryDialog";
 import type { ShareStoryState } from "@/lib/share/use-share-story";
@@ -128,5 +129,29 @@ describe("motion", () => {
   it("plays the entrance animation and the confetti on every device, whatever the system motion setting", () => {
     const css = readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
     expect(css).not.toContain("prefers-reduced-motion");
+  });
+});
+
+describe("ShareStoryDialog which shirt", () => {
+  const noop = { onShare: vi.fn(), onAnother: vi.fn(), onRetry: vi.fn(), onClose: vi.fn() };
+
+  it("says nothing about the shirt when there is no keeper", () => {
+    renderWithDesign(<ShareStoryDialog {...noop} state={ready} />);
+    expect(screen.queryByText(/Camiseta de (jugador|arquero)/)).toBeNull();
+  });
+
+  it("says which shirt the picture shows when the keeper is in the order", () => {
+    const { api } = renderWithDesign(<ShareStoryDialog {...noop} state={ready} />);
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    expect(screen.getByText("Camiseta de jugador")).toBeInTheDocument();
+
+    act(() => api.current!.setEditing("keeper"));
+    expect(screen.getByText("Camiseta de arquero")).toBeInTheDocument();
+  });
+
+  it("does not name a shirt while it is still preparing", () => {
+    const { api } = renderWithDesign(<ShareStoryDialog {...noop} state={{ status: "preparing" }} />);
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    expect(screen.queryByText(/Camiseta de (jugador|arquero)/)).toBeNull();
   });
 });

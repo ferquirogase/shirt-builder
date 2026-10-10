@@ -4,6 +4,7 @@ import { SIZES, type Confirmation, type Order, type Thumbnails } from "./order";
 export const ORDER_KEY = "gepe:order";
 export const CONFIRMATION_KEY = "gepe:confirmation";
 export const DESIGN_IMAGES_KEY = "gepe:design-images";
+export const KEEPER_DESIGN_IMAGES_KEY = "gepe:keeper-design-images";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -116,6 +117,7 @@ const confirmationSlot = createSlot(CONFIRMATION_KEY, isConfirmation);
 // The big images live apart from the order: they are heavy, and if they do not fit in
 // sessionStorage the order itself must still be saved.
 const designImagesSlot = createSlot(DESIGN_IMAGES_KEY, isImagePair);
+const keeperDesignImagesSlot = createSlot(KEEPER_DESIGN_IMAGES_KEY, isImagePair);
 
 export const loadOrder = orderSlot.load;
 export const saveOrder = orderSlot.save;
@@ -126,3 +128,6 @@ export const clearConfirmation = confirmationSlot.clear;
 export const loadDesignImages = designImagesSlot.load;
 export const saveDesignImages = designImagesSlot.save;
 export const clearDesignImages = designImagesSlot.clear;
+export const loadKeeperDesignImages = keeperDesignImagesSlot.load;
+export const saveKeeperDesignImages = keeperDesignImagesSlot.save;
+export const clearKeeperDesignImages = keeperDesignImagesSlot.clear;

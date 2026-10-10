@@ -4,16 +4,24 @@ import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import { createPlayerLine } from "@/lib/checkout/order";
 import { forgetSplash, markSplashSeen } from "@/lib/builder/splash";
-import { clearDesignImages, clearOrder, loadDesignImages, loadOrder, saveDesignImages, saveOrder } from "@/lib/checkout/order-storage";
+import {
+  clearDesignImages,
+  clearKeeperDesignImages,
+  clearOrder,
+  loadDesignImages,
+  loadKeeperDesignImages,
+  loadOrder,
+  saveDesignImages,
+  saveKeeperDesignImages,
+  saveOrder,
+} from "@/lib/checkout/order-storage";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const captureDesignImages = vi.fn();
-const captureThumbnails = vi.fn();
 vi.mock("@/lib/checkout/thumbnails", () => ({
   captureDesignImages: (options: unknown) => captureDesignImages(options),
-  captureThumbnails: (options: unknown) => captureThumbnails(options),
 }));
 
 const captureViews = vi.fn();
@@ -47,6 +55,7 @@ describe("BuilderPage", () => {
   beforeEach(() => {
     clearOrder();
     clearDesignImages();
+    clearKeeperDesignImages();
     // The splash has its own tests: here the page has already shown it.
     markSplashSeen();
     push.mockReset();
@@ -172,29 +181,32 @@ describe("BuilderPage", () => {
     expect(loadOrder()?.roster).toHaveLength(1);
   });
 
+  const playerShots = { thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } };
+  const keeperShots = { thumbnails: { front: "KF", back: "KB" }, images: { front: "KFF", back: "KBB" } };
+
   it("also photographs the keeper's shirt when the keeper is in the design, then goes back to the player", async () => {
-    captureDesignImages.mockResolvedValue({ thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } });
-    captureThumbnails.mockResolvedValue({ front: "KF", back: "KB" });
+    captureDesignImages.mockResolvedValueOnce(playerShots).mockResolvedValueOnce(keeperShots);
     render(<BuilderPage />);
     fireEvent.click(screen.getByRole("switch", { name: "Sumar camiseta de arquero" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
-    expect(captureThumbnails).toHaveBeenCalledTimes(1);
+    expect(captureDesignImages).toHaveBeenCalledTimes(2);
     expect(loadOrder()?.keeperThumbnails).toEqual({ front: "KF", back: "KB" });
+    expect(loadDesignImages()).toEqual({ front: "FF", back: "BB" });
+    expect(loadKeeperDesignImages()).toEqual({ front: "KFF", back: "KBB" });
     expect(screen.getByRole("radio", { name: "Jugador" })).toHaveAttribute("aria-checked", "true");
   });
 
   it("photographs the player's shirt as the player's even when the viewer was showing the keeper", async () => {
-    let shownWhenPhotographed = "";
+    const playerShownWhenPhotographed: string[] = [];
     captureDesignImages.mockImplementation(async () => {
       // The real capture waits for the camera before it reads the canvas: let the viewer repaint.
       await new Promise((resolve) => setTimeout(resolve, 0));
-      shownWhenPhotographed = screen.getByRole("radio", { name: "Jugador" }).getAttribute("aria-checked") ?? "";
-      return { thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } };
+      playerShownWhenPhotographed.push(screen.getByRole("radio", { name: "Jugador" }).getAttribute("aria-checked") ?? "");
+      return playerShots;
     });
-    captureThumbnails.mockResolvedValue({ front: "KF", back: "KB" });
     render(<BuilderPage />);
     fireEvent.click(screen.getByRole("switch", { name: "Sumar camiseta de arquero" }));
     fireEvent.click(screen.getByRole("radio", { name: "Arquero" }));
@@ -202,24 +214,25 @@ describe("BuilderPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
-    expect(shownWhenPhotographed).toBe("true");
+    // First the player's shirt, then the keeper's.
+    expect(playerShownWhenPhotographed).toEqual(["true", "false"]);
   });
 
-  it("does not photograph a keeper when there is none", async () => {
-    captureDesignImages.mockResolvedValue({ thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } });
-    captureThumbnails.mockReset();
+  it("does not photograph a keeper when there is none, and drops the old keeper images", async () => {
+    saveKeeperDesignImages({ front: "OLD", back: "OLD" });
+    captureDesignImages.mockResolvedValue(playerShots);
     render(<BuilderPage />);
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
-    expect(captureThumbnails).not.toHaveBeenCalled();
+    expect(captureDesignImages).toHaveBeenCalledTimes(1);
     expect(loadOrder()?.keeperThumbnails).toBeNull();
+    expect(loadKeeperDesignImages()).toBeNull();
   });
 
   it("goes to the checkout without the keeper's photos when taking them fails", async () => {
-    captureDesignImages.mockResolvedValue({ thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } });
-    captureThumbnails.mockRejectedValue(new Error("tainted canvas"));
+    captureDesignImages.mockResolvedValueOnce(playerShots).mockRejectedValueOnce(new Error("tainted canvas"));
     render(<BuilderPage />);
     fireEvent.click(screen.getByRole("switch", { name: "Sumar camiseta de arquero" }));
 
@@ -227,6 +240,7 @@ describe("BuilderPage", () => {
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
     expect(loadOrder()?.keeperThumbnails).toBeNull();
+    expect(loadKeeperDesignImages()).toBeNull();
     expect(loadOrder()?.thumbnails).toEqual({ front: "F", back: "B" });
   });
 
