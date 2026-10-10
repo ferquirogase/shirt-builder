@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { VIEW_SETTLE_MS, captureViews } from "@/lib/builder/io/capture-views";
 
 const canvas = { width: 10, height: 10 } as HTMLCanvasElement;
@@ -39,6 +39,38 @@ describe("captureViews", () => {
 
     let calls = 0;
     expect(await captureViews(options, () => (++calls === 2 ? null : "ok"))).toBeNull();
+  });
+
+  it("stops when cancelled while the camera is turning: no back view, no reads", async () => {
+    const controller = new AbortController();
+    const log: string[] = [];
+    const result = await captureViews(
+      {
+        canvas,
+        signal: controller.signal,
+        showView: (side) => log.push(`show-${side}`),
+        wait: async () => {
+          log.push("wait");
+          controller.abort();
+        },
+      },
+      () => {
+        log.push("grab");
+        return "view";
+      }
+    );
+
+    expect(result).toBeNull();
+    expect(log).toEqual(["show-front", "wait"]);
+  });
+
+  it("does not even turn the camera when it is already cancelled", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const showView = vi.fn();
+    const result = await captureViews({ canvas, signal: controller.signal, showView, wait: async () => {} }, () => "view");
+    expect(result).toBeNull();
+    expect(showView).not.toHaveBeenCalled();
   });
 
   it("keeps a falsy but valid grab result", async () => {

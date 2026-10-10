@@ -15,7 +15,7 @@ export type ShareStoryState =
 // capture the two sides, compose the image, show it, and recompose it with
 // another phrase on demand. The captured shirts are kept so "otra frase" does
 // not turn the camera again.
-export function useShareStory(captureShirts: () => Promise<ShirtViews | null>) {
+export function useShareStory(captureShirts: (signal: AbortSignal) => Promise<ShirtViews | null>) {
   const [state, setState] = useState<ShareStoryState>({ status: "closed" });
   // Bumped on every open and close: an async step that finds a newer number
   // belongs to a flow that was closed or replaced, and must not publish.
@@ -25,6 +25,9 @@ export function useShareStory(captureShirts: () => Promise<ShirtViews | null>) {
   const blob = useRef<Blob | null>(null);
   const phrase = useRef<string | null>(null);
   const url = useRef<string | null>(null);
+  // Cancels the capture that is still turning the camera: closing (or leaving
+  // the page) must not let it keep moving the camera under a newer capture.
+  const capture = useRef<AbortController | null>(null);
 
   const revoke = useCallback(() => {
     if (url.current) {
@@ -33,8 +36,21 @@ export function useShareStory(captureShirts: () => Promise<ShirtViews | null>) {
     }
   }, []);
 
-  // Free the image when the page goes away.
-  useEffect(() => revoke, [revoke]);
+  const cancelCapture = useCallback(() => {
+    capture.current?.abort();
+    capture.current = null;
+  }, []);
+
+  // When the page goes away: stop any capture, drop any flow still in the air
+  // (it must not publish an image nobody will free) and free the image.
+  useEffect(
+    () => () => {
+      generation.current += 1;
+      cancelCapture();
+      revoke();
+    },
+    [cancelCapture, revoke]
+  );
 
   const publish = useCallback(
     (image: Blob, text: string) => {
@@ -55,9 +71,12 @@ export function useShareStory(captureShirts: () => Promise<ShirtViews | null>) {
     views.current = null;
     blob.current = null;
     revoke();
+    cancelCapture();
+    const controller = new AbortController();
+    capture.current = controller;
     setState({ status: "preparing" });
     try {
-      const captured = await captureShirts();
+      const captured = await captureShirts(controller.signal);
       if (mine !== generation.current) return;
       if (!captured) throw new Error("The shirts could not be captured");
       views.current = captured;
@@ -70,7 +89,7 @@ export function useShareStory(captureShirts: () => Promise<ShirtViews | null>) {
     } finally {
       if (mine === generation.current) busy.current = false;
     }
-  }, [captureShirts, publish, revoke]);
+  }, [captureShirts, publish, revoke, cancelCapture]);
 
   const anotherPhrase = useCallback(async () => {
     const captured = views.current;
@@ -100,9 +119,10 @@ export function useShareStory(captureShirts: () => Promise<ShirtViews | null>) {
     views.current = null;
     blob.current = null;
     phrase.current = null;
+    cancelCapture();
     revoke();
     setState({ status: "closed" });
-  }, [revoke]);
+  }, [cancelCapture, revoke]);
 
   return { state, open, retry: open, anotherPhrase, share, close };
 }

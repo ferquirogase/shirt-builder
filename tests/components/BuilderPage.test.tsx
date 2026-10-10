@@ -215,6 +215,23 @@ describe("BuilderPage", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("hands the capture a signal that is cancelled when the dialog is closed mid-capture", async () => {
+    let signal: AbortSignal | undefined;
+    captureViews.mockImplementation((options: { signal: AbortSignal }) => {
+      signal = options.signal;
+      return new Promise(() => {});
+    });
+    render(<BuilderPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Compartir" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(signal).toBeInstanceOf(AbortSignal);
+    expect(signal!.aborted).toBe(false);
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cerrar" }));
+    expect(signal!.aborted).toBe(true);
+  });
+
   it("blocks Revisar diseño while the share dialog is open", async () => {
     captureViews.mockResolvedValue({ front: {}, back: {} });
     renderStory.mockResolvedValue(new Blob(["png"], { type: "image/png" }));

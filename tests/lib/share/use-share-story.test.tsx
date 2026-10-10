@@ -179,6 +179,62 @@ describe("useShareStory", () => {
     expect(result.current.state.status).toBe("ready");
   });
 
+  it("closing cancels the capture that is still turning the camera, and a new open gets a fresh signal", async () => {
+    const pending = deferred<ShirtViews | null>();
+    const signals: AbortSignal[] = [];
+    const capture = vi.fn((signal: AbortSignal) => {
+      signals.push(signal);
+      return signals.length === 1 ? pending.promise : Promise.resolve(views);
+    });
+    const { result } = renderHook(() => useShareStory(capture));
+
+    let first!: Promise<void>;
+    act(() => {
+      first = result.current.open();
+    });
+    expect(signals[0].aborted).toBe(false);
+
+    act(() => result.current.close());
+    expect(signals[0].aborted).toBe(true);
+
+    await act(async () => {
+      await result.current.open();
+    });
+    expect(signals).toHaveLength(2);
+    expect(signals[1].aborted).toBe(false);
+
+    await act(async () => {
+      pending.resolve(null);
+      await first;
+    });
+    expect(result.current.state.status).toBe("ready");
+  });
+
+  it("unmounting cancels a capture in progress and leaves no image behind", async () => {
+    const pending = deferred<ShirtViews | null>();
+    let signal!: AbortSignal;
+    const { result, unmount } = renderHook(() =>
+      useShareStory((s) => {
+        signal = s;
+        return pending.promise;
+      })
+    );
+
+    let opening!: Promise<void>;
+    act(() => {
+      opening = result.current.open();
+    });
+    unmount();
+    expect(signal.aborted).toBe(true);
+
+    await act(async () => {
+      pending.resolve(views);
+      await opening;
+    });
+    expect(renderStory).not.toHaveBeenCalled();
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+  });
+
   it("close frees the image, and so does unmounting", async () => {
     const { result, unmount } = renderHook(() => useShareStory(async () => views));
     await act(async () => {

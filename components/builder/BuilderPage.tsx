@@ -72,11 +72,11 @@ export function BuilderPage() {
 
   // The two sides of the shirt for the story image: the camera turns (visibly,
   // behind the dialog) and each side is copied with its transparency.
-  async function captureShirts(): Promise<ShirtViews | null> {
+  async function captureShirts(signal: AbortSignal): Promise<ShirtViews | null> {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     return captureViews(
-      { canvas, showView: (side) => requestView(side, true), wait: pause },
+      { canvas, signal, showView: (side) => requestView(side, true), wait: pause },
       (source) => shirtImageOf(source)
     );
   }
