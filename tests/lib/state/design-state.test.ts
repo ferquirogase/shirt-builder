@@ -274,3 +274,30 @@ describe("shortsColor", () => {
     expect(shortsColor(next)).toBe("#ff0000");
   });
 });
+
+describe("RESET_DESIGN", () => {
+  const edited = [
+    { type: "SET_BODY_PATTERN", id: "plain-body" },
+    { type: "SET_COLOR", slot: "primary", value: "#123456" },
+    { type: "SET_PLAYER_NAME", value: "Leo" },
+    { type: "SET_PLAYER_NUMBER", value: "10" },
+    { type: "SET_LOGO", dataUrl: "data:image/png;base64,AAAA" },
+    { type: "SET_SHORTS_COLOR_SOURCE", value: "secondary" },
+  ] as const;
+
+  it("brings every design choice back to the start", () => {
+    const state = edited.reduce(designReducer, initialDesignState);
+    const reset = designReducer(state, { type: "RESET_DESIGN" });
+    expect(reset).toEqual(initialDesignState);
+  });
+
+  it("keeps what is being bought and the project name: they are not part of the design", () => {
+    let state = designReducer(initialDesignState, { type: "SET_SHORTS_INCLUDED", value: true });
+    state = designReducer(state, { type: "SET_PROJECT_NAME", value: "Los Pibes" });
+    state = designReducer(state, { type: "SET_COLOR", slot: "primary", value: "#123456" });
+    const reset = designReducer(state, { type: "RESET_DESIGN" });
+    expect(reset.shorts.included).toBe(true);
+    expect(reset.projectName).toBe("Los Pibes");
+    expect(reset.colors).toEqual(initialDesignState.colors);
+  });
+});

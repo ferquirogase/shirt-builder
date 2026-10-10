@@ -46,9 +46,6 @@ export const ShortsIcon = (p: IconProps) => (
 export const UndoIcon = (p: IconProps) => (
   <Svg {...p}><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3" /></Svg>
 );
-export const RedoIcon = (p: IconProps) => (
-  <Svg {...p}><path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0 0 12h3" /></Svg>
-);
 export const ShareIcon = (p: IconProps) => (
   <Svg {...p}><path d="M12 15V4m0 0L8 8m4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" /></Svg>
 );

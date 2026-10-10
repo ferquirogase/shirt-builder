@@ -73,6 +73,11 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
   );
 }
 
+// Whether a reset would change anything: false on a design that is already the starting one.
+export function canResetDesign(design: DesignState): boolean {
+  return !sameDesign(designReducer(design, { type: "RESET_DESIGN" }), design);
+}
+
 export function historyReducer(state: HistoryState, action: HistoryAction): HistoryState {
   // Opening a saved design starts a clean history: it is not an edit to undo.
   if (action.type === "LOAD_DESIGN") return createHistory(action.design);

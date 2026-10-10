@@ -1,6 +1,5 @@
 "use client";
 import { useDesign } from "@/lib/builder/state/design-context";
-import type { ShortsColorSource } from "@/lib/builder/state/design-state";
 import { formatMoney, pricePerPlayer } from "@/lib/checkout/pricing";
 import { ShirtIcon, ShortsIcon } from "../icons";
 import { PanelShell } from "./PanelShell";
@@ -12,20 +11,15 @@ const KIT_OPTIONS = [
   { id: "kit", included: true, label: "Camiseta + short", showShorts: true },
 ] as const;
 
-const COLOR_OPTIONS: { source: ShortsColorSource; label: string }[] = [
-  { source: "primary", label: "Color primario" },
-  { source: "secondary", label: "Color secundario" },
-];
-
 const OPTION = "flex items-center gap-3 rounded-2xl border-2 bg-white/70 p-3 text-left text-sm font-medium";
 const border = (checked: boolean) => (checked ? "border-foreground" : "border-transparent hover:border-line");
 
 export function GarmentsPanel() {
   const { state, dispatch } = useDesign();
-  const { included, colorSource } = state.shorts;
+  const { included } = state.shorts;
 
   return (
-    <PanelShell title="Prendas" hint="El short toma uno de los colores de la camiseta.">
+    <PanelShell title="Prendas" hint="Elegí qué llevás. El diseño viene después.">
       <p id="kit-question" className="mb-3 text-sm font-semibold">
         ¿Qué querés comprar?
       </p>
@@ -61,39 +55,6 @@ export function GarmentsPanel() {
         })}
       </div>
 
-      {included && (
-        <div className="mt-6">
-          <p id="shorts-color-title" className="mb-3 text-sm font-semibold">
-            Color del short
-          </p>
-          <div role="radiogroup" aria-labelledby="shorts-color-title" className="flex flex-col gap-3">
-            {COLOR_OPTIONS.map((option) => {
-              const checked = colorSource === option.source;
-              return (
-                <button
-                  key={option.source}
-                  type="button"
-                  role="radio"
-                  aria-checked={checked}
-                  onClick={() => dispatch({ type: "SET_SHORTS_COLOR_SOURCE", value: option.source })}
-                  className={`${OPTION} ${border(checked)}`}
-                >
-                  <span
-                    data-swatch
-                    aria-hidden="true"
-                    className="h-8 w-8 shrink-0 rounded-full border border-line"
-                    style={{ backgroundColor: state.colors[option.source] }}
-                  />
-                  <span className="flex flex-col">
-                    {option.label}
-                    <span className="font-mono text-xs uppercase text-muted">{state.colors[option.source]}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </PanelShell>
   );
 }

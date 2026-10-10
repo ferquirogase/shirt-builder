@@ -371,44 +371,59 @@ describe("GarmentsPanel", () => {
     expect(screen.getByRole("radio", { name: "Camiseta + short" })).toHaveAccessibleDescription(/por jugador/);
   });
 
-  it("starts as shirt only, without the color choice", () => {
+  it("starts as shirt only", () => {
     renderWithDesign(<GarmentsPanel />);
     expect(screen.getByRole("radio", { name: "Solo camiseta" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "Camiseta + short" })).not.toBeChecked();
-    expect(screen.queryByRole("radio", { name: /Color primario/ })).toBeNull();
-    expect(screen.queryByText("Color del short")).toBeNull();
   });
 
-  it("switches to shirt and shorts and shows the color choice", () => {
+  it("switches to shirt and shorts and back", () => {
     const { api } = renderWithDesign(<GarmentsPanel />);
     fireEvent.click(screen.getByRole("radio", { name: "Camiseta + short" }));
     expect(api.current!.state.shorts.included).toBe(true);
+    fireEvent.click(screen.getByRole("radio", { name: "Solo camiseta" }));
+    expect(api.current!.state.shorts.included).toBe(false);
+  });
+
+  it("no longer asks for the shorts' color: that lives in Colores", () => {
+    renderWithDesign(<GarmentsPanel />);
+    fireEvent.click(screen.getByRole("radio", { name: "Camiseta + short" }));
+    expect(screen.queryByText("Color del short")).toBeNull();
+    expect(screen.queryByRole("radio", { name: /Color primario/ })).toBeNull();
+  });
+});
+
+describe("ColorsPanel shorts color", () => {
+  const withShorts = () => {
+    const utils = renderWithDesign(<ColorsPanel />);
+    act(() => utils.api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
+    return utils;
+  };
+
+  it("is not offered when only the shirt is bought", () => {
+    renderWithDesign(<ColorsPanel />);
+    expect(screen.queryByText("Color del short")).toBeNull();
+    expect(screen.queryByRole("radio", { name: /Color primario/ })).toBeNull();
+  });
+
+  it("asks which shirt color the shorts wear, primary by default", () => {
+    withShorts();
     expect(screen.getByText("Color del short")).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Color primario/ })).toBeChecked();
     expect(screen.getByRole("radio", { name: /Color secundario/ })).not.toBeChecked();
   });
 
   it("picks the secondary color for the shorts", () => {
-    const { api } = renderWithDesign(<GarmentsPanel />);
-    fireEvent.click(screen.getByRole("radio", { name: "Camiseta + short" }));
+    const { api } = withShorts();
     fireEvent.click(screen.getByRole("radio", { name: /Color secundario/ }));
     expect(api.current!.state.shorts.colorSource).toBe("secondary");
     expect(screen.getByRole("radio", { name: /Color secundario/ })).toBeChecked();
   });
 
-  it("shows each color option with the shirt's current color", () => {
-    const { api } = renderWithDesign(<GarmentsPanel />);
-    fireEvent.click(screen.getByRole("radio", { name: "Camiseta + short" }));
+  it("shows each option with the shirt's current color", () => {
+    const { api } = withShorts();
     act(() => api.current!.dispatch({ type: "SET_COLOR", slot: "secondary", value: "#123456" }));
     const swatch = screen.getByRole("radio", { name: /Color secundario/ }).querySelector("[data-swatch]") as HTMLElement;
     expect(swatch.style.backgroundColor).toBe("rgb(18, 52, 86)");
-  });
-
-  it("goes back to shirt only", () => {
-    const { api } = renderWithDesign(<GarmentsPanel />);
-    fireEvent.click(screen.getByRole("radio", { name: "Camiseta + short" }));
-    fireEvent.click(screen.getByRole("radio", { name: "Solo camiseta" }));
-    expect(api.current!.state.shorts.included).toBe(false);
-    expect(screen.queryByRole("radio", { name: /Color primario/ })).toBeNull();
   });
 });

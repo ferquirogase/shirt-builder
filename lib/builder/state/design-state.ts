@@ -35,7 +35,8 @@ export type DesignAction =
   | { type: "SET_NN_OUTLINE"; value: boolean }
   | { type: "SET_PROJECT_NAME"; value: string }
   | { type: "SET_SHORTS_INCLUDED"; value: boolean }
-  | { type: "SET_SHORTS_COLOR_SOURCE"; value: ShortsColorSource };
+  | { type: "SET_SHORTS_COLOR_SOURCE"; value: ShortsColorSource }
+  | { type: "RESET_DESIGN" };
 
 export const initialDesignState: DesignState = {
   bodyPatternId: "stripes-v1",
@@ -121,6 +122,13 @@ export function designReducer(state: DesignState, action: DesignAction): DesignS
       return { ...state, nameNumberStyle: { ...state.nameNumberStyle, outline: action.value } };
     case "SET_PROJECT_NAME":
       return { ...state, projectName: action.value };
+    case "RESET_DESIGN":
+      // What is bought and the project name are not part of the design: they stay.
+      return {
+        ...initialDesignState,
+        projectName: state.projectName,
+        shorts: { ...initialDesignState.shorts, included: state.shorts.included },
+      };
     case "SET_SHORTS_INCLUDED":
       return state.shorts.included === action.value
         ? state

@@ -35,6 +35,15 @@ describe("historyReducer", () => {
     expect(undone.present.colors.collar).toBe(initialDesignState.colors.collar);
   });
 
+  it("records a reset as one undo step, and ignores it on an untouched design", () => {
+    expect(run([{ type: "RESET_DESIGN" }]).past).toHaveLength(0);
+
+    const edited = run([{ type: "SET_BODY_PATTERN", id: "plain-body" }]);
+    const reset = historyReducer(edited, { type: "RESET_DESIGN" });
+    expect(reset.present.bodyPatternId).toBe(initialDesignState.bodyPatternId);
+    expect(historyReducer(reset, { type: "UNDO" }).present.bodyPatternId).toBe("plain-body");
+  });
+
   it("ignores UNDO/REDO when there is nothing to do", () => {
     const fresh = createHistory();
     expect(historyReducer(fresh, { type: "UNDO" })).toBe(fresh);
