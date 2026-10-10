@@ -35,16 +35,82 @@ body {
   scrollbar-gutter: stable;
 }
 
-/* Splash: the animations only define where each piece starts ("from"). Like the share story, they play whatever the system motion setting. */
-@keyframes splash-draw {
+/* Splash: the shirt is uncovered from the bottom up and then tries on a few designs before
+   settling on its own. Like the share story, it plays whatever the system motion setting.
+   The resting values (no animation) are the finished shirt. */
+@keyframes splash-wipe-up {
   from {
-    stroke-dashoffset: 1;
+    transform: translateY(500px);
   }
 }
 
-@keyframes splash-rise {
-  from {
-    transform: translateY(200px);
+/* Each design holds for a while and the change between them is quick: a slow blend
+   between two colors passes through a muddy grey. */
+@keyframes splash-body-colors {
+  0%,
+  22% {
+    fill: #b9233e;
+  }
+  27%,
+  50% {
+    fill: #1e50d0;
+  }
+  55%,
+  78% {
+    fill: #f5b700;
+  }
+  83%,
+  100% {
+    fill: #b9233e;
+  }
+}
+
+@keyframes splash-trim-colors {
+  0%,
+  22% {
+    fill: #439360;
+  }
+  27%,
+  50% {
+    fill: #ffffff;
+  }
+  55%,
+  78% {
+    fill: #1c1917;
+  }
+  83%,
+  100% {
+    fill: #439360;
+  }
+}
+
+@keyframes splash-bands-in {
+  0%,
+  24% {
+    opacity: 0;
+  }
+  27%,
+  50% {
+    opacity: 1;
+  }
+  53%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes splash-hoops-in {
+  0%,
+  52% {
+    opacity: 0;
+  }
+  55%,
+  78% {
+    opacity: 1;
+  }
+  81%,
+  100% {
+    opacity: 0;
   }
 }
 
@@ -67,22 +133,32 @@ body {
   }
 }
 
-.splash-outline {
-  stroke-dasharray: 1;
-  animation: splash-draw 1300ms ease-in-out both;
+.splash-wipe {
+  animation: splash-wipe-up 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.splash-stripe {
-  animation: splash-rise 700ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay) both;
+.splash-body {
+  fill: #b9233e;
+  animation: splash-body-colors 2200ms ease-in-out 500ms both;
 }
 
-.splash-collar {
-  stroke-dasharray: 1;
-  animation: splash-draw 500ms ease-out 1900ms both;
+.splash-trim {
+  fill: #439360;
+  animation: splash-trim-colors 2200ms ease-in-out 500ms both;
+}
+
+.splash-bands {
+  opacity: 0;
+  animation: splash-bands-in 2200ms ease-in-out 500ms both;
+}
+
+.splash-hoops {
+  opacity: 0;
+  animation: splash-hoops-in 2200ms ease-in-out 500ms both;
 }
 
 .splash-word {
-  animation: splash-fade-up 600ms ease-out 1500ms both;
+  animation: splash-fade-up 600ms ease-out 1900ms both;
 }
 
 .splash-bar {
@@ -90,7 +166,7 @@ body {
 }
 
 .splash-shirt {
-  animation: splash-breathe 1600ms ease-in-out 2200ms infinite alternate;
+  animation: splash-breathe 1600ms ease-in-out 2700ms infinite alternate;
 }
 
 /* Share story: reveal animation and confetti. */
