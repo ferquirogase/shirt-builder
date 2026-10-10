@@ -52,16 +52,16 @@ describe("setClothCollider", () => {
 });
 
 describe("applyClothSway", () => {
-  function compile() {
+  function compile(options?: { collide?: boolean }) {
     const uniforms = createClothSwayUniforms();
     const material = new THREE.MeshStandardMaterial();
-    applyClothSway(material, uniforms);
+    applyClothSway(material, uniforms, options);
     const shader = {
       uniforms: {} as Record<string, { value: unknown }>,
       vertexShader: "#include <common>\n#include <begin_vertex>\n",
     };
     material.onBeforeCompile(shader as unknown as THREE.WebGLProgramParametersWithUniforms, {} as THREE.WebGLRenderer);
-    return { shader, uniforms };
+    return { shader, uniforms, material };
   }
 
   it("shares the sway and collider uniforms with the shader, not copies of them", () => {
@@ -70,6 +70,17 @@ describe("applyClothSway", () => {
     expect(shader.uniforms.uColliderRadii).toBe(uniforms.uColliderRadii);
     expect(shader.uniforms.uColliderRange).toBe(uniforms.uColliderRange);
     expect(shader.uniforms.uColliderCenter).toBe(uniforms.uColliderCenter);
+  });
+
+  it("leaves out the collider for the shorts, which must not push themselves", () => {
+    const { shader, material } = compile({ collide: false });
+    expect(shader.vertexShader).not.toContain("uColliderRadii");
+    expect(shader.vertexShader).not.toContain("uColliderRange");
+    // It still sways and ripples like the shirt.
+    expect(shader.vertexShader).toContain("uSway *");
+    expect(shader.uniforms.uSway).toBeDefined();
+    // And does not share a compiled program with the shirt's.
+    expect(material.customProgramCacheKey()).not.toBe(compile().material.customProgramCacheKey());
   });
 
   it("declares the collider and pushes the displaced vertex out of it", () => {

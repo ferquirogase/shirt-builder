@@ -69,21 +69,31 @@ if (uColliderRange.z > 0.5 && transformed.y >= uColliderRange.x && transformed.y
   }
 }`;
 
-/** Makes `material` displace its vertices by their `swayWeight`, and keep out of the shorts' collider. Safe to call once per material. */
-export function applyClothSway(material: THREE.Material, uniforms: ClothSwayUniforms): void {
+/**
+ * Makes `material` displace its vertices by their `swayWeight`, and (unless `collide`
+ * is false, for the shorts themselves) keep out of the shorts' collider. Safe to call
+ * once per material.
+ */
+export function applyClothSway(
+  material: THREE.Material,
+  uniforms: ClothSwayUniforms,
+  { collide = true }: { collide?: boolean } = {}
+): void {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uSway = uniforms.uSway;
     shader.uniforms.uTime = uniforms.uTime;
-    shader.uniforms.uColliderRange = uniforms.uColliderRange;
-    shader.uniforms.uColliderCenter = uniforms.uColliderCenter;
-    shader.uniforms.uColliderRadii = uniforms.uColliderRadii;
+    if (collide) {
+      shader.uniforms.uColliderRange = uniforms.uColliderRange;
+      shader.uniforms.uColliderCenter = uniforms.uColliderCenter;
+      shader.uniforms.uColliderRadii = uniforms.uColliderRadii;
+    }
     shader.vertexShader = shader.vertexShader
       .replace(
         "#include <common>",
         `#include <common>
 attribute float ${SWAY_ATTRIBUTE};
 uniform vec3 uSway;
-uniform float uTime;${COLLIDER_GLSL}`
+uniform float uTime;${collide ? COLLIDER_GLSL : ""}`
       )
       .replace(
         "#include <begin_vertex>",
@@ -91,10 +101,10 @@ uniform float uTime;${COLLIDER_GLSL}`
 float swayW = ${SWAY_ATTRIBUTE};
 // Squared so the part near the body barely moves and the free edge swings most.
 transformed += uSway * (swayW * swayW);
-transformed += normal * sin(position.y * 0.12 + position.x * 0.09 + uTime * ${RIPPLE_SPEED.toFixed(2)}) * ${RIPPLE_AMPLITUDE.toFixed(2)} * swayW;${COLLIDE_GLSL}`
+transformed += normal * sin(position.y * 0.12 + position.x * 0.09 + uTime * ${RIPPLE_SPEED.toFixed(2)}) * ${RIPPLE_AMPLITUDE.toFixed(2)} * swayW;${collide ? COLLIDE_GLSL : ""}`
       );
   };
-  material.customProgramCacheKey = () => "cloth-sway";
+  material.customProgramCacheKey = () => (collide ? "cloth-sway" : "cloth-sway-free");
   material.needsUpdate = true;
 }
 
