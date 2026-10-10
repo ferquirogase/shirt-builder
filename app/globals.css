@@ -35,6 +35,64 @@ body {
   scrollbar-gutter: stable;
 }
 
+/* Splash: the animations only define where each piece starts ("from"). Like the share story, they play whatever the system motion setting. */
+@keyframes splash-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@keyframes splash-rise {
+  from {
+    transform: translateY(200px);
+  }
+}
+
+@keyframes splash-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes splash-grow {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes splash-breathe {
+  to {
+    transform: scale(1.04);
+  }
+}
+
+.splash-outline {
+  stroke-dasharray: 1;
+  animation: splash-draw 1300ms ease-in-out both;
+}
+
+.splash-stripe {
+  animation: splash-rise 700ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay) both;
+}
+
+.splash-collar {
+  stroke-dasharray: 1;
+  animation: splash-draw 500ms ease-out 1900ms both;
+}
+
+.splash-word {
+  animation: splash-fade-up 600ms ease-out 1500ms both;
+}
+
+.splash-bar {
+  animation: splash-grow var(--splash-ms) linear both;
+}
+
+.splash-shirt {
+  animation: splash-breathe 1600ms ease-in-out 2200ms infinite alternate;
+}
+
 /* Share story: reveal animation and confetti. */
 @keyframes story-in {
   from {

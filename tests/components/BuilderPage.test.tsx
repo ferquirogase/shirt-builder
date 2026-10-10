@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import { createPlayerLine } from "@/lib/checkout/order";
+import { SPLASH_SEEN_KEY } from "@/lib/builder/splash";
 import { clearDesignImages, clearOrder, loadDesignImages, loadOrder, saveDesignImages, saveOrder } from "@/lib/checkout/order-storage";
 
 const push = vi.fn();
@@ -44,6 +45,8 @@ describe("BuilderPage", () => {
   beforeEach(() => {
     clearOrder();
     clearDesignImages();
+    // The splash has its own tests: here the session has already seen it.
+    window.sessionStorage.setItem(SPLASH_SEEN_KEY, "1");
     push.mockReset();
     captureDesignImages.mockReset();
     captureViews.mockReset();
@@ -212,6 +215,19 @@ describe("BuilderPage", () => {
     expect(loadOrder()!.roster.map((l) => l.name)).toEqual(["Leo", "Dibu"]);
     expect(loadOrder()!.thumbnails).toEqual({ front: "F2", back: "B2" });
     expect(loadOrder()!.design.projectName).toBe("Los del viernes");
+  });
+
+  it("covers the builder with the splash on the first visit, and keeps the builder out of reach meanwhile", () => {
+    window.sessionStorage.removeItem(SPLASH_SEEN_KEY);
+    const { container } = render(<BuilderPage />);
+    expect(screen.getByRole("status", { name: "Cargando GEPE" })).toBeInTheDocument();
+    expect(container.querySelector("[inert]")).not.toBeNull();
+  });
+
+  it("goes straight to the builder when the splash was already seen", () => {
+    const { container } = render(<BuilderPage />);
+    expect(screen.queryByRole("status", { name: "Cargando GEPE" })).toBeNull();
+    expect(container.querySelector("[inert]")).toBeNull();
   });
 
   it("no longer has a Descargar PNG button", () => {

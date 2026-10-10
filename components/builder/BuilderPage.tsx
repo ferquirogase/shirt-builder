@@ -14,8 +14,11 @@ import { pause } from "@/lib/checkout/pause";
 import { captureDesignImages } from "@/lib/checkout/thumbnails";
 import { stageBaseCss, stageGlowCss } from "@/lib/builder/stage-style";
 import type { ViewSide } from "@/lib/builder/geometry/camera-math";
+import { useModelReady } from "@/lib/builder/use-model-ready";
+import { useSplash } from "@/lib/builder/use-splash";
 import { Header } from "./Header";
 import { RestoreOrderDesign } from "./RestoreOrderDesign";
+import { SplashScreen } from "./SplashScreen";
 import { SectionNav, type SectionId } from "./SectionNav";
 import { StageToolbar } from "./viewer/StageToolbar";
 import { Viewer3D } from "./viewer/Viewer3D";
@@ -45,6 +48,7 @@ function SectionPanel({ section }: { section: SectionId }) {
 }
 
 export function BuilderPage() {
+  const splash = useSplash(useModelReady());
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [section, setSection] = useState<SectionId>("prendas");
   const [view, setView] = useState<ViewSide>("front");
@@ -116,7 +120,9 @@ export function BuilderPage() {
   return (
     <DesignProvider>
       <RestoreOrderDesign />
-      <div className="min-h-dvh">
+      <SplashScreen phase={splash} />
+      {/* Out of reach (keyboard and screen readers too) until the splash lets go. */}
+      <div className="min-h-dvh" inert={splash === "showing"}>
         <main
           className="flex h-dvh flex-col overflow-hidden"
           style={{ background: stageBaseCss() }}
