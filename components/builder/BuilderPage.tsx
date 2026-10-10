@@ -101,6 +101,8 @@ export function BuilderPage() {
     let keeperThumbnails: Thumbnails | null = null;
     const canvas = canvasRef.current;
     if (canvas) {
+      // The player's photos must show the player's shirt, whatever the viewer was showing.
+      showKit("player");
       const options = { canvas, showView: (side: ViewSide) => requestView(side, true), wait: pause };
       try {
         captured = await captureDesignImages(options);

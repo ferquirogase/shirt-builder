@@ -109,7 +109,7 @@ describe("RosterTable keeper", () => {
 
   it("marks who plays in goal", () => {
     render(<Harness initial={order(createPlayerLine("a"), createPlayerLine("b"))} withKeeper />);
-    expect(screen.getByText("Marcá quién es el arquero.")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Marcá quién es el arquero.");
     fireEvent.click(screen.getByLabelText("Arquero: jugador 2"));
     expect(screen.getByLabelText("Arquero: jugador 2")).toBeChecked();
     expect(screen.getByLabelText("Arquero: jugador 1")).not.toBeChecked();

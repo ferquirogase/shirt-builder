@@ -13,6 +13,8 @@ describe("cleanInitials", () => {
     expect(cleanInitials(" a b ")).toBe("AB");
     expect(cleanInitials("<b>a&c")).toBe("BAC");
     expect(cleanInitials("ñu7")).toBe("ÑU7");
+    expect(cleanInitials("Álvaro")).toBe("ALV");
+    expect(cleanInitials("Éric")).toBe("ERI");
   });
 });
 

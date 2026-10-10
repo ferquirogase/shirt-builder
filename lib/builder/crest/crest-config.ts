@@ -27,7 +27,12 @@ export const INITIAL_CREST: CrestConfig = {
   symbol: null,
 };
 
+// Accents are folded to their base letter ("Álvaro" -> A...), keeping Ñ, which is a letter of its own.
+function baseLetter(char: string): string {
+  return char.toUpperCase() === "Ñ" ? "Ñ" : char.normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
 // Up to three letters or digits, uppercase: what fits inside a shield.
 export function cleanInitials(text: string): string {
-  return text.toUpperCase().replace(/[^A-ZÑ0-9]/g, "").slice(0, MAX_INITIALS);
+  return [...text].map(baseLetter).join("").toUpperCase().replace(/[^A-ZÑ0-9]/g, "").slice(0, MAX_INITIALS);
 }

@@ -186,6 +186,25 @@ describe("BuilderPage", () => {
     expect(screen.getByRole("radio", { name: "Jugador" })).toHaveAttribute("aria-checked", "true");
   });
 
+  it("photographs the player's shirt as the player's even when the viewer was showing the keeper", async () => {
+    let shownWhenPhotographed = "";
+    captureDesignImages.mockImplementation(async () => {
+      // The real capture waits for the camera before it reads the canvas: let the viewer repaint.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      shownWhenPhotographed = screen.getByRole("radio", { name: "Jugador" }).getAttribute("aria-checked") ?? "";
+      return { thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } };
+    });
+    captureThumbnails.mockResolvedValue({ front: "KF", back: "KB" });
+    render(<BuilderPage />);
+    fireEvent.click(screen.getByRole("switch", { name: "Sumar camiseta de arquero" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Arquero" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
+    expect(shownWhenPhotographed).toBe("true");
+  });
+
   it("does not photograph a keeper when there is none", async () => {
     captureDesignImages.mockResolvedValue({ thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } });
     captureThumbnails.mockReset();

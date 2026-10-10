@@ -177,7 +177,9 @@ export function RosterTable({ roster, errors, dispatch, withShorts, withKeeper =
       </ul>
 
       {withKeeper && !roster.some((line) => line.keeper) && (
-        <p className="mt-3 text-sm text-muted">Marcá quién es el arquero.</p>
+        <p role="status" className="mt-3 rounded-xl bg-accent-soft px-3 py-2 text-sm font-medium">
+          Marcá quién es el arquero.
+        </p>
       )}
 
       <button
