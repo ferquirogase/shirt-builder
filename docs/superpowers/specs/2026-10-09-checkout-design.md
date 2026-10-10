@@ -15,7 +15,7 @@ Fuera de alcance: conexión real con Ripple o cualquier backend, cuentas de usua
 
 ## Decisiones tomadas
 - **Un diseño + plantel.** Se diseña una camiseta y cada fila del plantel es una camiseta con ese diseño. No hay diseños distintos en el mismo pedido.
-- **Miniatura por diseño**, no por jugador: frente y espalda, sin el nombre y número de ningún jugador en particular. Las filas del plantel son texto.
+- **Miniatura por diseño**, no por jugador: frente y espalda tal como se ven en el visor al tocar "Revisar diseño" (con el nombre y número cargados en el builder, si hay). Las filas del plantel son texto.
 - **Una página completa**, no un wizard.
 - **`/checkout` es una ruta propia** y el pedido viaja por `sessionStorage` (no un modal ni el estado en memoria del layout). Así sobrevive a un refresh y el pedido ya es un objeto serializable que se puede mandar a Ripple.
 
@@ -33,7 +33,7 @@ type Order = {
 - Reducer del pedido: `ADD_PLAYER`, `REMOVE_PLAYER`, `DUPLICATE_PLAYER`, `UPDATE_PLAYER { id, patch }`. No se puede quitar la última línea.
 - Cantidad entre 1 y 99. Número de 0 a 99, como texto de hasta 2 dígitos. Nombre de hasta 12 caracteres (el largo que entra en la espalda).
 - `orderTotals(order)`: cantidad de camisetas, subtotal y total. Precios y moneda son constantes de ejemplo en un solo archivo (`pricing.ts`): precio por camiseta y un descuento por cantidad. Es lo único que Ripple o un catálogo real reemplazaría.
-- `validateOrder(order, contact)`: devuelve los errores por campo (nombre y número de cada línea, y los datos de contacto y envío obligatorios). El botón de pagar se bloquea con errores.
+- `validateOrder(order, contact)`: devuelve los errores por campo (nombre y número de cada línea, y los datos de contacto y envío obligatorios). Los errores se muestran después del primer intento de pagar; el botón no se deshabilita, para que el usuario vea qué falta: se muestran los mensajes y el foco va al primer campo inválido.
 
 ## Persistencia (`order-storage.ts`)
 Lee y escribe `Order` en `sessionStorage` con try/catch; si falla (cuota, modo privado), el pedido sigue en memoria y la página funciona igual. El escudo y los sponsors son data URLs grandes: las miniaturas se reducen a unos 400 px de lado para dejar espacio. Un JSON dañado se descarta y se trata como "sin pedido".
