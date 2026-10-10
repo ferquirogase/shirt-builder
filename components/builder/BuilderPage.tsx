@@ -8,10 +8,17 @@ import type { ShirtViews } from "@/lib/share/compose-story";
 import { shirtImageOf } from "@/lib/share/shirt-image";
 import { useShareStory } from "@/lib/share/use-share-story";
 import { ShareStoryDialog } from "@/components/share/ShareStoryDialog";
-import { orderFromDesign, type Thumbnails } from "@/lib/checkout/order";
-import { clearDesignImages, loadOrder, saveDesignImages, saveOrder } from "@/lib/checkout/order-storage";
+import { orderFromDesign } from "@/lib/checkout/order";
+import {
+  clearDesignImages,
+  clearKeeperDesignImages,
+  loadOrder,
+  saveDesignImages,
+  saveKeeperDesignImages,
+  saveOrder,
+} from "@/lib/checkout/order-storage";
 import { pause } from "@/lib/checkout/pause";
-import { captureDesignImages, captureThumbnails } from "@/lib/checkout/thumbnails";
+import { captureDesignImages } from "@/lib/checkout/thumbnails";
 import { stageBaseCss, stageGlowCss } from "@/lib/builder/stage-style";
 import type { ViewSide } from "@/lib/builder/geometry/camera-math";
 import { useModelReady } from "@/lib/builder/use-model-ready";
@@ -98,7 +105,7 @@ export function BuilderPage() {
     if (reviewing || sharing) return;
     setReviewing(true);
     let captured = null;
-    let keeperThumbnails: Thumbnails | null = null;
+    let keeperCaptured: Awaited<ReturnType<typeof captureDesignImages>> = null;
     const canvas = canvasRef.current;
     if (canvas) {
       // The player's photos must show the player's shirt, whatever the viewer was showing.
@@ -110,13 +117,13 @@ export function BuilderPage() {
         captured = null;
       }
       // The keeper's shirt is photographed after the player's: the viewer shows it for a moment,
-      // then goes back to the player. Only small photos: the AI try-on uses the player shirt.
+      // then goes back to the player. Both sizes, like the player's: the AI try-on can use either.
       if (captured && design.keeper.included) {
         showKit("keeper");
         try {
-          keeperThumbnails = await captureThumbnails(options);
+          keeperCaptured = await captureDesignImages(options);
         } catch {
-          keeperThumbnails = null;
+          keeperCaptured = null;
         } finally {
           showKit("player");
         }
@@ -125,7 +132,9 @@ export function BuilderPage() {
     // The big images (for the AI try-on) are kept apart; stale ones must not outlive a failed capture.
     if (captured) saveDesignImages(captured.images);
     else clearDesignImages();
-    saveOrder(orderFromDesign(design, captured?.thumbnails ?? null, loadOrder(), keeperThumbnails));
+    if (keeperCaptured) saveKeeperDesignImages(keeperCaptured.images);
+    else clearKeeperDesignImages();
+    saveOrder(orderFromDesign(design, captured?.thumbnails ?? null, loadOrder(), keeperCaptured?.thumbnails ?? null));
     router.push("/checkout", { transitionTypes: ["nav-forward"] });
   }
 

@@ -3,7 +3,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { AiTryOn } from "@/components/checkout/AiTryOn";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import { createPlayerLine, type Order } from "@/lib/checkout/order";
-import { clearDesignImages, saveDesignImages } from "@/lib/checkout/order-storage";
+import {
+  clearDesignImages,
+  clearKeeperDesignImages,
+  saveDesignImages,
+  saveKeeperDesignImages,
+} from "@/lib/checkout/order-storage";
 
 const order: Order = {
   design: { ...initialDesignState, projectName: "Los del viernes" },
@@ -15,6 +20,7 @@ const writeText = vi.fn();
 
 beforeEach(() => {
   clearDesignImages();
+  clearKeeperDesignImages();
   window.sessionStorage.clear();
   writeText.mockReset().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
@@ -75,5 +81,56 @@ describe("AiTryOn", () => {
     expect(screen.queryByRole("link", { name: /Descargar/ })).toBeNull();
     expect(screen.getByText(/No pudimos preparar las imágenes/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copiar prompt" })).toBeInTheDocument();
+  });
+});
+
+describe("AiTryOn with a keeper", () => {
+  const keeperOrder: Order = {
+    design: { ...initialDesignState, projectName: "Los del viernes", keeper: { ...initialDesignState.keeper, included: true } },
+    thumbnails: null,
+    roster: [
+      createPlayerLine("a", { name: "LEO", number: "10" }),
+      createPlayerLine("b", { name: "DIBU", number: "1", keeper: true }),
+    ],
+  };
+
+  it("offers no choice without a keeper", () => {
+    render(<AiTryOn order={order} />);
+    open();
+    expect(screen.queryByRole("radiogroup", { name: "Camiseta" })).toBeNull();
+  });
+
+  it("switches the downloads and the prompt to the keeper's shirt", async () => {
+    saveDesignImages({ front: "data:image/jpeg;base64,PF", back: "data:image/jpeg;base64,PB" });
+    saveKeeperDesignImages({ front: "data:image/jpeg;base64,KF", back: "data:image/jpeg;base64,KB" });
+    render(<AiTryOn order={keeperOrder} />);
+    open();
+    await waitFor(() => expect(screen.getByRole("link", { name: "Descargar frente" })).toHaveAttribute("href", "data:image/jpeg;base64,PF"));
+    expect((screen.getByRole("textbox", { name: "Prompt de ejemplo" }) as HTMLTextAreaElement).value).toContain("LEO");
+
+    fireEvent.click(screen.getByRole("radio", { name: "Arquero" }));
+    expect(screen.getByRole("link", { name: "Descargar frente" })).toHaveAttribute("href", "data:image/jpeg;base64,KF");
+    expect(screen.getByRole("link", { name: "Descargar frente" })).toHaveAttribute("download", expect.stringContaining("arquero"));
+    const box = screen.getByRole("textbox", { name: "Prompt de ejemplo" }) as HTMLTextAreaElement;
+    expect(box.value).toContain("DIBU");
+    expect(box.value).toMatch(/arquero/i);
+  });
+
+  it("keeps what was typed for each shirt apart", () => {
+    render(<AiTryOn order={keeperOrder} />);
+    open();
+    fireEvent.change(screen.getByRole("textbox", { name: "Prompt de ejemplo" }), { target: { value: "mi texto" } });
+    fireEvent.click(screen.getByRole("radio", { name: "Arquero" }));
+    expect((screen.getByRole("textbox", { name: "Prompt de ejemplo" }) as HTMLTextAreaElement).value).toContain("DIBU");
+    fireEvent.click(screen.getByRole("radio", { name: "Jugador" }));
+    expect((screen.getByRole("textbox", { name: "Prompt de ejemplo" }) as HTMLTextAreaElement).value).toBe("mi texto");
+  });
+
+  it("says so when the keeper's images could not be prepared", () => {
+    saveDesignImages({ front: "data:image/jpeg;base64,PF", back: "data:image/jpeg;base64,PB" });
+    render(<AiTryOn order={keeperOrder} />);
+    open();
+    fireEvent.click(screen.getByRole("radio", { name: "Arquero" }));
+    expect(screen.getByText(/No pudimos preparar las imágenes/)).toBeInTheDocument();
   });
 });
