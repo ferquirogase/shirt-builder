@@ -3,10 +3,10 @@ import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useLoader } from "@react-three/fiber";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
-import { JERSEY_BOTTOM_Y, JERSEY_CENTER_Y } from "@/lib/builder/geometry/jersey-model";
+import { JERSEY_CENTER_Y } from "@/lib/builder/geometry/jersey-model";
 import { firstMeshGeometry } from "@/lib/builder/geometry/jersey-geometry";
 import { SHORTS_MODEL } from "@/lib/builder/geometry/shorts-model";
-import { buildShortsCollider } from "@/lib/builder/geometry/shorts-collider";
+import { buildKitCollider } from "@/lib/builder/geometry/shorts-collider";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { shortsColor } from "@/lib/builder/state/design-state";
 import { createBlendedNormalTexture } from "@/lib/builder/texture/fabric-texture";
@@ -28,11 +28,7 @@ export function ShortsModel() {
 
   // The shirt's shader gets the shorts' shape from the hem up to their waist, and
   // lets go of it when the shorts are taken off.
-  const collider = useMemo(() => {
-    if (!geometry) return null;
-    const top = new THREE.Box3().setFromBufferAttribute(geometry.getAttribute("position") as THREE.BufferAttribute).max.y;
-    return buildShortsCollider(geometry, JERSEY_BOTTOM_Y, top);
-  }, [geometry]);
+  const collider = useMemo(() => (geometry ? buildKitCollider(geometry) : null), [geometry]);
   const sway = useClothSway();
   useEffect(() => {
     setClothCollider(sway, collider);

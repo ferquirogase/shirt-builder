@@ -35,7 +35,7 @@ describe("setClothCollider", () => {
     setClothCollider(uniforms, labelledCollider());
     expect(uniforms.uColliderRange.value.toArray()).toEqual([167, 205, 1]);
     expect(uniforms.uColliderCenter.value[5].toArray()).toEqual([5, -5]);
-    for (const [i, k] of [[0, 0], [0, 23], [3, 7], [15, 23], [9, 4]]) {
+    for (const [i, k] of [[0, 0], [0, COLLIDER_BINS - 1], [3, 7], [COLLIDER_SAMPLES - 1, COLLIDER_BINS - 1], [5, 4]]) {
       const index = i * COLLIDER_BINS + k;
       expect(uniforms.uColliderRadii.value[Math.floor(index / 4)].getComponent(index % 4)).toBe(100 * i + k);
     }

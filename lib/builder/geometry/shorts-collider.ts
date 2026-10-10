@@ -1,4 +1,5 @@
 import type * as THREE from "three";
+import { JERSEY_BOTTOM_Y } from "./jersey-model";
 
 // The shirt's hem hangs over the shorts' waist with only a few units of air, and
 // the cloth sway can swing it further than that. So the shirt is not allowed into
@@ -9,15 +10,22 @@ import type * as THREE from "three";
 //
 // All numbers are in the OBJ's own units.
 
+// The shorts barely change from one height to the next, but their corners are tight,
+// so the directions are many and the heights few. 7 x 56 radii is 98 vec4 of shader
+// uniforms (a phone's vertex stage has at least 256). With 24 directions a hem vertex
+// that is not touching the shorts was pushed out by 3 units.
 /** Heights the cross-section is measured at. */
-export const COLLIDER_SAMPLES = 16;
+export const COLLIDER_SAMPLES = 7;
 /** Directions around the centre. A multiple of 4: the shader packs 4 radii per vec4. */
-export const COLLIDER_BINS = 24;
+export const COLLIDER_BINS = 56;
 /** How far outside the shorts' surface the shirt is kept. */
 export const COLLIDER_MARGIN = 0.4;
+/** A height takes the vertices within this many steps of it (1 = the neighbouring heights too). */
+export const COLLIDER_BAND = 1;
+/** The collider starts this far under the shirt's hem: its lowest vertices lie a hair below JERSEY_BOTTOM_Y. */
+export const COLLIDER_LEAD = 1;
 
 const TWO_PI = Math.PI * 2;
-const BIN_WIDTH = TWO_PI / COLLIDER_BINS;
 
 /** The cross-section at one height: its centre and the radius at angle -PI + k * 2PI/COLLIDER_BINS. */
 export type ColliderSample = { cx: number; cz: number; radii: number[] };
@@ -25,6 +33,7 @@ export type ShortsCollider = { yMin: number; yMax: number; samples: ColliderSamp
 
 // Empty directions take a straight line between the nearest ones that have a radius.
 function fillEmptyBins(radii: (number | null)[]): number[] | null {
+  const bins = radii.length;
   const known = radii.flatMap((r, k) => (r === null ? [] : [k]));
   if (known.length === 0) return null;
   return radii.map((r, k) => {
@@ -38,8 +47,8 @@ function fillEmptyBins(radii: (number | null)[]): number[] | null {
         break;
       }
     }
-    const span = (after - before + COLLIDER_BINS) % COLLIDER_BINS || COLLIDER_BINS;
-    const t = ((k - before + COLLIDER_BINS) % COLLIDER_BINS) / span;
+    const span = (after - before + bins) % bins || bins;
+    const t = ((k - before + bins) % bins) / span;
     return (radii[before] as number) * (1 - t) + (radii[after] as number) * t;
   });
 }
@@ -53,8 +62,11 @@ export function buildShortsCollider(
   geometry: THREE.BufferGeometry,
   yMin: number,
   yMax: number,
-  count = COLLIDER_SAMPLES
+  count = COLLIDER_SAMPLES,
+  band = COLLIDER_BAND,
+  bins = COLLIDER_BINS
 ): ShortsCollider {
+  const binWidth = TWO_PI / bins;
   const position = geometry.getAttribute("position");
   const step = (yMax - yMin) / (count - 1);
 
@@ -62,7 +74,7 @@ export function buildShortsCollider(
     const y = yMin + i * step;
     const near: { x: number; z: number }[] = [];
     for (let v = 0; v < position.count; v++) {
-      if (Math.abs(position.getY(v) - y) <= step) near.push({ x: position.getX(v), z: position.getZ(v) });
+      if (Math.abs(position.getY(v) - y) <= step * band) near.push({ x: position.getX(v), z: position.getZ(v) });
     }
     if (near.length === 0) return null;
 
@@ -70,10 +82,15 @@ export function buildShortsCollider(
     const zs = near.map((p) => p.z);
     const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
     const cz = (Math.min(...zs) + Math.max(...zs)) / 2;
-    const reach: (number | null)[] = Array.from({ length: COLLIDER_BINS }, () => null);
+    const reach: (number | null)[] = Array.from({ length: bins }, () => null);
     for (const { x, z } of near) {
-      const bin = Math.round((Math.atan2(z - cz, x - cx) + Math.PI) / BIN_WIDTH) % COLLIDER_BINS;
-      reach[bin] = Math.max(reach[bin] ?? 0, Math.hypot(x - cx, z - cz));
+      // A vertex counts for both directions on either side of it, so the radius blended
+      // between two directions can never fall short of a vertex that lies between them.
+      const u = (Math.atan2(z - cz, x - cx) + Math.PI) / binWidth;
+      const radius = Math.hypot(x - cx, z - cz);
+      for (const bin of [Math.floor(u) % bins, (Math.floor(u) + 1) % bins]) {
+        reach[bin] = Math.max(reach[bin] ?? 0, radius);
+      }
     }
     const radii = fillEmptyBins(reach);
     return radii ? { cx, cz, radii } : null;
@@ -86,9 +103,17 @@ export function buildShortsCollider(
       const near = measured[i - d] ?? measured[i + d];
       if (near) return near;
     }
-    return { cx: 0, cz: 0, radii: Array.from({ length: COLLIDER_BINS }, () => 0) };
+    return { cx: 0, cz: 0, radii: Array.from({ length: bins }, () => 0) };
   });
   return { yMin, yMax, samples };
+}
+
+/** The collider the shirt must stay out of: the shorts, from just under the shirt's hem to their waist. */
+export function buildKitCollider(shorts: THREE.BufferGeometry): ShortsCollider {
+  const position = shorts.getAttribute("position");
+  let top = -Infinity;
+  for (let v = 0; v < position.count; v++) top = Math.max(top, position.getY(v));
+  return buildShortsCollider(shorts, JERSEY_BOTTOM_Y - COLLIDER_LEAD, top);
 }
 
 function mix(a: number, b: number, t: number): number {
@@ -121,9 +146,10 @@ export function pushOutside(
   const dx = x - cx;
   const dz = z - cz;
   const dist = Math.hypot(dx, dz);
-  const u = (Math.atan2(dz, dx) + Math.PI) / BIN_WIDTH;
-  const k0 = Math.floor(u) % COLLIDER_BINS;
-  const k1 = (k0 + 1) % COLLIDER_BINS;
+  const bins = lo.radii.length;
+  const u = (Math.atan2(dz, dx) + Math.PI) / (TWO_PI / bins);
+  const k0 = Math.floor(u) % bins;
+  const k1 = (k0 + 1) % bins;
   const fk = u - Math.floor(u);
   const radius = mix(mix(lo.radii[k0], lo.radii[k1], fk), mix(hi.radii[k0], hi.radii[k1], fk), t) + margin;
 

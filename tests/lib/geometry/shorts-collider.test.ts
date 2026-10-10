@@ -2,10 +2,12 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import * as THREE from "three";
 import { JERSEY_BOTTOM_Y } from "@/lib/builder/geometry/jersey-model";
+import { MAX_SWAY, swayWeight } from "@/lib/builder/geometry/cloth-sway";
 import {
   COLLIDER_BINS,
   COLLIDER_MARGIN,
   COLLIDER_SAMPLES,
+  buildKitCollider,
   buildShortsCollider,
   pushOutside,
   type ShortsCollider,
@@ -103,7 +105,9 @@ describe("pushOutside", () => {
     const along = pushOutside(oval, 10 + 7, 5, -4, margin);
     expect(along.x).toBeCloseTo(10 + 8.5, 1);
     const across = pushOutside(oval, 10, 5, -4 + 3.5, margin);
-    expect(across.z).toBeCloseTo(-4 + 4.5, 1);
+    // The envelope takes the widest vertex within a direction either side, so it never undershoots.
+    expect(across.z).toBeGreaterThanOrEqual(-4 + 4.5 - 1e-6);
+    expect(across.z).toBeLessThan(-4 + 4.5 + 0.3);
     // Just outside the short axis, where a bounding circle would have pushed it.
     expect(pushOutside(oval, 10, 5, -4 + 5, margin)).toEqual({ x: 10, z: 1 });
   });
@@ -121,36 +125,81 @@ describe("pushOutside", () => {
   });
 });
 
+// Möller–Trumbore: distance along the ray to the triangle, or null.
+function rayHit(o: number[], d: number[], a: number[], b: number[], c: number[]): number | null {
+  const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+  const e2 = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+  const p = [d[1] * e2[2] - d[2] * e2[1], d[2] * e2[0] - d[0] * e2[2], d[0] * e2[1] - d[1] * e2[0]];
+  const det = e1[0] * p[0] + e1[1] * p[1] + e1[2] * p[2];
+  if (Math.abs(det) < 1e-12) return null;
+  const inv = 1 / det;
+  const s = [o[0] - a[0], o[1] - a[1], o[2] - a[2]];
+  const u = (s[0] * p[0] + s[1] * p[1] + s[2] * p[2]) * inv;
+  if (u < 0 || u > 1) return null;
+  const q = [s[1] * e1[2] - s[2] * e1[1], s[2] * e1[0] - s[0] * e1[2], s[0] * e1[1] - s[1] * e1[0]];
+  const v = (d[0] * q[0] + d[1] * q[1] + d[2] * q[2]) * inv;
+  if (v < 0 || u + v > 1) return null;
+  const t = (e2[0] * q[0] + e2[1] * q[1] + e2[2] * q[2]) * inv;
+  return t > 1e-6 ? t : null;
+}
+
 describe("the real shorts", () => {
-  const flat = objVertices("public/models/gepe_shorts.obj").flat();
+  const shortsVertices = objVertices("public/models/gepe_shorts.obj");
   const shorts = new THREE.BufferGeometry();
-  shorts.setAttribute("position", new THREE.Float32BufferAttribute(flat, 3));
-  shorts.computeBoundingBox();
-  const top = shorts.boundingBox!.max.y;
-  const collider = buildShortsCollider(shorts, JERSEY_BOTTOM_Y, top);
+  shorts.setAttribute("position", new THREE.Float32BufferAttribute(shortsVertices.flat(), 3));
+  const top = Math.max(...shortsVertices.map((v) => v[1]));
+  const collider = buildKitCollider(shorts);
+
+  // Triangles of the shorts around the shirt's hem, from the OBJ's faces.
+  const faces = readFileSync("public/models/gepe_shorts.obj", "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith("f "))
+    .map((line) => line.trim().split(/\s+/).slice(1, 4).map((s) => Number(s.split("/")[0]) - 1));
+  const hemTriangles = faces.map((f) => f.map((i) => shortsVertices[i])).filter((tri) => tri.some((p) => p[1] > 160));
 
   // Body only: the sleeves are far from the shorts.
-  const shirtBody = objVertices("public/models/gepe_shirt.obj")
-    .filter((v) => Math.abs(v[0]) < 45)
-    .filter((v) => v[1] >= JERSEY_BOTTOM_Y && v[1] <= top);
+  const shirtBody = objVertices("public/models/gepe_shirt.obj").filter((v) => Math.abs(v[0]) < 45 && v[1] <= top);
+
+  // How deep inside the shorts a point is: the farthest crossing of the shorts' wall along an outward ray, or 0.
+  function depthInside(x: number, y: number, z: number): number {
+    const length = Math.hypot(x, z) || 1;
+    const direction = [x / length, 0, z / length];
+    let depth = 0;
+    for (const tri of hemTriangles) {
+      const t = rayHit([x, y, z], direction, tri[0], tri[1], tri[2]);
+      if (t !== null) depth = Math.max(depth, t);
+    }
+    return depth;
+  }
+
+  it("covers the shirt's lowest vertices, which lie a hair under JERSEY_BOTTOM_Y", () => {
+    expect(Math.min(...shirtBody.map((v) => v[1]))).toBeLessThan(JERSEY_BOTTOM_Y);
+    expect(collider.yMin).toBeLessThan(Math.min(...shirtBody.map((v) => v[1])));
+  });
 
   it("barely moves the shirt at rest: the shorts sit inside it", () => {
     expect(shirtBody.length).toBeGreaterThan(0);
     for (const [x, y, z] of shirtBody) {
       const pushed = pushOutside(collider, x, y, z);
-      // The shorts already stick out 0.6 past the shirt's hem, plus the margin: about a unit.
+      // The shorts already stick out 0.6 past the shirt's hem, plus the margin and the
+      // envelope's slack: a unit or so. A vertex that is not touching them must not be flung out.
       expect(Math.hypot(pushed.x - x, pushed.z - z)).toBeLessThan(1.5);
     }
   });
 
-  it("keeps the shirt out of the shorts even when its hem is swung sideways by the largest sway", () => {
-    for (const [x, y, z] of shirtBody) {
-      for (const swing of [-7, 7]) {
-        const once = pushOutside(collider, x + swing, y, z);
-        // Out means pushing it again changes nothing.
-        const again = pushOutside(collider, once.x, y, once.z);
-        expect(Math.hypot(again.x - once.x, again.z - once.z)).toBeLessThan(1e-6);
+  it("keeps every vertex of the swung shirt outside the shorts, whichever way the camera is orbiting", () => {
+    const inside: string[] = [];
+    for (let degrees = 0; degrees < 360; degrees += 30) {
+      const dx = Math.cos((degrees * Math.PI) / 180);
+      const dz = -Math.sin((degrees * Math.PI) / 180);
+      for (const [x, y, z] of shirtBody) {
+        // What the shader does: the sway squared by the vertex's weight.
+        const w = swayWeight(x, y);
+        const swung = pushOutside(collider, x + dx * MAX_SWAY * w * w, y, z + dz * MAX_SWAY * w * w);
+        const depth = depthInside(swung.x, y, swung.z);
+        if (depth > 0.05) inside.push(`${degrees}deg (${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}) ${depth.toFixed(2)}`);
       }
     }
+    expect(inside).toEqual([]);
   });
 });
