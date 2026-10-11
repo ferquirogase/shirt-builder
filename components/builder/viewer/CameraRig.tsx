@@ -2,9 +2,11 @@
 import { useEffect, useRef, type ComponentRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
+import { MOUSE } from "three";
 import {
   VIEW_AZIMUTH,
   azimuthOf,
+  clampPanTarget,
   offsetAt,
   shortestDelta,
   stepAzimuth,
@@ -47,6 +49,14 @@ export function CameraRig({ view, viewToken, resetPose, defaultRadius, defaultHe
     if (!ctl || !animating.current) return;
 
     const target = ctl.target;
+    // The pan goes back to the centre together with zoom and tilt. The camera keeps
+    // its offset from the target, so it travels along with it.
+    const easePose = resetPose || refit.current;
+    if (easePose) {
+      const before = target.clone();
+      target.set(stepToward(target.x, 0, 0.12), stepToward(target.y, 0, 0.12), stepToward(target.z, 0, 0.12));
+      camera.position.add(target.clone().sub(before));
+    }
     const dx = camera.position.x - target.x;
     const dz = camera.position.z - target.z;
     const radius = Math.hypot(dx, dz);
@@ -54,7 +64,6 @@ export function CameraRig({ view, viewToken, resetPose, defaultRadius, defaultHe
     const goal = VIEW_AZIMUTH[view];
 
     const nextAzimuth = stepAzimuth(azimuthOf(dx, dz), goal, 0.12);
-    const easePose = resetPose || refit.current;
     const nextRadius = easePose ? stepToward(radius, defaultRadius, 0.12) : radius;
     const nextHeight = easePose ? stepToward(height, defaultHeight, 0.12) : height;
     const offset = offsetAt(nextRadius, nextAzimuth);
@@ -63,7 +72,8 @@ export function CameraRig({ view, viewToken, resetPose, defaultRadius, defaultHe
 
     const settled =
       Math.abs(shortestDelta(nextAzimuth, goal)) < 1e-6 &&
-      (!easePose || (nextRadius === defaultRadius && nextHeight === defaultHeight));
+      (!easePose ||
+        (nextRadius === defaultRadius && nextHeight === defaultHeight && target.lengthSq() === 0));
     if (settled) {
       animating.current = false;
       refit.current = false;
@@ -74,9 +84,22 @@ export function CameraRig({ view, viewToken, resetPose, defaultRadius, defaultHe
     <OrbitControls
       ref={controls}
       makeDefault
-      enablePan={false}
+      enablePan
+      mouseButtons={{ LEFT: MOUSE.ROTATE, MIDDLE: MOUSE.PAN, RIGHT: MOUSE.PAN }}
       minDistance={1}
       maxDistance={6}
+      onChange={() => {
+        // Keep the panned centre inside the box, and the camera with it.
+        const ctl = controls.current;
+        if (!ctl) return;
+        const held = clampPanTarget(ctl.target);
+        if (held.x === ctl.target.x && held.y === ctl.target.y && held.z === ctl.target.z) return;
+        const camera = ctl.object;
+        camera.position.x += held.x - ctl.target.x;
+        camera.position.y += held.y - ctl.target.y;
+        camera.position.z += held.z - ctl.target.z;
+        ctl.target.set(held.x, held.y, held.z);
+      }}
       onStart={() => {
         animating.current = false;
         refit.current = false;
