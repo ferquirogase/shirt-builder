@@ -9,6 +9,19 @@ export const VIEW_AZIMUTH: Record<ViewSide, number> = { front: 0, back: Math.PI 
 export const DEFAULT_CAMERA_HEIGHT = 1.0;
 export const DEFAULT_CAMERA_RADIUS = 2.6;
 
+// How far the view can be panned (scene units, from the default centre). The
+// kit is about 1.8 tall and the shirt 1.3 wide with its sleeves, so the box
+// reaches a bit past them: you can bring any corner to the middle, never lose
+// the garment. Tune from screenshots.
+export const PAN_LIMIT = { x: 0.9, y: 1.1, z: 0.4 };
+
+export type Point3 = { x: number; y: number; z: number };
+
+export function clampPanTarget(target: Point3): Point3 {
+  const hold = (value: number, limit: number) => Math.min(limit, Math.max(-limit, value));
+  return { x: hold(target.x, PAN_LIMIT.x), y: hold(target.y, PAN_LIMIT.y), z: hold(target.z, PAN_LIMIT.z) };
+}
+
 const TWO_PI = Math.PI * 2;
 
 // Normalizes into (-PI, PI].

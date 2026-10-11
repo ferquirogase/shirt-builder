@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   DEFAULT_CAMERA_HEIGHT,
   DEFAULT_CAMERA_RADIUS,
+  PAN_LIMIT,
+  clampPanTarget,
   stepToward,
   VIEW_AZIMUTH,
   azimuthOf,
@@ -70,5 +72,22 @@ describe("camera math", () => {
   it("puts the front camera on +z and the back camera on -z", () => {
     expect(offsetAt(3, VIEW_AZIMUTH.front).z).toBeCloseTo(3);
     expect(offsetAt(3, VIEW_AZIMUTH.back).z).toBeCloseTo(-3);
+  });
+});
+
+
+describe("pan limits", () => {
+  it("leaves a target inside the box alone", () => {
+    expect(clampPanTarget({ x: 0.2, y: -0.5, z: 0.1 })).toEqual({ x: 0.2, y: -0.5, z: 0.1 });
+  });
+
+  it("holds a target that went too far on each axis at the edge, either side", () => {
+    expect(clampPanTarget({ x: 9, y: 9, z: 9 })).toEqual({ x: PAN_LIMIT.x, y: PAN_LIMIT.y, z: PAN_LIMIT.z });
+    expect(clampPanTarget({ x: -9, y: -9, z: -9 })).toEqual({ x: -PAN_LIMIT.x, y: -PAN_LIMIT.y, z: -PAN_LIMIT.z });
+  });
+
+  it("keeps the centre of the garment reachable and the box taller than wide", () => {
+    expect(clampPanTarget({ x: 0, y: 0, z: 0 })).toEqual({ x: 0, y: 0, z: 0 });
+    expect(PAN_LIMIT.y).toBeGreaterThan(PAN_LIMIT.x);
   });
 });
