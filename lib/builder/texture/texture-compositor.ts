@@ -184,9 +184,9 @@ const CREST_U_FRAC = 0.66;
 // The maker's mark sits on the other chest, where the crest used to be mirrored.
 const BRAND_U_FRAC = 0.3;
 const CREST_V_FRAC = 0.71;
-// The longer side of the crest, as a share of the canvas (it was 0.08, then 0.065, which still
+// The longer side of the crest, as a share of the canvas (it was 0.08, then 0.065 and 0.058, which still
 // reached the curve of the sleeve).
-const CREST_BOX_FRACTION = 0.058;
+const CREST_BOX_FRACTION = 0.052;
 // The maker's mark is smaller than the crest, like a brand on a real shirt.
 const BRAND_BOX_FRACTION = 0.03;
 // Cloth at least this bright (0..1) gets the logo version meant for light backgrounds.
