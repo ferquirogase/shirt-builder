@@ -41,4 +41,17 @@ describe("SectionNav", () => {
     fireEvent.click(screen.getByRole("button", { name: "Nombre y número" }));
     expect(onChange).toHaveBeenCalledWith("texto");
   });
+
+  it("draws every icon inside a box of the same size, whatever the image's proportions", () => {
+    render(<SectionNav active="prendas" onChange={() => {}} />);
+    const boxes = screen.getAllByRole("button").map((button) => button.querySelector("img")!.parentElement!);
+    expect(boxes).toHaveLength(6);
+    for (const box of boxes) {
+      expect(box.className).toContain("h-8");
+      expect(box.className).toContain("w-8");
+    }
+    for (const button of screen.getAllByRole("button")) {
+      expect(button.querySelector("img")!.className).toContain("object-contain");
+    }
+  });
 });
