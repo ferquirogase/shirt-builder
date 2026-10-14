@@ -4,8 +4,8 @@ import { useDesign } from "@/lib/builder/state/design-context";
 import { UndoIcon } from "../icons";
 
 const SHIRTS = [
-  { target: "player", label: "Jugador" },
-  { target: "keeper", label: "Arquero" },
+  { target: "player", label: "Jugador", icon: "/icons/sections/kit-shirt.webp" },
+  { target: "keeper", label: "Arquero", icon: "/icons/sections/kit-gloves.webp" },
 ] as const;
 
 export function StageToolbar() {
@@ -22,17 +22,21 @@ export function StageToolbar() {
           aria-label="Camiseta"
           className="pointer-events-auto flex h-11 rounded-full bg-white/80 p-1 shadow-sm"
         >
-          {SHIRTS.map(({ target, label }) => (
+          {SHIRTS.map(({ target, label, icon }) => (
             <button
               key={target}
               type="button"
               role="radio"
               aria-checked={editing === target}
               onClick={() => setEditing(target)}
-              className={`rounded-full px-4 text-sm font-semibold transition ${
+              className={`flex items-center gap-1.5 rounded-full pl-2 pr-4 text-sm font-semibold transition ${
                 editing === target ? "bg-foreground text-white" : "text-muted hover:text-foreground"
               }`}
             >
+              {/* Same square box for both images, whatever their proportions. */}
+              <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center">
+                <img src={icon} alt="" className="h-full w-full object-contain" />
+              </span>
               {label}
             </button>
           ))}

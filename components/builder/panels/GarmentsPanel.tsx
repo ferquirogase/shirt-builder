@@ -1,14 +1,13 @@
 "use client";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { formatMoney, pricePerPlayer } from "@/lib/checkout/pricing";
-import { ShirtIcon, ShortsIcon } from "../icons";
 import { PanelShell } from "./PanelShell";
 
 // What is bought comes first: it decides the price, what the viewer shows and the
 // sizes the checkout asks for. The design is built after that.
 const KIT_OPTIONS = [
-  { id: "shirt", included: false, label: "Solo camiseta", showShorts: false },
-  { id: "kit", included: true, label: "Camiseta + short", showShorts: true },
+  { id: "shirt", included: false, label: "Solo camiseta", icon: "/icons/sections/kit-shirt.webp" },
+  { id: "kit", included: true, label: "Camiseta + short", icon: "/icons/sections/kit-kit.webp" },
 ] as const;
 
 const OPTION = "flex items-center gap-3 rounded-2xl border-2 bg-white/70 p-3 text-left text-sm font-medium";
@@ -38,9 +37,9 @@ export function GarmentsPanel() {
               onClick={() => dispatch({ type: "SET_SHORTS_INCLUDED", value: option.included })}
               className={`${OPTION} ${border(checked)} flex-col items-start p-3 md:flex-row md:items-center md:p-4`}
             >
-              <span aria-hidden="true" className="flex shrink-0 gap-1 text-foreground">
-                <ShirtIcon className="h-8 w-8" />
-                {option.showShorts && <ShortsIcon className="h-8 w-8" />}
+              {/* Same square box for both images, so the options stay the same size. */}
+              <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center">
+                <img src={option.icon} alt="" className="h-full w-full object-contain" />
               </span>
               <span className="flex flex-col">
                 <span id={`${option.id}-label`} className="text-base font-semibold">
@@ -55,6 +54,7 @@ export function GarmentsPanel() {
         })}
       </div>
 
+      {/* Icon, title and switch share the first row; the hint takes the full width below so the text is not squeezed between them. */}
       <button
         type="button"
         role="switch"
@@ -62,15 +62,14 @@ export function GarmentsPanel() {
         aria-labelledby="keeper-label"
         aria-describedby="keeper-hint"
         onClick={() => dispatch({ type: "SET_KEEPER_INCLUDED", value: !state.keeper.included })}
-        className={`${OPTION} ${border(state.keeper.included)} mt-3 w-full justify-between md:p-4`}
+        className={`${OPTION} ${border(state.keeper.included)} mt-3 grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 md:p-4`}
       >
-        <span className="flex flex-col">
-          <span id="keeper-label" className="text-base font-semibold">
-            Sumar camiseta de arquero
-          </span>
-          <span id="keeper-hint" className="font-normal text-muted">
-            Colores y patrón propios. Comparte escudo y sponsors.
-          </span>
+        {/* Smaller than the kit images: this row also holds the text and the switch. */}
+        <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center">
+          <img src="/icons/sections/kit-gloves.webp" alt="" className="h-full w-full object-contain" />
+        </span>
+        <span id="keeper-label" className="text-base font-semibold leading-tight">
+          Sumar camiseta de arquero
         </span>
         <span
           aria-hidden="true"
@@ -83,6 +82,9 @@ export function GarmentsPanel() {
               state.keeper.included ? "translate-x-5" : ""
             }`}
           />
+        </span>
+        <span id="keeper-hint" className="col-span-3 font-normal text-muted">
+          Colores y patrón propios. Comparte escudo y sponsors.
         </span>
       </button>
     </PanelShell>
