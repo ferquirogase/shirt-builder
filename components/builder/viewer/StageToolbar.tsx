@@ -8,6 +8,9 @@ const SHIRTS = [
   { target: "keeper", label: "Arquero", icon: "/icons/sections/kit-gloves.webp" },
 ] as const;
 
+const RESET_LABEL = "Resetear diseño";
+const ARMED_LABEL = "¿Seguro? Se pierden los cambios";
+
 export function StageToolbar() {
   const { state, dispatch, canReset, editing, setEditing } = useDesign();
   // A reset throws the design away and the page has no undo, so it takes two clicks.
@@ -15,7 +18,7 @@ export function StageToolbar() {
   const armed = confirming && canReset;
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex flex-wrap items-center justify-center gap-2 px-4">
+    <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex flex-wrap items-center justify-center gap-2 px-3 sm:px-4">
       {state.keeper.included && (
         <div
           role="radiogroup"
@@ -29,12 +32,12 @@ export function StageToolbar() {
               role="radio"
               aria-checked={editing === target}
               onClick={() => setEditing(target)}
-              className={`flex items-center gap-1.5 rounded-full pl-2 pr-4 text-sm font-semibold transition ${
+              className={`flex items-center gap-1 rounded-full pl-1.5 pr-3 text-sm sm:gap-1.5 sm:pl-2 sm:pr-4 font-semibold transition ${
                 editing === target ? "bg-foreground text-white" : "text-muted hover:text-foreground"
               }`}
             >
               {/* Same square box for both images, whatever their proportions. */}
-              <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center">
+              <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center sm:h-7 sm:w-7">
                 <img src={icon} alt="" className="h-full w-full object-contain" />
               </span>
               {label}
@@ -51,12 +54,15 @@ export function StageToolbar() {
           dispatch({ type: "RESET_DESIGN" });
         }}
         onBlur={() => setConfirming(false)}
-        className={`pointer-events-auto flex h-11 items-center gap-2 rounded-full px-4 text-sm font-medium shadow-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
+        aria-label={armed ? ARMED_LABEL : RESET_LABEL}
+        className={`pointer-events-auto flex h-11 items-center gap-1.5 rounded-full px-3 text-sm sm:gap-2 sm:px-4 font-medium shadow-sm transition disabled:cursor-not-allowed disabled:opacity-40 ${
           armed ? "bg-foreground text-white" : "bg-white/80 hover:bg-white"
         }`}
       >
         <UndoIcon className="h-5 w-5" />
-        {armed ? "¿Seguro? Se pierden los cambios" : "Resetear diseño"}
+        {/* A phone has no room for the full text next to the shirt switch, so it keeps it all on one line. */}
+        <span className="sm:hidden">{armed ? "¿Seguro?" : "Resetear"}</span>
+        <span className="hidden sm:inline">{armed ? ARMED_LABEL : RESET_LABEL}</span>
       </button>
     </div>
   );
