@@ -142,7 +142,7 @@ function drawBrandLogo(
   const reference = forDark ?? forLight;
   if (!reference) return;
 
-  const center = pointInRegionToCanvas(regions.bodyFront, 1 - CREST_U_FRAC, CREST_V_FRAC, canvasSize);
+  const center = pointInRegionToCanvas(regions.bodyFront, BRAND_U_FRAC, CREST_V_FRAC, canvasSize);
   const box = fitLogoBox(reference, center, canvasSize, BRAND_BOX_FRACTION);
   const lightCloth = isLightUnder(ctx, box, canvasSize, design.colors.primary);
   const chosen = (lightCloth ? forLight ?? forDark : forDark ?? forLight)!;
@@ -176,13 +176,17 @@ function drawSponsors(
 
 // Where the crest is centered within bodyFront: the wearer's left chest, the
 // usual crest spot. Front faces +z and the camera is on +z, so u grows toward
-// the viewer's right. Tuned against screenshots of the GEPE shirt: 0.70 of the
-// way across and 0.71 of the way up from the hem (an earlier 0.78 / 0.635 sat
-// too close to the armpit).
-const CREST_U_FRAC = 0.7;
+// the viewer's right. Tuned against screenshots of the GEPE shirt: 0.66 of the
+// way across and 0.71 of the way up from the hem. It was 0.70, but the edge
+// nearest the sleeve got distorted where the cloth curves; an earlier 0.78 / 0.635
+// sat too close to the armpit.
+const CREST_U_FRAC = 0.66;
+// The maker's mark sits on the other chest, where the crest used to be mirrored.
+const BRAND_U_FRAC = 0.3;
 const CREST_V_FRAC = 0.71;
-// The longer side of the crest, as a share of the canvas (it was 0.08, which looked too big).
-const CREST_BOX_FRACTION = 0.065;
+// The longer side of the crest, as a share of the canvas (it was 0.08, then 0.065 and 0.058, which still
+// reached the curve of the sleeve).
+const CREST_BOX_FRACTION = 0.052;
 // The maker's mark is smaller than the crest, like a brand on a real shirt.
 const BRAND_BOX_FRACTION = 0.03;
 // Cloth at least this bright (0..1) gets the logo version meant for light backgrounds.
