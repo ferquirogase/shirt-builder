@@ -445,14 +445,14 @@ describe("drawDesignToCanvas", () => {
       { bodyPatternImage: null, sleevePatternImage: null, logoImage: logo },
       regions
     );
-    // bodyFront u .3..0.7, v .5..0.9. Chest point: 0.70 across (toward the viewer's right,
+    // bodyFront u .3..0.7, v .5..0.9. Chest point: 0.66 across (toward the viewer's right,
     // since u grows with model x) and 0.71 up from the hem:
-    //   u = 0.3 + 0.70 * 0.4 = 0.58 -> x 580;  v = 0.5 + 0.71 * 0.4 = 0.784 -> y 216.
-    // The crest box is 65px (6.5% of the canvas), centered there.
+    //   u = 0.3 + 0.66 * 0.4 = 0.564 -> x 564;  v = 0.5 + 0.71 * 0.4 = 0.784 -> y 216.
+    // The crest box is 58px (5.8% of the canvas), centered there.
     const [, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(w).toBeCloseTo(65, 5);
-    expect(h).toBeCloseTo(65, 5);
-    expect(x + w / 2).toBeCloseTo(580, 5);
+    expect(w).toBeCloseTo(58, 5);
+    expect(h).toBeCloseTo(58, 5);
+    expect(x + w / 2).toBeCloseTo(564, 5);
     expect(y + h / 2).toBeCloseTo(216, 5);
   });
 
@@ -467,7 +467,7 @@ describe("drawDesignToCanvas", () => {
       regions
     );
     const [, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(x + w / 2).toBeCloseTo(580, 5);
+    expect(x + w / 2).toBeCloseTo(564, 5);
     expect(y + h / 2).toBeCloseTo(216, 5);
   });
 
@@ -501,7 +501,7 @@ describe("drawDesignToCanvas", () => {
       const [img, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(img).toBe(forDark);
       // bodyFront u .3..0.7, v .5..0.9: 0.30 across -> u 0.42 -> x 420; same height as the crest, y 216.
-      // Smaller than the crest (65px): a maker's mark is 3% of the canvas.
+      // Smaller than the crest (58px): a maker's mark is 3% of the canvas.
       expect(w).toBeCloseTo(30, 5);
       expect(h).toBeCloseTo(30 * (381 / 512), 5);
       expect(x + w / 2).toBeCloseTo(420, 5);
