@@ -111,6 +111,14 @@ describe("sponsorAnchor on the GEPE shirt", () => {
     for (const id of ["belly", "waist"]) expect(Math.abs(anchorOf(id).position.x), id).toBeLessThan(5);
   });
 
+  it("puts the upper chest ones just outside the collar, not out on the shoulder's edge", () => {
+    for (const id of ["chest-right", "chest-left"]) {
+      const x = Math.abs(anchorOf(id).position.x);
+      expect(x, id).toBeGreaterThan(24);
+      expect(x, id).toBeLessThan(31);
+    }
+  });
+
   it("puts the upper chest ones above the center column, the player's right on the left of the front view", () => {
     // Seen from the front, the player's right is on the viewer's left, which is -x.
     expect(anchorOf("chest-right").position.x).toBeLessThan(0);

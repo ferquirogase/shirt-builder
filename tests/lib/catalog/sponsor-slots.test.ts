@@ -26,18 +26,28 @@ describe("sponsor slots", () => {
     ]);
   });
 
+  it("gives the three center placements a wide, short rectangle, like a sponsor's banner", () => {
+    for (const id of ["abdomen", "belly", "waist"]) {
+      const slot = findSponsorSlot(id)!;
+      expect(slot.baseBox, id).toBe(0.12);
+      expect(slot.baseHeight, id).toBeLessThan(slot.baseBox / 2);
+    }
+  });
+
   it("stacks the three center placements so that even at their biggest they do not touch", () => {
     const center = ["abdomen", "belly", "waist"].map((id) => findSponsorSlot(id)!);
     const front = GEPE_UV_REGIONS.bodyFront;
     const height = front.v1 - front.v0;
+    // What matters is the height of the rectangle, not its width.
+    const tall = (s: (typeof center)[number]) => s.baseHeight ?? s.baseBox;
     for (let i = 0; i < center.length - 1; i++) {
       const gap = (center[i].vFrac - center[i + 1].vFrac) * height; // canvas fraction between the two centers
-      const reach = (center[i].baseBox + center[i + 1].baseBox) * SPONSOR_MAX_SCALE * 0.5;
+      const reach = (tall(center[i]) + tall(center[i + 1])) * SPONSOR_MAX_SCALE * 0.5;
       expect(gap, `${center[i].id} / ${center[i + 1].id}`).toBeGreaterThanOrEqual(reach);
     }
   });
 
-  it("sizes them: the chest column and the sleeves bigger than the small corners and the back", () => {
+  it("sizes them: the chest column widest, then the sleeves, the small corners and the back", () => {
     const size = (id: string) => findSponsorSlot(id)!.baseBox;
     expect(size("sleeve-left")).toBe(0.05);
     expect(size("sleeve-right")).toBe(0.05);
@@ -54,6 +64,10 @@ describe("sponsor slots", () => {
     expect(right.uFrac).toBeLessThan(0.3);
     expect(left.uFrac).toBeGreaterThan(0.66);
     expect(right.uFrac + left.uFrac).toBeCloseTo(1, 5);
+    // Close to the collar, as GEPE draws them, not out at the edge of the shoulder.
+    expect(right.uFrac).toBeGreaterThan(0.18);
+    expect(right.vFrac).toBeGreaterThanOrEqual(0.78);
+    expect(findSponsorSlot("chest-right")!.baseHeight).toBeLessThan(findSponsorSlot("chest-right")!.baseBox);
     expect(right.vFrac).toBe(left.vFrac);
     expect(right.vFrac).toBeGreaterThan(0.71);
     expect(right.region).toBe("bodyFront");

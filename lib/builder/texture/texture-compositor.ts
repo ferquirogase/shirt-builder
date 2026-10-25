@@ -73,22 +73,26 @@ function pointInRegionToCanvas(
 
 type LogoBox = { x: number; y: number; width: number; height: number };
 
-// Fits a logo inside a square box of `boxFraction` of the canvas, keeping its
-// aspect ratio, centered on `center`.
+// Fits a logo inside a box of `boxFraction` x `heightFraction` of the canvas (square when
+// the height is not given), keeping its aspect ratio, centered on `center`. The logo is as big
+// as the box lets it be: a wide banner is limited by the width, a tall one by the height.
 function fitLogoBox(
   image: HTMLImageElement,
   center: { x: number; y: number },
   canvasSize: number,
-  boxFraction: number
+  boxFraction: number,
+  heightFraction = boxFraction
 ): LogoBox {
-  const boxSize = canvasSize * boxFraction;
+  const boxWidth = canvasSize * boxFraction;
+  const boxHeight = canvasSize * heightFraction;
   const { naturalWidth, naturalHeight } = image;
-  const [width, height] =
-    naturalWidth > 0 && naturalHeight > 0
-      ? naturalWidth >= naturalHeight
-        ? [boxSize, boxSize * (naturalHeight / naturalWidth)]
-        : [boxSize * (naturalWidth / naturalHeight), boxSize]
-      : [boxSize, boxSize];
+  let width = Math.min(boxWidth, boxHeight);
+  let height = width;
+  if (naturalWidth > 0 && naturalHeight > 0) {
+    const fit = Math.min(boxWidth / naturalWidth, boxHeight / naturalHeight);
+    width = naturalWidth * fit;
+    height = naturalHeight * fit;
+  }
   return { x: center.x - width / 2, y: center.y - height / 2, width, height };
 }
 
@@ -183,7 +187,8 @@ function drawSponsors(
     if (!entry || !image) continue;
 
     const center = pointInRegionToCanvas(regions[slot.region], slot.uFrac, slot.vFrac, canvasSize);
-    const box = fitLogoBox(image, { x: 0, y: 0 }, canvasSize, slot.baseBox * clampSponsorScale(entry.scale));
+    const scale = clampSponsorScale(entry.scale);
+    const box = fitLogoBox(image, { x: 0, y: 0 }, canvasSize, slot.baseBox * scale, (slot.baseHeight ?? slot.baseBox) * scale);
     ctx.save();
     ctx.translate(center.x, center.y);
     if (slot.rotation !== 0) ctx.rotate(slot.rotation);

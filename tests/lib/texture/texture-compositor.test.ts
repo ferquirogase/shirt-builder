@@ -672,13 +672,23 @@ describe("drawDesignToCanvas", () => {
       expect(sizeAt(Number.NaN)).toBeCloseTo(50, 5);
     });
 
+    it("fits a tall or square image inside the rectangle by its height, so stacked placements never touch", () => {
+      const ctx = createMockCtx();
+      const tall = { id: "t", naturalWidth: 100, naturalHeight: 400 } as unknown as HTMLImageElement;
+      drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: tall } }, regions);
+      const { w, h } = drawn(ctx, tall);
+      expect(h).toBeCloseTo(50, 5);
+      expect(w).toBeCloseTo(12.5, 5);
+    });
+
     it("keeps a wide image's proportions", () => {
       const ctx = createMockCtx();
       const wide = { id: "w", naturalWidth: 400, naturalHeight: 100 } as unknown as HTMLImageElement;
       drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: wide } }, regions);
       const { w, h } = drawn(ctx, wide);
-      expect(w).toBeCloseTo(50, 5);
-      expect(h).toBeCloseTo(12.5, 5);
+      // The chest placement is a wide rectangle (0.12 x 0.05 of the canvas): a banner uses all its width.
+      expect(w).toBeCloseTo(120, 5);
+      expect(h).toBeCloseTo(30, 5);
     });
 
     it("draws an SVG with no natural size as a square instead of failing (Review Focus 3)", () => {
@@ -717,13 +727,13 @@ describe("drawDesignToCanvas", () => {
       );
       expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
       // bodyFront u .3..0.7, v .5..0.9: belly vFrac .41 -> v .664 -> y 336; waist .24 -> v .596 -> y 404.
-      // chest-right uFrac .12 -> u .348 -> x 348, chest-left .88 -> u .652 -> x 652, both vFrac .78 -> v .812 -> y 188.
+      // chest-right uFrac .19 -> u .376 -> x 376, chest-left .81 -> u .624 -> x 624, both vFrac .80 -> v .82 -> y 180.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       expect(t.map(([x, y]) => [Math.round(x), Math.round(y)])).toEqual([
         [500, 336],
         [500, 404],
-        [348, 188],
-        [652, 188],
+        [376, 180],
+        [624, 180],
       ]);
     });
 

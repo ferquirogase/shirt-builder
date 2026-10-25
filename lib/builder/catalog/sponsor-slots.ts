@@ -26,8 +26,10 @@ export type SponsorSlot = {
   vFrac: number;
   /** Canvas rotation in radians so the image reads upright on the model. */
   rotation: number;
-  /** Longer side of the box the image is fitted in, as a share of the canvas, at scale 1. */
+  /** Width of the box the image is fitted in, as a share of the canvas, at scale 1. */
   baseBox: number;
+  /** Height of that box, when it is not square: a wide, short rectangle for the chest. */
+  baseHeight?: number;
   /** When this is set, something else is printed on this spot and the placement is not offered. */
   blockedBy?: SponsorBlocker;
 };
@@ -36,8 +38,8 @@ export const SPONSOR_MIN_SCALE = 0.5;
 export const SPONSOR_MAX_SCALE = 1.5;
 
 // GEPE's map of where sponsors go (numbers 1 to 9 on the shirt), in its order. On the front
-// the three of the center column (1, 2, 3) are stacked, so they are small enough not to touch
-// even at their biggest. GEPE draws 8 and 9 above the maker's logo and the crest, but on this
+// the three of the center column (1, 2, 3) are stacked: each is a wide, short rectangle (a
+// sponsor's banner), so even at their biggest they do not touch. GEPE draws 8 and 9 above the maker's logo and the crest, but on this
 // model the cloth ends at the collar there: they sit on the front of each shoulder, beside the collar.
 //
 // Placements and orientations were derived from public/models/gepe_shirt.obj.
@@ -48,9 +50,9 @@ export const SPONSOR_MAX_SCALE = 1.5;
 // player's: the sleeve seen on the left of the front view is the player's right one (GEPE's 4).
 // The nape is not a placement: that spot is reserved for the maker's logo (see the compositor).
 export const SPONSOR_SLOTS: SponsorSlot[] = [
-  { id: "abdomen", label: "Pecho", region: "bodyFront", uFrac: 0.5, vFrac: 0.58, rotation: 0, baseBox: 0.05 },
-  { id: "belly", label: "Abdomen", region: "bodyFront", uFrac: 0.5, vFrac: 0.41, rotation: 0, baseBox: 0.05 },
-  { id: "waist", label: "Cintura", region: "bodyFront", uFrac: 0.5, vFrac: 0.24, rotation: 0, baseBox: 0.05 },
+  { id: "abdomen", label: "Pecho", region: "bodyFront", uFrac: 0.5, vFrac: 0.58, rotation: 0, baseBox: 0.12, baseHeight: 0.05 },
+  { id: "belly", label: "Abdomen", region: "bodyFront", uFrac: 0.5, vFrac: 0.41, rotation: 0, baseBox: 0.12, baseHeight: 0.05 },
+  { id: "waist", label: "Cintura", region: "bodyFront", uFrac: 0.5, vFrac: 0.24, rotation: 0, baseBox: 0.12, baseHeight: 0.05 },
   {
     id: "sleeve-right",
     label: "Manga derecha",
@@ -89,8 +91,26 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     rotation: Math.PI,
     baseBox: 0.045,
   },
-  { id: "chest-right", label: "Pecho alto derecho", region: "bodyFront", uFrac: 0.12, vFrac: 0.78, rotation: 0, baseBox: 0.03 },
-  { id: "chest-left", label: "Pecho alto izquierdo", region: "bodyFront", uFrac: 0.88, vFrac: 0.78, rotation: 0, baseBox: 0.03 },
+  {
+    id: "chest-right",
+    label: "Pecho alto derecho",
+    region: "bodyFront",
+    uFrac: 0.19,
+    vFrac: 0.8,
+    rotation: 0,
+    baseBox: 0.045,
+    baseHeight: 0.035,
+  },
+  {
+    id: "chest-left",
+    label: "Pecho alto izquierdo",
+    region: "bodyFront",
+    uFrac: 0.81,
+    vFrac: 0.8,
+    rotation: 0,
+    baseBox: 0.045,
+    baseHeight: 0.035,
+  },
 ];
 
 export function findSponsorSlot(id: string): SponsorSlot | undefined {
