@@ -512,7 +512,7 @@ describe("drawDesignToCanvas", () => {
       const ctx = ctxWithPixels(0, 0, 0);
       const crest = { naturalWidth: 100, naturalHeight: 100 } as HTMLImageElement;
       drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand, logoImage: crest }, regions);
-      expect(drawnImages(ctx)).toEqual([crest, forDark]);
+      expect(drawnImages(ctx)).toEqual([crest, forDark, forDark]);
       const [, x, , w] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[1];
       expect(x + w / 2).toBeCloseTo(420, 5);
     });
@@ -520,13 +520,13 @@ describe("drawDesignToCanvas", () => {
     it("uses the version for dark backgrounds over dark pixels", () => {
       const ctx = ctxWithPixels(10, 90, 50);
       drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions);
-      expect(drawnImages(ctx)).toEqual([forDark]);
+      expect(drawnImages(ctx)).toEqual([forDark, forDark]);
     });
 
     it("uses the version for light backgrounds over light pixels", () => {
       const ctx = ctxWithPixels(250, 250, 250);
       drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions);
-      expect(drawnImages(ctx)).toEqual([forLight]);
+      expect(drawnImages(ctx)).toEqual([forLight, forLight]);
     });
 
     it("samples the pixels under the logo, after the patterns are painted", () => {
@@ -534,20 +534,23 @@ describe("drawDesignToCanvas", () => {
       drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, bodyPatternImage: {} as HTMLImageElement, ...brand }, regions);
       const sample = (ctx as unknown as { getImageData: ReturnType<typeof vi.fn> }).getImageData;
       const patternDraws = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.invocationCallOrder;
-      expect(sample).toHaveBeenCalledTimes(1);
+      // One sample for the chest logo and one for the nape logo, each just before its own draw.
+      expect(sample).toHaveBeenCalledTimes(2);
       expect(sample.mock.invocationCallOrder[0]).toBeGreaterThan(patternDraws[1]);
       expect(sample.mock.invocationCallOrder[0]).toBeLessThan(patternDraws[2]);
+      expect(sample.mock.invocationCallOrder[1]).toBeGreaterThan(patternDraws[2]);
+      expect(sample.mock.invocationCallOrder[1]).toBeLessThan(patternDraws[3]);
     });
 
     it("falls back to the primary color when pixels can't be read (no getImageData)", () => {
       const dark = createMockCtx();
       drawDesignToCanvas(dark, 1000, initialDesignState, { ...base, ...brand }, regions); // primary #0a5c36 is dark
-      expect(drawnImages(dark)).toEqual([forDark]);
+      expect(drawnImages(dark)).toEqual([forDark, forDark]);
 
       const light = createMockCtx();
       const pale = { ...initialDesignState, colors: { ...initialDesignState.colors, primary: "#f5f0e0" } };
       drawDesignToCanvas(light, 1000, pale, { ...base, ...brand }, regions);
-      expect(drawnImages(light)).toEqual([forLight]);
+      expect(drawnImages(light)).toEqual([forLight, forLight]);
     });
 
     it("falls back to the primary color when reading pixels throws (tainted canvas)", () => {
@@ -556,13 +559,60 @@ describe("drawDesignToCanvas", () => {
         throw new Error("SecurityError");
       });
       expect(() => drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions)).not.toThrow();
-      expect(drawnImages(ctx)).toEqual([forDark]);
+      expect(drawnImages(ctx)).toEqual([forDark, forDark]);
     });
 
     it("uses the other version when the preferred one is missing", () => {
       const ctx = ctxWithPixels(0, 0, 0); // dark -> prefers forDark, which is missing
       drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, brandLogoForLight: forLight, brandLogoForDark: null }, regions);
-      expect(drawnImages(ctx)).toEqual([forLight]);
+      expect(drawnImages(ctx)).toEqual([forLight, forLight]);
+    });
+
+    describe("on the back of the neck", () => {
+      it("sits at the nape, in the middle of the back, turned half a turn like the rest of the back", () => {
+        const ctx = ctxWithPixels(0, 0, 0);
+        drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions);
+        expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI]]);
+        // bodyBack u .3..0.7 -> x 500; NAPE_V_FRAC 0.10 -> v 0.1+0.10*0.4=0.14 -> y 860.
+        const [tx, ty] = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls[0];
+        expect(tx).toBeCloseTo(500, 5);
+        expect(ty).toBeCloseTo(860, 5);
+        const [img, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[1];
+        expect(img).toBe(forDark);
+        // Smaller than the logo on the chest (30px): 2.2% of the canvas. Centered on the translated point.
+        expect(w).toBeCloseTo(22, 5);
+        expect(h).toBeCloseTo(22 * (381 / 512), 5);
+        const chestWidth = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0][3];
+        expect(w).toBeLessThan(chestWidth);
+        expect(x + w / 2).toBeCloseTo(0, 5);
+        expect(y + h / 2).toBeCloseTo(0, 5);
+      });
+
+      it("picks black or white by the cloth under the nape, not by the cloth on the chest", () => {
+        // Dark on the chest (y < 500), light on the back where the nape is (y > 500).
+        const ctx = createMockCtx();
+        (ctx as unknown as { getImageData: unknown }).getImageData = vi.fn((_x: number, y: number, w: number, h: number) => {
+          const data = new Uint8ClampedArray(w * h * 4);
+          data.fill(y > 500 ? 250 : 10);
+          return { data };
+        });
+        drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions);
+        expect(drawnImages(ctx)).toEqual([forDark, forLight]);
+      });
+
+      it("is drawn before the sponsors, and leaves the canvas state as it found it", () => {
+        const ctx = ctxWithPixels(0, 0, 0);
+        const low = { id: "low", naturalWidth: 100, naturalHeight: 100 } as unknown as HTMLImageElement;
+        drawDesignToCanvas(
+          ctx,
+          1000,
+          { ...initialDesignState, sponsors: { "lower-back": { dataUrl: "data:image/png;base64,AAAA", scale: 1 } } },
+          { ...base, ...brand, sponsorImages: { "lower-back": low } },
+          regions
+        );
+        expect(drawnImages(ctx)).toEqual([forDark, forDark, low]);
+        expect((ctx.save as ReturnType<typeof vi.fn>).mock.calls.length).toBe((ctx.restore as ReturnType<typeof vi.fn>).mock.calls.length);
+      });
     });
 
     it("draws nothing when no brand logo has loaded yet", () => {
@@ -640,24 +690,15 @@ describe("drawDesignToCanvas", () => {
       expect(h).toBeCloseTo(120, 5);
     });
 
-    it("turns the back sponsors half a turn, like the name and number", () => {
+    it("turns the back sponsor half a turn, like the name and number", () => {
       const ctx = createMockCtx();
-      const nape = square("nape");
       const low = square("low");
-      drawDesignToCanvas(
-        ctx,
-        1000,
-        designWith({ nape: entry(), "lower-back": entry() }),
-        { ...base, sponsorImages: { nape, "lower-back": low } },
-        regions
-      );
-      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI], [Math.PI]]);
-      // bodyBack u .3..0.7 -> x 500; vFrac 0.10 -> v 0.1+0.10*0.4=0.14 -> y 860; 0.75 -> v 0.4 -> y 600.
+      drawDesignToCanvas(ctx, 1000, designWith({ "lower-back": entry() }), { ...base, sponsorImages: { "lower-back": low } }, regions);
+      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI]]);
+      // bodyBack u .3..0.7 -> x 500; vFrac 0.75 -> v 0.1+0.75*0.4=0.4 -> y 600.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       expect(t[0][0]).toBeCloseTo(500, 5);
-      expect(t[0][1]).toBeCloseTo(860, 5);
-      expect(t[1][1]).toBeCloseTo(600, 5);
-      expect(drawn(ctx, nape).w).toBeCloseTo(30, 5);
+      expect(t[0][1]).toBeCloseTo(600, 5);
       expect(drawn(ctx, low).w).toBeCloseTo(45, 5);
     });
 
@@ -704,8 +745,8 @@ describe("drawDesignToCanvas", () => {
       drawDesignToCanvas(
         ctx,
         1000,
-        designWith({ abdomen: entry(), nape: entry() }),
-        { ...base, sponsorImages: { nape: null, "lower-back": square("orphan") } },
+        designWith({ abdomen: entry(), "lower-back": entry() }),
+        { ...base, sponsorImages: { "lower-back": null, "sleeve-left": square("orphan") } },
         regions
       );
       expect(ctx.drawImage).not.toHaveBeenCalled();
@@ -722,8 +763,8 @@ describe("drawDesignToCanvas", () => {
       drawDesignToCanvas(
         ctx,
         1000,
-        designWith({ nape: entry(), abdomen: entry() }),
-        { ...base, sponsorImages: { nape: square("n"), abdomen: square("a") } },
+        designWith({ "lower-back": entry(), abdomen: entry() }),
+        { ...base, sponsorImages: { "lower-back": square("n"), abdomen: square("a") } },
         regions
       );
       const saves = (ctx.save as ReturnType<typeof vi.fn>).mock.calls.length;

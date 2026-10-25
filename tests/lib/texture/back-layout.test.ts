@@ -9,6 +9,7 @@ import {
   NUMBER_FONT_FRACTION,
 } from "@/lib/builder/texture/back-layout";
 import { SPONSOR_SLOTS, SPONSOR_MAX_SCALE, findSponsorSlot } from "@/lib/builder/catalog/sponsor-slots";
+import { NAPE_BRAND_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
 import { GEPE_UV_REGIONS } from "@/lib/builder/geometry/uv-regions";
 
 const back = GEPE_UV_REGIONS.bodyBack;
@@ -28,11 +29,11 @@ describe("back layout (GEPE model, sponsors at max scale)", () => {
     expect(NUMBER_V_FRAC).toBe(0.55);
   });
 
-  it("puts the nape sponsor between the collar and the name: clear of the collar at its normal size, clear of the name at its largest", () => {
-    // It sits close under the collar, so only the normal size is guaranteed clear of it.
-    const halfAtNormalSize = toV(findSponsorSlot("nape")!.baseBox / 2);
-    expect(NAPE_V_FRAC - halfAtNormalSize).toBeGreaterThanOrEqual(COLLAR_BAND_END_V_FRAC);
-    expect(NAPE_V_FRAC + halfBox("nape")).toBeLessThanOrEqual(nameTop);
+  it("puts the GEPE logo at the nape between the collar and the name, clear of both", () => {
+    // Its longer side is its width; half of that is a safe bound for its half height.
+    const half = toV(NAPE_BRAND_BOX_FRACTION / 2);
+    expect(NAPE_V_FRAC - half).toBeGreaterThanOrEqual(COLLAR_BAND_END_V_FRAC);
+    expect(NAPE_V_FRAC + half).toBeLessThanOrEqual(nameTop);
   });
 
   it("puts the number below the name", () => {
@@ -45,9 +46,9 @@ describe("back layout (GEPE model, sponsors at max scale)", () => {
     expect(LOWER_BACK_V_FRAC + halfBox("lower-back")).toBeLessThanOrEqual(0.85);
   });
 
-  it("is the one source of the back sponsors' vertical positions", () => {
-    expect(findSponsorSlot("nape")!.vFrac).toBe(NAPE_V_FRAC);
+  it("is the one source of the back sponsor's vertical position, and has no sponsor at the nape", () => {
     expect(findSponsorSlot("lower-back")!.vFrac).toBe(LOWER_BACK_V_FRAC);
-    expect(SPONSOR_SLOTS.length).toBe(5);
+    expect(findSponsorSlot("nape")).toBeUndefined();
+    expect(SPONSOR_SLOTS.length).toBe(4);
   });
 });

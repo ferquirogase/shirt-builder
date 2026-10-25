@@ -197,8 +197,8 @@ describe("sponsors", () => {
 
   it("keeps the placements independent", () => {
     const a = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG });
-    const b = designReducer(a, { type: "SET_SPONSOR", slot: "nape", dataUrl: IMG2 });
-    expect(b.sponsors).toEqual({ abdomen: { dataUrl: IMG, scale: 1 }, nape: { dataUrl: IMG2, scale: 1 } });
+    const b = designReducer(a, { type: "SET_SPONSOR", slot: "lower-back", dataUrl: IMG2 });
+    expect(b.sponsors).toEqual({ abdomen: { dataUrl: IMG, scale: 1 }, "lower-back": { dataUrl: IMG2, scale: 1 } });
   });
 
   it("replacing an image keeps that placement's scale (Review Focus 6)", () => {
@@ -209,22 +209,28 @@ describe("sponsors", () => {
   });
 
   it("clamps the scale to 0.5..1.5 and treats NaN as 1 (Review Focus 1)", () => {
-    const base = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "nape", dataUrl: IMG });
-    expect(designReducer(base, { type: "SET_SPONSOR_SCALE", slot: "nape", value: 9 }).sponsors.nape!.scale).toBe(1.5);
-    expect(designReducer(base, { type: "SET_SPONSOR_SCALE", slot: "nape", value: 0 }).sponsors.nape!.scale).toBe(0.5);
-    expect(designReducer(base, { type: "SET_SPONSOR_SCALE", slot: "nape", value: Number.NaN }).sponsors.nape!.scale).toBe(1);
+    const base = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "lower-back", dataUrl: IMG });
+    expect(designReducer(base, { type: "SET_SPONSOR_SCALE", slot: "lower-back", value: 9 }).sponsors["lower-back"]!.scale).toBe(1.5);
+    expect(designReducer(base, { type: "SET_SPONSOR_SCALE", slot: "lower-back", value: 0 }).sponsors["lower-back"]!.scale).toBe(0.5);
+    expect(designReducer(base, { type: "SET_SPONSOR_SCALE", slot: "lower-back", value: Number.NaN }).sponsors["lower-back"]!.scale).toBe(1);
   });
 
   it("ignores a scale change on an empty placement", () => {
-    const next = designReducer(initialDesignState, { type: "SET_SPONSOR_SCALE", slot: "nape", value: 1.2 });
+    const next = designReducer(initialDesignState, { type: "SET_SPONSOR_SCALE", slot: "lower-back", value: 1.2 });
+    expect(next).toBe(initialDesignState);
+  });
+
+  it("ignores a sponsor for the nape: that spot is reserved for the GEPE logo", () => {
+    // A design saved before the nape was reserved could still carry that placement.
+    const next = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "nape" as never, dataUrl: IMG });
     expect(next).toBe(initialDesignState);
   });
 
   it("removes a sponsor, leaving the others", () => {
     let s = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG });
-    s = designReducer(s, { type: "SET_SPONSOR", slot: "nape", dataUrl: IMG2 });
+    s = designReducer(s, { type: "SET_SPONSOR", slot: "lower-back", dataUrl: IMG2 });
     s = designReducer(s, { type: "REMOVE_SPONSOR", slot: "abdomen" });
-    expect(s.sponsors).toEqual({ nape: { dataUrl: IMG2, scale: 1 } });
+    expect(s.sponsors).toEqual({ "lower-back": { dataUrl: IMG2, scale: 1 } });
   });
 
   it("ignores removing an empty placement and any unknown placement", () => {
