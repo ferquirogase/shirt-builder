@@ -73,6 +73,15 @@ describe("ColorsPanel", () => {
     expect(api.current!.state.colors.secondary).toBe("#00ff00");
   });
 
+  it("shows each color in CMYK, and no longer in hexadecimal", () => {
+    renderWithDesign(<ColorsPanel />);
+    fireEvent.change(screen.getByLabelText("Color primario"), { target: { value: "#ff0000" } });
+    fireEvent.change(screen.getByLabelText("Color del cuello"), { target: { value: "#123456" } });
+    expect(screen.getByText("C 0 M 100 Y 100 K 0")).toBeInTheDocument();
+    expect(screen.getByText("C 79 M 40 Y 0 K 66")).toBeInTheDocument();
+    expect(screen.queryByText(/#[0-9a-f]{6}/i)).toBeNull();
+  });
+
   it("updates the collar color on its own, leaving the pattern colors alone", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
     const before = { ...api.current!.state.colors };
@@ -424,9 +433,12 @@ describe("ColorsPanel shorts color", () => {
     expect(screen.getByRole("radio", { name: /Color secundario/ })).toBeChecked();
   });
 
-  it("shows each option with the shirt's current color", () => {
+  it("shows each option with the shirt's current color, in CMYK, without the hexadecimal", () => {
     const { api } = withShorts();
     act(() => api.current!.dispatch({ type: "SET_COLOR", slot: "secondary", value: "#123456" }));
+    const radio = screen.getByRole("radio", { name: /Color secundario/ });
+    expect(radio).toHaveTextContent("C 79 M 40 Y 0 K 66");
+    expect(radio).not.toHaveTextContent("#");
     const swatch = screen.getByRole("radio", { name: /Color secundario/ }).querySelector("[data-swatch]") as HTMLElement;
     expect(swatch.style.backgroundColor).toBe("rgb(18, 52, 86)");
   });
