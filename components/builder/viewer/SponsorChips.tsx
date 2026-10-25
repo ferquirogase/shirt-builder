@@ -41,7 +41,7 @@ function ChipAnchor({ slot, anchor, number }: { slot: SponsorSlot; anchor: Spons
           <SponsorChip
             number={number}
             label={slot.label}
-            image={state.sponsors[slot.id]?.dataUrl}
+            filled={Boolean(state.sponsors[slot.id])}
             selected={selectedSponsor === slot.id}
             onSelect={() => pickSponsor(slot.id)}
           />

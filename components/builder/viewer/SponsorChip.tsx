@@ -1,17 +1,18 @@
 // One marker on the shirt: a black dot with the placement's number, like GEPE's map. Once the
-// placement has a sponsor the dot shows its image. It is drawn small but the button around it is
-// 44px, the least a finger needs.
+// placement has a sponsor the dot shrinks to a small badge in a corner, so it does not cover the
+// sponsor that is now printed there (the panel shows the image itself). It is drawn small but the
+// button around it is 44px, the least a finger needs.
 export function SponsorChip({
   number,
   label,
-  image,
+  filled,
   selected,
   onSelect,
 }: {
   number: number;
   label: string;
-  /** The sponsor's image, once there is one. */
-  image: string | undefined;
+  /** The placement already has a sponsor. */
+  filled: boolean;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -24,27 +25,12 @@ export function SponsorChip({
       className="flex h-11 w-11 items-center justify-center rounded-full"
     >
       <span
-        className={`relative flex h-8 w-8 items-center justify-center rounded-full border-2 bg-foreground text-sm font-bold text-white shadow-md transition-transform ${
-          selected ? "scale-110 border-accent" : "border-white"
-        }`}
+        data-dot
+        className={`flex items-center justify-center rounded-full border-2 bg-foreground font-bold text-white shadow-md transition-transform ${
+          filled ? "h-5 w-5 translate-x-4 -translate-y-4 text-[10px] leading-none" : "h-8 w-8 text-sm"
+        } ${selected ? "scale-110 border-accent" : "border-white"}`}
       >
-        {image ? (
-          <span
-            data-thumb
-            aria-hidden="true"
-            className="absolute inset-0 rounded-full bg-white bg-contain bg-center bg-no-repeat"
-            style={{ backgroundImage: `url("${image}")` }}
-          />
-        ) : null}
-        <span
-          className={
-            image
-              ? "absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[10px] leading-none"
-              : ""
-          }
-        >
-          {number}
-        </span>
+        {number}
       </span>
     </button>
   );
