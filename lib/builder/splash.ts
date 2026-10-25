@@ -6,6 +6,15 @@ export type SplashPhase = "showing" | "leaving" | "gone";
 export const SPLASH_MIN_MS = 2800;
 // If the model never reports it is ready, nobody is left staring at the splash.
 export const SPLASH_MAX_MS = 8000;
+// What the splash says while it waits, one line at a time, in the order a team gets ready.
+export const SPLASH_PHRASES = [
+  "Atando los cordones…",
+  "Entrando en calor…",
+  "Armando la formación…",
+  "Saliendo a la cancha…",
+] as const;
+// How long each phrase stays on screen. The whole round repeats if loading takes longer.
+export const SPLASH_PHRASE_MS = 1100;
 // Matches the fade-out duration of SplashScreen.
 export const SPLASH_FADE_MS = 500;
 

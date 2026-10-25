@@ -1,7 +1,6 @@
 import type { CSSProperties } from "react";
-import { SPLASH_MIN_MS, type SplashPhase } from "@/lib/builder/splash";
+import { SPLASH_MIN_MS, SPLASH_PHRASES, SPLASH_PHRASE_MS, type SplashPhase } from "@/lib/builder/splash";
 import { stageBaseCss, stageGlowCss } from "@/lib/builder/stage-style";
-import { SplashShirt } from "./SplashShirt";
 
 export function SplashScreen({ phase }: { phase: SplashPhase }) {
   if (phase === "gone") return null;
@@ -18,14 +17,30 @@ export function SplashScreen({ phase }: { phase: SplashPhase }) {
       <div className="absolute inset-0" style={{ background: stageGlowCss() }} aria-hidden="true" />
 
       <div className="relative flex flex-col items-center gap-6" aria-hidden="true">
-        {/* The shirt is uncovered from the bottom up by clipping this box. */}
-        <div className="splash-reveal">
-          <SplashShirt className="splash-shirt h-48 w-auto md:h-64" />
-        </div>
-
         <p className="splash-word text-4xl font-black tracking-tight md:text-5xl">
           GEPE<sup className="ml-0.5 align-super text-[0.4em] font-bold">®</sup>
         </p>
+
+        {/* The phrases share one cell and take turns: each one is only visible during its own slot. */}
+        <div
+          className="grid text-center text-lg font-semibold text-muted md:text-xl"
+          style={
+            {
+              "--splash-phrase-ms": `${SPLASH_PHRASE_MS}ms`,
+              "--splash-phrase-round-ms": `${SPLASH_PHRASE_MS * SPLASH_PHRASES.length}ms`,
+            } as CSSProperties
+          }
+        >
+          {SPLASH_PHRASES.map((phrase, i) => (
+            <p
+              key={phrase}
+              className="splash-phrase col-start-1 row-start-1"
+              style={{ "--splash-phrase-index": i } as CSSProperties}
+            >
+              {phrase}
+            </p>
+          ))}
+        </div>
 
         <div className="h-1 w-40 overflow-hidden rounded-full bg-line">
           <div
