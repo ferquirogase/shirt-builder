@@ -5,4 +5,4 @@ export const FABRIC_REPEAT = 11;
 // How much of the weave's tilt is added to the wrinkles.
 export const WEAVE_STRENGTH = 0.22;
 // The interior of the garment, seen through the neck, hem and sleeve or leg openings.
-export const LINING_COLOR = "#c9c3b6";
+export const LINING_COLOR = "#d4d4d4";
