@@ -247,17 +247,19 @@ describe("SponsorPanel", () => {
       .getAllByRole("region")
       .map((r) => r.getAttribute("aria-label"))
       .filter((name) => name !== "Sponsor");
-    expect(names).toEqual(["Abdomen", "Manga izquierda", "Manga derecha", "Nuca", "Espalda baja"]);
+    expect(names).toEqual(["Abdomen", "Manga izquierda", "Manga derecha", "Espalda baja"]);
+    // The nape is reserved for the GEPE logo.
+    expect(screen.queryByLabelText("Subir sponsor: Nuca")).toBeNull();
     expect(screen.queryByRole("slider")).toBeNull();
     expect(screen.queryByRole("button", { name: /Quitar sponsor/ })).toBeNull();
   });
 
   it("uploads to the chosen placement only", async () => {
     const { api } = renderWithDesign(<SponsorPanel />);
-    upload("Nuca", png());
-    await waitFor(() => expect(api.current!.state.sponsors.nape?.dataUrl).toMatch(/^data:image\/png/));
-    expect(api.current!.state.sponsors.nape!.scale).toBe(1);
-    expect(Object.keys(api.current!.state.sponsors)).toEqual(["nape"]);
+    upload("Espalda baja", png());
+    await waitFor(() => expect(api.current!.state.sponsors["lower-back"]?.dataUrl).toMatch(/^data:image\/png/));
+    expect(api.current!.state.sponsors["lower-back"]!.scale).toBe(1);
+    expect(Object.keys(api.current!.state.sponsors)).toEqual(["lower-back"]);
   });
 
   it("shows the preview, the scale control and remove only for a placement that has an image", async () => {
@@ -267,7 +269,7 @@ describe("SponsorPanel", () => {
     expect(screen.getByRole("img", { name: "Sponsor de Abdomen" })).toBeInTheDocument();
     expect(screen.getByLabelText("Tamaño del sponsor: Abdomen")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Quitar sponsor: Abdomen" })).toBeInTheDocument();
-    expect(screen.queryByLabelText("Tamaño del sponsor: Nuca")).toBeNull();
+    expect(screen.queryByLabelText("Tamaño del sponsor: Espalda baja")).toBeNull();
     expect(screen.getAllByRole("slider")).toHaveLength(1);
   });
 
@@ -295,20 +297,20 @@ describe("SponsorPanel", () => {
 
   it("removes a sponsor", async () => {
     const { api } = renderWithDesign(<SponsorPanel />);
-    upload("Nuca", png());
-    await waitFor(() => expect(api.current!.state.sponsors.nape).toBeDefined());
-    fireEvent.click(screen.getByRole("button", { name: "Quitar sponsor: Nuca" }));
-    expect(api.current!.state.sponsors.nape).toBeUndefined();
-    expect(screen.queryByRole("button", { name: "Quitar sponsor: Nuca" })).toBeNull();
+    upload("Espalda baja", png());
+    await waitFor(() => expect(api.current!.state.sponsors["lower-back"]).toBeDefined());
+    fireEvent.click(screen.getByRole("button", { name: "Quitar sponsor: Espalda baja" }));
+    expect(api.current!.state.sponsors["lower-back"]).toBeUndefined();
+    expect(screen.queryByRole("button", { name: "Quitar sponsor: Espalda baja" })).toBeNull();
   });
 
   it("rejects a file of the wrong type, and shows the error only in that card (Review Focus 4)", () => {
     const { api } = renderWithDesign(<SponsorPanel />);
-    upload("Nuca", new File(["x"], "doc.pdf", { type: "application/pdf" }));
+    upload("Espalda baja", new File(["x"], "doc.pdf", { type: "application/pdf" }));
     const alerts = screen.getAllByRole("alert");
     expect(alerts).toHaveLength(1);
     expect(alerts[0]).toHaveTextContent(/PNG, JPG o SVG/);
-    expect(screen.getByRole("region", { name: "Nuca" })).toContainElement(alerts[0]);
+    expect(screen.getByRole("region", { name: "Espalda baja" })).toContainElement(alerts[0]);
     expect(api.current!.state.sponsors).toEqual({});
   });
 
@@ -359,16 +361,16 @@ describe("SponsorPanel", () => {
     const { api } = renderWithDesign(<SponsorPanel />);
     upload("Abdomen", new File(["a"], "a.png", { type: "image/png" }));
     await waitFor(() => expect(pending).toHaveLength(1));
-    upload("Nuca", new File(["b"], "b.png", { type: "image/png" }));
+    upload("Espalda baja", new File(["b"], "b.png", { type: "image/png" }));
     await waitFor(() => expect(pending).toHaveLength(2));
     pending[0].resolve();
     pending[1].resolve();
-    await waitFor(() => expect(Object.keys(api.current!.state.sponsors).sort()).toEqual(["abdomen", "nape"]));
+    await waitFor(() => expect(Object.keys(api.current!.state.sponsors).sort()).toEqual(["abdomen", "lower-back"]));
   });
 
   it("makes keyboard focus visible on every upload control", () => {
     renderWithDesign(<SponsorPanel />);
-    for (const label of ["Abdomen", "Manga izquierda", "Manga derecha", "Nuca", "Espalda baja"]) {
+    for (const label of ["Abdomen", "Manga izquierda", "Manga derecha", "Espalda baja"]) {
       const control = screen.getByLabelText(`Subir sponsor: ${label}`).closest("label");
       expect(control?.className).toContain("focus-within:ring-2");
     }

@@ -183,12 +183,12 @@ describe("sponsor history", () => {
 
   it("undoing a removal brings back the image and its scale", () => {
     const s = run([
-      { type: "SET_SPONSOR", slot: "nape", dataUrl: IMG },
-      { type: "SET_SPONSOR_SCALE", slot: "nape", value: 1.4, at: 10_000 },
-      { type: "REMOVE_SPONSOR", slot: "nape" },
+      { type: "SET_SPONSOR", slot: "lower-back", dataUrl: IMG },
+      { type: "SET_SPONSOR_SCALE", slot: "lower-back", value: 1.4, at: 10_000 },
+      { type: "REMOVE_SPONSOR", slot: "lower-back" },
     ]);
     expect(s.present.sponsors).toEqual({});
-    expect(historyReducer(s, { type: "UNDO" }).present.sponsors.nape).toEqual({ dataUrl: IMG, scale: 1.4 });
+    expect(historyReducer(s, { type: "UNDO" }).present.sponsors["lower-back"]).toEqual({ dataUrl: IMG, scale: 1.4 });
   });
 
   it("collapses dragging one placement's scale into one undo step", () => {
@@ -205,9 +205,9 @@ describe("sponsor history", () => {
   it("does not group scale changes of two different placements", () => {
     const s = run([
       { type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG },
-      { type: "SET_SPONSOR", slot: "nape", dataUrl: IMG },
+      { type: "SET_SPONSOR", slot: "lower-back", dataUrl: IMG },
       { type: "SET_SPONSOR_SCALE", slot: "abdomen", value: 1.1, at: 10_000 },
-      { type: "SET_SPONSOR_SCALE", slot: "nape", value: 1.1, at: 10_100 },
+      { type: "SET_SPONSOR_SCALE", slot: "lower-back", value: 1.1, at: 10_100 },
     ]);
     expect(s.past).toHaveLength(4);
   });

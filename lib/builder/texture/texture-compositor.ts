@@ -1,6 +1,6 @@
 import type { DesignState } from "../state/design-state";
 import { UV_FLIP_Y, type UVRegions, type UVRect } from "../geometry/uv-regions";
-import { NAME_FONT_FRACTION, NAME_V_FRAC, NUMBER_FONT_FRACTION, NUMBER_V_FRAC } from "./back-layout";
+import { NAME_FONT_FRACTION, NAME_V_FRAC, NAPE_V_FRAC, NUMBER_FONT_FRACTION, NUMBER_V_FRAC } from "./back-layout";
 import { SPONSOR_SLOTS, clampSponsorScale, type SponsorSlotId } from "../catalog/sponsor-slots";
 import {
   OUTLINE_COLOR,
@@ -128,9 +128,10 @@ function isLightUnder(ctx: CanvasRenderingContext2D, box: LogoBox, canvasSize: n
   return hexLuma(fallbackHex) >= LIGHT_BACKGROUND_LUMA;
 }
 
-// The maker's logo: fixed, on the wearer's right chest (mirroring the crest).
-// It comes in two versions and the one that contrasts with the cloth is used.
-function drawBrandLogo(
+// The maker's logo, in two places: the wearer's right chest (mirroring the crest) and the
+// back of the neck, which is reserved for it. It comes in two versions and, at each place,
+// the one that contrasts with the cloth under it is used.
+function drawBrandLogos(
   ctx: CanvasRenderingContext2D,
   canvasSize: number,
   design: DesignState,
@@ -142,11 +143,27 @@ function drawBrandLogo(
   const reference = forDark ?? forLight;
   if (!reference) return;
 
-  const center = pointInRegionToCanvas(regions.bodyFront, BRAND_U_FRAC, CREST_V_FRAC, canvasSize);
-  const box = fitLogoBox(reference, center, canvasSize, BRAND_BOX_FRACTION);
-  const lightCloth = isLightUnder(ctx, box, canvasSize, design.colors.primary);
-  const chosen = (lightCloth ? forLight ?? forDark : forDark ?? forLight)!;
-  ctx.drawImage(chosen, box.x, box.y, box.width, box.height);
+  const drawAt = (center: { x: number; y: number }, rotation: number) => {
+    const box = fitLogoBox(reference, center, canvasSize, BRAND_BOX_FRACTION);
+    // The box is centered on `center`, so the cloth is judged where the logo really sits
+    // whatever the turn.
+    const lightCloth = isLightUnder(ctx, box, canvasSize, design.colors.primary);
+    const chosen = (lightCloth ? forLight ?? forDark : forDark ?? forLight)!;
+    if (rotation === 0) {
+      ctx.drawImage(chosen, box.x, box.y, box.width, box.height);
+      return;
+    }
+    // Turned like the rest of the back, so it reads upright on the model.
+    const upright = fitLogoBox(reference, { x: 0, y: 0 }, canvasSize, BRAND_BOX_FRACTION);
+    ctx.save();
+    ctx.translate(center.x, center.y);
+    ctx.rotate(rotation);
+    ctx.drawImage(chosen, upright.x, upright.y, upright.width, upright.height);
+    ctx.restore();
+  };
+
+  drawAt(pointInRegionToCanvas(regions.bodyFront, BRAND_U_FRAC, CREST_V_FRAC, canvasSize), 0);
+  drawAt(pointInRegionToCanvas(regions.bodyBack, 0.5, NAPE_V_FRAC, canvasSize), Math.PI);
 }
 
 // The sponsors: one image per placement. Each is fitted into its box (placement
@@ -188,7 +205,7 @@ const CREST_V_FRAC = 0.71;
 // reached the curve of the sleeve).
 const CREST_BOX_FRACTION = 0.052;
 // The maker's mark is smaller than the crest, like a brand on a real shirt.
-const BRAND_BOX_FRACTION = 0.03;
+export const BRAND_BOX_FRACTION = 0.03;
 // Cloth at least this bright (0..1) gets the logo version meant for light backgrounds.
 const LIGHT_BACKGROUND_LUMA = 0.5;
 
@@ -239,7 +256,7 @@ export function drawDesignToCanvas(
     ctx.drawImage(images.logoImage, box.x, box.y, box.width, box.height);
   }
 
-  drawBrandLogo(ctx, canvasSize, design, images, regions);
+  drawBrandLogos(ctx, canvasSize, design, images, regions);
   drawSponsors(ctx, canvasSize, design, images, regions);
 
   const nnStyle = design.nameNumberStyle;
@@ -250,7 +267,7 @@ export function drawDesignToCanvas(
   if (design.playerName) {
     // Upper portion of bodyBack: vFrac=0 is bodyBack.v0, the edge shared
     // with bodyFront's top (see logo comment above), i.e. near the collar.
-    // Below the collar band and the nape sponsor, above the number (see back-layout.ts).
+    // Below the collar band and the maker's logo at the nape, above the number (see back-layout.ts).
     const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, NAME_V_FRAC, canvasSize);
     drawBackText(ctx, design.playerName, cx, cy, {
       basePx: canvasSize * NAME_FONT_FRACTION * nnPreset.nameScale,

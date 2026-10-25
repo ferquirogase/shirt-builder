@@ -167,12 +167,12 @@ describe("useJerseyTexture", () => {
 
   it("decodes each sponsor once, even when only its scale changes", async () => {
     const { result } = mount();
-    act(() => result.current.design.dispatch({ type: "SET_SPONSOR", slot: "nape", dataUrl: "data:sponsor" }));
-    await waitFor(() => expect(lastImages().sponsorImages?.nape).toEqual({ src: "data:sponsor" }));
+    act(() => result.current.design.dispatch({ type: "SET_SPONSOR", slot: "lower-back", dataUrl: "data:sponsor" }));
+    await waitFor(() => expect(lastImages().sponsorImages?.["lower-back"]).toEqual({ src: "data:sponsor" }));
 
-    act(() => result.current.design.dispatch({ type: "SET_SPONSOR_SCALE", slot: "nape", value: 1.3 }));
-    await waitFor(() => expect(lastDesign().sponsors.nape?.scale).toBe(1.3));
-    await waitFor(() => expect(lastImages().sponsorImages?.nape).toEqual({ src: "data:sponsor" }));
+    act(() => result.current.design.dispatch({ type: "SET_SPONSOR_SCALE", slot: "lower-back", value: 1.3 }));
+    await waitFor(() => expect(lastDesign().sponsors["lower-back"]?.scale).toBe(1.3));
+    await waitFor(() => expect(lastImages().sponsorImages?.["lower-back"]).toEqual({ src: "data:sponsor" }));
     expect(loadedWith("data:sponsor")).toBe(1);
   });
 

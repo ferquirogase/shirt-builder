@@ -1,6 +1,6 @@
-import { LOWER_BACK_V_FRAC, NAPE_V_FRAC } from "../texture/back-layout";
+import { LOWER_BACK_V_FRAC } from "../texture/back-layout";
 
-export type SponsorSlotId = "abdomen" | "sleeve-left" | "sleeve-right" | "nape" | "lower-back";
+export type SponsorSlotId = "abdomen" | "sleeve-left" | "sleeve-right" | "lower-back";
 export type SponsorEntry = { dataUrl: string; scale: number };
 export type SponsorMap = Partial<Record<SponsorSlotId, SponsorEntry>>;
 
@@ -26,6 +26,7 @@ export const SPONSOR_MAX_SCALE = 1.5;
 // image is turned a quarter turn (left sleeve one way, right the other); neither
 // needs mirroring. The back is rotated half a turn like the name and number.
 // The sleeve anchor is the middle of the outer face of the arm.
+// The nape is not a placement: that spot is reserved for the maker's logo (see the compositor).
 export const SPONSOR_SLOTS: SponsorSlot[] = [
   { id: "abdomen", label: "Abdomen", region: "bodyFront", uFrac: 0.5, vFrac: 0.58, rotation: 0, baseBox: 0.12 },
   {
@@ -46,7 +47,6 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     rotation: Math.PI / 2,
     baseBox: 0.05,
   },
-  { id: "nape", label: "Nuca", region: "bodyBack", uFrac: 0.5, vFrac: NAPE_V_FRAC, rotation: Math.PI, baseBox: 0.03 },
   {
     id: "lower-back",
     label: "Espalda baja",

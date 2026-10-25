@@ -10,32 +10,28 @@ import {
 import { GEPE_UV_REGIONS } from "@/lib/builder/geometry/uv-regions";
 
 describe("sponsor slots", () => {
-  it("lists the five placements in order with their labels", () => {
+  it("lists the four placements in order with their labels", () => {
     expect(SPONSOR_SLOTS.map((s) => [s.id, s.label])).toEqual([
       ["abdomen", "Abdomen"],
       ["sleeve-left", "Manga izquierda"],
       ["sleeve-right", "Manga derecha"],
-      ["nape", "Nuca"],
       ["lower-back", "Espalda baja"],
     ]);
   });
 
-  it("sizes them abdomen > sleeves > lower back > nape", () => {
+  it("sizes them abdomen > sleeves > lower back", () => {
     const size = (id: string) => findSponsorSlot(id)!.baseBox;
     expect(size("abdomen")).toBe(0.12);
     expect(size("sleeve-left")).toBe(0.05);
     expect(size("sleeve-right")).toBe(0.05);
     expect(size("lower-back")).toBe(0.045);
-    expect(size("nape")).toBe(0.03);
     expect(size("abdomen")).toBeGreaterThan(size("sleeve-left"));
     expect(size("sleeve-left")).toBeGreaterThan(size("lower-back"));
-    expect(size("lower-back")).toBeGreaterThan(size("nape"));
   });
 
   it("orients each placement from the mesh: upright, upside-down on the back, sleeves along their axis", () => {
     const rotation = (id: string) => findSponsorSlot(id)!.rotation;
     expect(rotation("abdomen")).toBe(0);
-    expect(rotation("nape")).toBe(Math.PI);
     expect(rotation("lower-back")).toBe(Math.PI);
     expect(rotation("sleeve-left")).toBe(-Math.PI / 2);
     expect(rotation("sleeve-right")).toBe(Math.PI / 2);
@@ -61,7 +57,9 @@ describe("sponsor slots", () => {
   });
 
   it("recognizes ids", () => {
-    expect(isSponsorSlotId("nape")).toBe(true);
+    expect(isSponsorSlotId("lower-back")).toBe(true);
+    // The nape belongs to the GEPE logo: it is not a placement for a sponsor.
+    expect(isSponsorSlotId("nape")).toBe(false);
     expect(isSponsorSlotId("nope")).toBe(false);
     expect(findSponsorSlot("nope")).toBeUndefined();
   });

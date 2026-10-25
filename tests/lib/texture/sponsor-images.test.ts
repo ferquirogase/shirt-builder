@@ -7,13 +7,13 @@ describe("loadSponsorImages", () => {
   it("returns an image per placement that has an entry, and nothing for the empty ones", async () => {
     const load = vi.fn(async (src: string) => img(src));
     const result = await loadSponsorImages(
-      { abdomen: { dataUrl: "A", scale: 1 }, nape: { dataUrl: "B", scale: 1.2 } },
+      { abdomen: { dataUrl: "A", scale: 1 }, "lower-back": { dataUrl: "B", scale: 1.2 } },
       new Map(),
       load
     );
-    expect(Object.keys(result).sort()).toEqual(["abdomen", "nape"]);
+    expect(Object.keys(result).sort()).toEqual(["abdomen", "lower-back"]);
     expect(result.abdomen).toEqual(img("A"));
-    expect(result.nape).toEqual(img("B"));
+    expect(result["lower-back"]).toEqual(img("B"));
   });
 
   it("decodes the same image once when two placements share it (Review Focus 2)", async () => {
@@ -42,11 +42,11 @@ describe("loadSponsorImages", () => {
       return img(src);
     });
     const result = await loadSponsorImages(
-      { abdomen: { dataUrl: "BAD", scale: 1 }, nape: { dataUrl: "OK", scale: 1 } },
+      { abdomen: { dataUrl: "BAD", scale: 1 }, "lower-back": { dataUrl: "OK", scale: 1 } },
       new Map(),
       load
     );
-    expect(Object.keys(result)).toEqual(["nape"]);
+    expect(Object.keys(result)).toEqual(["lower-back"]);
     expect(error).toHaveBeenCalled();
     error.mockRestore();
   });
