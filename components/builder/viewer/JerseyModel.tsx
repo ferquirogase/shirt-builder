@@ -60,12 +60,8 @@ export function JerseyModel() {
     [texture, wrinkleNormal, fabricNormal]
   );
 
-  // The collar takes the same texture as the body, drawn on both sides.
-  const collarMaterial = useMemo(() => {
-    const m = material.clone();
-    m.side = THREE.DoubleSide;
-    return m;
-  }, [material]);
+  // The collar takes the same texture as the body on the outside; its inside is lined like the body.
+  const collarMaterial = useMemo(() => material.clone(), [material]);
 
   // The body is rendered as our own mesh below so it can't fall back to the
   // loader's default grey material.
@@ -113,7 +109,10 @@ export function JerseyModel() {
       {modelCollarGeometry && (
         // Its UVs sit inside the body island of the same atlas, so it takes the
         // same texture and the pattern continues up to the collar.
-        <mesh geometry={modelCollarGeometry} material={collarMaterial} dispose={null} />
+        <>
+          <mesh geometry={modelCollarGeometry} material={collarMaterial} dispose={null} />
+          <mesh geometry={modelCollarGeometry} material={liningMaterial} dispose={null} />
+        </>
       )}
     </group>
   );
