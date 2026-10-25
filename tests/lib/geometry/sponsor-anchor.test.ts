@@ -111,11 +111,25 @@ describe("sponsorAnchor on the GEPE shirt", () => {
     for (const id of ["belly", "waist"]) expect(Math.abs(anchorOf(id).position.x), id).toBeLessThan(5);
   });
 
-  it("puts the upper chest ones just outside the collar, not out on the shoulder's edge", () => {
+  it("anchors the upper chest markers on the cloth just outside the collar, not out on the shoulder's edge", () => {
     for (const id of ["chest-right", "chest-left"]) {
       const x = Math.abs(anchorOf(id).position.x);
       expect(x, id).toBeGreaterThan(24);
       expect(x, id).toBeLessThan(31);
+    }
+  });
+
+  it("has no cloth where the upper chest images are painted: that is the neck, so the marker uses its own point", () => {
+    const front = GEPE_UV_REGIONS.bodyFront;
+    for (const id of ["chest-right", "chest-left"]) {
+      const slot = findSponsorSlot(id)!;
+      const painted = uvPointOnMesh(
+        geometry,
+        front.u0 + slot.uFrac * (front.u1 - front.u0),
+        front.v0 + slot.vFrac * (front.v1 - front.v0)
+      );
+      expect(painted, id).toBeNull();
+      expect(anchorOf(id), id).not.toBeNull();
     }
   });
 

@@ -727,13 +727,13 @@ describe("drawDesignToCanvas", () => {
       );
       expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
       // bodyFront u .3..0.7, v .5..0.9: belly vFrac .41 -> v .664 -> y 336; waist .24 -> v .596 -> y 404.
-      // chest-right uFrac .19 -> u .376 -> x 376, chest-left .81 -> u .624 -> x 624, both vFrac .80 -> v .82 -> y 180.
+      // chest-right uFrac .27 -> u .408 -> x 408, chest-left .73 -> u .592 -> x 592, both vFrac .8 -> v .82 -> y 180.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       expect(t.map(([x, y]) => [Math.round(x), Math.round(y)])).toEqual([
         [500, 336],
         [500, 404],
-        [376, 180],
-        [624, 180],
+        [408, 180],
+        [592, 180],
       ]);
     });
 

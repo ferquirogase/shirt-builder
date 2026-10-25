@@ -32,6 +32,11 @@ export type SponsorSlot = {
   baseHeight?: number;
   /** When this is set, something else is printed on this spot and the placement is not offered. */
   blockedBy?: SponsorBlocker;
+  /**
+   * Where the marker on the 3D shirt goes, when the image is painted somewhere the model has no
+   * cloth of its own (next to the neck): a point on the nearest cloth.
+   */
+  marker?: { uFrac: number; vFrac: number };
 };
 
 export const SPONSOR_MIN_SCALE = 0.5;
@@ -95,8 +100,9 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     id: "chest-right",
     label: "Pecho alto derecho",
     region: "bodyFront",
-    uFrac: 0.19,
+    uFrac: 0.27,
     vFrac: 0.8,
+    marker: { uFrac: 0.22, vFrac: 0.8 },
     rotation: 0,
     baseBox: 0.045,
     baseHeight: 0.035,
@@ -105,8 +111,9 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     id: "chest-left",
     label: "Pecho alto izquierdo",
     region: "bodyFront",
-    uFrac: 0.81,
+    uFrac: 0.73,
     vFrac: 0.8,
+    marker: { uFrac: 0.78, vFrac: 0.8 },
     rotation: 0,
     baseBox: 0.045,
     baseHeight: 0.035,

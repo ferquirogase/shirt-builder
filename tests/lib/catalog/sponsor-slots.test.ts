@@ -65,8 +65,14 @@ describe("sponsor slots", () => {
     expect(left.uFrac).toBeGreaterThan(0.66);
     expect(right.uFrac + left.uFrac).toBeCloseTo(1, 5);
     // Close to the collar, as GEPE draws them, not out at the edge of the shoulder.
-    expect(right.uFrac).toBeGreaterThan(0.18);
+    expect(right.uFrac).toBeGreaterThan(0.25);
     expect(right.vFrac).toBeGreaterThanOrEqual(0.78);
+    // The image is painted by the neck, where the model has no cloth of its own, so the marker
+    // sits on the nearest cloth, a little further out; the other placements need no such thing.
+    expect(right.marker!.uFrac).toBeLessThan(right.uFrac);
+    expect(left.marker!.uFrac).toBeGreaterThan(left.uFrac);
+    expect(right.marker!.vFrac).toBe(right.vFrac);
+    expect(findSponsorSlot("abdomen")!.marker).toBeUndefined();
     expect(findSponsorSlot("chest-right")!.baseHeight).toBeLessThan(findSponsorSlot("chest-right")!.baseBox);
     expect(right.vFrac).toBe(left.vFrac);
     expect(right.vFrac).toBeGreaterThan(0.71);

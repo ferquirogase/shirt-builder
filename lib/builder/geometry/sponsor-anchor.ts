@@ -61,11 +61,14 @@ export function uvPointOnMesh(geometry: THREE.BufferGeometry, u: number, v: numb
 export function sponsorAnchor(
   geometry: THREE.BufferGeometry,
   regions: UVRegions,
-  slot: Pick<SponsorSlot, "region" | "uFrac" | "vFrac">
+  slot: Pick<SponsorSlot, "region" | "uFrac" | "vFrac" | "marker">
 ): SponsorAnchor | null {
   const region = regions[slot.region];
-  const u = region.u0 + slot.uFrac * (region.u1 - region.u0);
-  const v = region.v0 + slot.vFrac * (region.v1 - region.v0);
+  // Where the image is painted can fall where the model has no cloth of its own (by the neck);
+  // the marker then sits on the nearest cloth, which the placement names.
+  const point = slot.marker ?? slot;
+  const u = region.u0 + point.uFrac * (region.u1 - region.u0);
+  const v = region.v0 + point.vFrac * (region.v1 - region.v0);
   return uvPointOnMesh(geometry, u, v);
 }
 
