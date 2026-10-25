@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { SplashScreen } from "@/components/builder/SplashScreen";
+import { SPLASH_PHRASES } from "@/lib/builder/splash";
 
 describe("SplashScreen", () => {
   it("announces that the builder is loading", () => {
@@ -20,12 +21,20 @@ describe("SplashScreen", () => {
     expect(screen.getByRole("status", { name: "Cargando GEPE" }).className).not.toContain("opacity-0");
   });
 
-  it("reveals the shirt with a CSS clip on a wrapper, not by animating inside an SVG clipPath", () => {
-    // Chrome does not repaint an animation inside a clipPath: the reveal got stuck halfway,
-    // leaving a horizontal cut in the shirt until something else forced a repaint.
+  it("shows the match phrases, one after the other, under the GEPE name", () => {
     const { container } = render(<SplashScreen phase="showing" />);
-    expect(container.querySelector(".splash-reveal svg")).not.toBeNull();
-    expect(container.querySelector("clipPath [class]")).toBeNull();
+    const shown = Array.from(container.querySelectorAll(".splash-phrase")).map((el) => el.textContent);
+    expect(shown).toEqual([...SPLASH_PHRASES]);
+  });
+
+  it("has four short phrases: the fade keyframes in globals.css give each a quarter of the round", () => {
+    expect(SPLASH_PHRASES).toHaveLength(4);
+    for (const phrase of SPLASH_PHRASES) expect(phrase.length).toBeLessThanOrEqual(30);
+  });
+
+  it("no longer shows the shirt that tries on designs", () => {
+    const { container } = render(<SplashScreen phase="showing" />);
+    expect(container.querySelector("svg, .splash-reveal, .splash-shirt, .splash-body")).toBeNull();
   });
 
   it("renders nothing once gone", () => {
