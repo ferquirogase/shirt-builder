@@ -1,20 +1,54 @@
 "use client";
+import { useEffect, useRef } from "react";
 import { useDesign } from "@/lib/builder/state/design-context";
-import { SPONSOR_MAX_SCALE, SPONSOR_MIN_SCALE, SPONSOR_SLOTS, type SponsorSlot } from "@/lib/builder/catalog/sponsor-slots";
+import {
+  SPONSOR_MAX_SCALE,
+  SPONSOR_MIN_SCALE,
+  SPONSOR_SLOTS,
+  sponsorNumber,
+  type SponsorSlot,
+} from "@/lib/builder/catalog/sponsor-slots";
 import { useImageUpload } from "@/lib/builder/io/use-image-upload";
 import { UploadIcon } from "../icons";
 import { PanelShell } from "./PanelShell";
 
 function SponsorCard({ slot }: { slot: SponsorSlot }) {
-  const { state, dispatch } = useDesign();
+  const { state, dispatch, selectedSponsor, registerSponsorUploader } = useDesign();
   const entry = state.sponsors[slot.id];
+  const selected = selectedSponsor === slot.id;
+  const input = useRef<HTMLInputElement>(null);
+  const card = useRef<HTMLElement>(null);
+
+  // A marker on the shirt opens this card's file chooser through here.
+  useEffect(
+    () => registerSponsorUploader(slot.id, () => input.current?.click()),
+    [slot.id, registerSponsorUploader]
+  );
+
+  // Picked on the shirt: bring its card into view.
+  useEffect(() => {
+    if (selected) card.current?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  }, [selected]);
   const { error, handleFile, cancelPending } = useImageUpload((dataUrl) =>
     dispatch({ type: "SET_SPONSOR", slot: slot.id, dataUrl })
   );
 
   return (
-    <section aria-label={slot.label} className="flex flex-col gap-3 rounded-2xl bg-white/70 p-3">
-      <h3 className="text-sm font-semibold">{slot.label}</h3>
+    <section
+      ref={card}
+      aria-label={slot.label}
+      aria-current={selected ? "true" : undefined}
+      className={`flex flex-col gap-3 rounded-2xl bg-white/70 p-3 ${selected ? "ring-2 ring-foreground" : ""}`}
+    >
+      <h3 className="flex items-center gap-2 text-sm font-semibold">
+        <span
+          aria-hidden="true"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-bold text-white"
+        >
+          {sponsorNumber(slot.id)}
+        </span>
+        {slot.label}
+      </h3>
 
       <div className="flex items-center gap-3">
         {entry && (
@@ -29,6 +63,7 @@ function SponsorCard({ slot }: { slot: SponsorSlot }) {
           <UploadIcon className="h-5 w-5 text-muted" />
           <span>{entry ? "Reemplazar" : "Subir imagen"}</span>
           <input
+            ref={input}
             type="file"
             aria-label={`Subir sponsor: ${slot.label}`}
             accept="image/png,image/jpeg,image/svg+xml"
@@ -79,6 +114,16 @@ function SponsorCard({ slot }: { slot: SponsorSlot }) {
 }
 
 export function SponsorPanel() {
+  const { setSponsorMarkers, selectSponsor } = useDesign();
+  // While this panel is open the shirt shows a marker on each placement.
+  useEffect(() => {
+    setSponsorMarkers(true);
+    return () => {
+      setSponsorMarkers(false);
+      selectSponsor(null);
+    };
+  }, [setSponsorMarkers, selectSponsor]);
+
   return (
     <PanelShell title="Sponsor" hint="Una imagen por ubicación. PNG, JPG o SVG, máximo 2 MB.">
       <div className="flex flex-col gap-3">

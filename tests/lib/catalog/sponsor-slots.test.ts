@@ -6,6 +6,7 @@ import {
   clampSponsorScale,
   findSponsorSlot,
   isSponsorSlotId,
+  sponsorNumber,
 } from "@/lib/builder/catalog/sponsor-slots";
 import { GEPE_UV_REGIONS } from "@/lib/builder/geometry/uv-regions";
 
@@ -54,6 +55,10 @@ describe("sponsor slots", () => {
       const share = s.region === "sleeveLeft" || s.region === "sleeveRight" ? 0.8 : 0.7;
       expect(s.baseBox * SPONSOR_MAX_SCALE).toBeLessThanOrEqual(room * share);
     }
+  });
+
+  it("numbers the placements from 1, in the order of the list", () => {
+    expect(SPONSOR_SLOTS.map((s) => sponsorNumber(s.id))).toEqual([1, 2, 3, 4]);
   });
 
   it("recognizes ids", () => {

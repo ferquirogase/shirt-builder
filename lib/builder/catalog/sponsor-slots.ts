@@ -62,6 +62,12 @@ export function findSponsorSlot(id: string): SponsorSlot | undefined {
   return SPONSOR_SLOTS.find((s) => s.id === id);
 }
 
+// The number a placement is shown with, on its marker and on its card: its place in the
+// list. The list follows GEPE's map (front, sleeves, back), so numbers always read in that order.
+export function sponsorNumber(id: SponsorSlotId): number {
+  return SPONSOR_SLOTS.findIndex((s) => s.id === id) + 1;
+}
+
 export function isSponsorSlotId(id: string): id is SponsorSlotId {
   return findSponsorSlot(id) !== undefined;
 }
