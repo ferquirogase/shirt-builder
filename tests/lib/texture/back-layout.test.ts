@@ -9,7 +9,7 @@ import {
   NUMBER_FONT_FRACTION,
 } from "@/lib/builder/texture/back-layout";
 import { SPONSOR_SLOTS, SPONSOR_MAX_SCALE, findSponsorSlot } from "@/lib/builder/catalog/sponsor-slots";
-import { BRAND_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
+import { NAPE_BRAND_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
 import { GEPE_UV_REGIONS } from "@/lib/builder/geometry/uv-regions";
 
 const back = GEPE_UV_REGIONS.bodyBack;
@@ -31,7 +31,7 @@ describe("back layout (GEPE model, sponsors at max scale)", () => {
 
   it("puts the GEPE logo at the nape between the collar and the name, clear of both", () => {
     // Its longer side is its width; half of that is a safe bound for its half height.
-    const half = toV(BRAND_BOX_FRACTION / 2);
+    const half = toV(NAPE_BRAND_BOX_FRACTION / 2);
     expect(NAPE_V_FRAC - half).toBeGreaterThanOrEqual(COLLAR_BAND_END_V_FRAC);
     expect(NAPE_V_FRAC + half).toBeLessThanOrEqual(nameTop);
   });

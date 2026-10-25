@@ -143,8 +143,8 @@ function drawBrandLogos(
   const reference = forDark ?? forLight;
   if (!reference) return;
 
-  const drawAt = (center: { x: number; y: number }, rotation: number) => {
-    const box = fitLogoBox(reference, center, canvasSize, BRAND_BOX_FRACTION);
+  const drawAt = (center: { x: number; y: number }, rotation: number, boxFraction: number) => {
+    const box = fitLogoBox(reference, center, canvasSize, boxFraction);
     // The box is centered on `center`, so the cloth is judged where the logo really sits
     // whatever the turn.
     const lightCloth = isLightUnder(ctx, box, canvasSize, design.colors.primary);
@@ -154,7 +154,7 @@ function drawBrandLogos(
       return;
     }
     // Turned like the rest of the back, so it reads upright on the model.
-    const upright = fitLogoBox(reference, { x: 0, y: 0 }, canvasSize, BRAND_BOX_FRACTION);
+    const upright = fitLogoBox(reference, { x: 0, y: 0 }, canvasSize, boxFraction);
     ctx.save();
     ctx.translate(center.x, center.y);
     ctx.rotate(rotation);
@@ -162,8 +162,8 @@ function drawBrandLogos(
     ctx.restore();
   };
 
-  drawAt(pointInRegionToCanvas(regions.bodyFront, BRAND_U_FRAC, CREST_V_FRAC, canvasSize), 0);
-  drawAt(pointInRegionToCanvas(regions.bodyBack, 0.5, NAPE_V_FRAC, canvasSize), Math.PI);
+  drawAt(pointInRegionToCanvas(regions.bodyFront, BRAND_U_FRAC, CREST_V_FRAC, canvasSize), 0, BRAND_BOX_FRACTION);
+  drawAt(pointInRegionToCanvas(regions.bodyBack, 0.5, NAPE_V_FRAC, canvasSize), Math.PI, NAPE_BRAND_BOX_FRACTION);
 }
 
 // The sponsors: one image per placement. Each is fitted into its box (placement
@@ -206,6 +206,8 @@ const CREST_V_FRAC = 0.71;
 const CREST_BOX_FRACTION = 0.052;
 // The maker's mark is smaller than the crest, like a brand on a real shirt.
 export const BRAND_BOX_FRACTION = 0.03;
+// At the nape it is smaller still: it is a tag, not a brand mark.
+export const NAPE_BRAND_BOX_FRACTION = 0.022;
 // Cloth at least this bright (0..1) gets the logo version meant for light backgrounds.
 const LIGHT_BACKGROUND_LUMA = 0.5;
 

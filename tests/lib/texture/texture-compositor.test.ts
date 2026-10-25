@@ -579,9 +579,11 @@ describe("drawDesignToCanvas", () => {
         expect(ty).toBeCloseTo(860, 5);
         const [img, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[1];
         expect(img).toBe(forDark);
-        // The same size as the logo on the chest, and centered on the translated point.
-        expect(w).toBeCloseTo(30, 5);
-        expect(h).toBeCloseTo(30 * (381 / 512), 5);
+        // Smaller than the logo on the chest (30px): 2.2% of the canvas. Centered on the translated point.
+        expect(w).toBeCloseTo(22, 5);
+        expect(h).toBeCloseTo(22 * (381 / 512), 5);
+        const chestWidth = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0][3];
+        expect(w).toBeLessThan(chestWidth);
         expect(x + w / 2).toBeCloseTo(0, 5);
         expect(y + h / 2).toBeCloseTo(0, 5);
       });
