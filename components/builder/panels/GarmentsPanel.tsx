@@ -6,7 +6,7 @@ import { PanelShell } from "./PanelShell";
 // What is bought comes first: it decides the price, what the viewer shows and the
 // sizes the checkout asks for. The design is built after that.
 const KIT_OPTIONS = [
-  { id: "shirt", included: false, label: "Solo camiseta", icon: "/icons/sections/kit-shirt.webp" },
+  { id: "shirt", included: false, label: "Solo camiseta", icon: "/icons/sections/kit-shirt-v2.webp" },
   { id: "kit", included: true, label: "Camiseta + short", icon: "/icons/sections/kit-kit.webp" },
 ] as const;
 
