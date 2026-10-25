@@ -1,5 +1,6 @@
 "use client";
-import { createContext, useCallback, useContext, useMemo, useReducer, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
+import type { SponsorSlotId } from "../catalog/sponsor-slots";
 import { canResetDesign, createHistory, historyReducer, type DesignDispatchAction, type HistoryAction } from "./design-history";
 import { lookFor, type DesignState, type LookAction, type LookTarget } from "./design-state";
 
@@ -14,6 +15,16 @@ export type DesignContextValue = {
   setEditing: (target: LookTarget) => void;
   /** The design as the shirt being shown wears it: what the viewer draws. */
   viewed: DesignState;
+  /** Is the Sponsor panel open? Then the shirt shows a marker on each placement. */
+  sponsorMarkers: boolean;
+  setSponsorMarkers: (on: boolean) => void;
+  /** The placement picked on the shirt or in the panel, if any. */
+  selectedSponsor: SponsorSlotId | null;
+  selectSponsor: (id: SponsorSlotId | null) => void;
+  /** A card of the panel says here how to open its file chooser, so a marker can open it. Returns how to take it back. */
+  registerSponsorUploader: (id: SponsorSlotId, open: () => void) => () => void;
+  /** A tap on a marker: selects the placement and, if it is empty, opens its file chooser. */
+  pickSponsor: (id: SponsorSlotId) => void;
 };
 
 const DesignContext = createContext<DesignContextValue | null>(null);
@@ -37,6 +48,26 @@ export function DesignProvider({ children }: { children: ReactNode }) {
   if (!keeperIn && wanted !== "player") setEditing("player");
   const editing: LookTarget = keeperIn ? wanted : "player";
 
+  // Also UI state: the markers on the shirt and the Sponsor panel share them.
+  const [sponsorMarkers, setSponsorMarkers] = useState(false);
+  const [selectedSponsor, selectSponsor] = useState<SponsorSlotId | null>(null);
+  const sponsorUploaders = useRef<Partial<Record<SponsorSlotId, () => void>>>({});
+  const registerSponsorUploader = useCallback((id: SponsorSlotId, open: () => void) => {
+    sponsorUploaders.current[id] = open;
+    return () => {
+      delete sponsorUploaders.current[id];
+    };
+  }, []);
+  const sponsors = history.present.sponsors;
+  // The file chooser has to open inside the tap that asked for it, so it is not left to an effect.
+  const pickSponsor = useCallback(
+    (id: SponsorSlotId) => {
+      selectSponsor(id);
+      if (!sponsors[id]) sponsorUploaders.current[id]?.();
+    },
+    [sponsors]
+  );
+
   const value = useMemo<DesignContextValue>(
     () => ({
       state: history.present,
@@ -47,8 +78,14 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       editing,
       setEditing,
       viewed: lookFor(history.present, editing),
+      sponsorMarkers,
+      setSponsorMarkers,
+      selectedSponsor,
+      selectSponsor,
+      registerSponsorUploader,
+      pickSponsor,
     }),
-    [history, dispatch, editing]
+    [history, dispatch, editing, sponsorMarkers, selectedSponsor, pickSponsor]
   );
 
   return <DesignContext.Provider value={value}>{children}</DesignContext.Provider>;

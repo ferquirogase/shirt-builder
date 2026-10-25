@@ -1,7 +1,7 @@
 import type { DesignState } from "../state/design-state";
 import { UV_FLIP_Y, type UVRegions, type UVRect } from "../geometry/uv-regions";
 import { NAME_FONT_FRACTION, NAME_V_FRAC, NAPE_V_FRAC, NUMBER_FONT_FRACTION, NUMBER_V_FRAC } from "./back-layout";
-import { SPONSOR_SLOTS, clampSponsorScale, type SponsorSlotId } from "../catalog/sponsor-slots";
+import { availableSponsorSlots, clampSponsorScale, type SponsorSlotId } from "../catalog/sponsor-slots";
 import {
   OUTLINE_COLOR,
   OUTLINE_WIDTH,
@@ -73,22 +73,26 @@ function pointInRegionToCanvas(
 
 type LogoBox = { x: number; y: number; width: number; height: number };
 
-// Fits a logo inside a square box of `boxFraction` of the canvas, keeping its
-// aspect ratio, centered on `center`.
+// Fits a logo inside a box of `boxFraction` x `heightFraction` of the canvas (square when
+// the height is not given), keeping its aspect ratio, centered on `center`. The logo is as big
+// as the box lets it be: a wide banner is limited by the width, a tall one by the height.
 function fitLogoBox(
   image: HTMLImageElement,
   center: { x: number; y: number },
   canvasSize: number,
-  boxFraction: number
+  boxFraction: number,
+  heightFraction = boxFraction
 ): LogoBox {
-  const boxSize = canvasSize * boxFraction;
+  const boxWidth = canvasSize * boxFraction;
+  const boxHeight = canvasSize * heightFraction;
   const { naturalWidth, naturalHeight } = image;
-  const [width, height] =
-    naturalWidth > 0 && naturalHeight > 0
-      ? naturalWidth >= naturalHeight
-        ? [boxSize, boxSize * (naturalHeight / naturalWidth)]
-        : [boxSize * (naturalWidth / naturalHeight), boxSize]
-      : [boxSize, boxSize];
+  let width = Math.min(boxWidth, boxHeight);
+  let height = width;
+  if (naturalWidth > 0 && naturalHeight > 0) {
+    const fit = Math.min(boxWidth / naturalWidth, boxHeight / naturalHeight);
+    width = naturalWidth * fit;
+    height = naturalHeight * fit;
+  }
   return { x: center.x - width / 2, y: center.y - height / 2, width, height };
 }
 
@@ -176,13 +180,15 @@ function drawSponsors(
   images: CompositorImages,
   regions: UVRegions
 ): void {
-  for (const slot of SPONSOR_SLOTS) {
+  // Only the placements offered: a sponsor kept on one that something else took over is not drawn.
+  for (const slot of availableSponsorSlots(design)) {
     const entry = design.sponsors[slot.id];
     const image = images.sponsorImages?.[slot.id];
     if (!entry || !image) continue;
 
     const center = pointInRegionToCanvas(regions[slot.region], slot.uFrac, slot.vFrac, canvasSize);
-    const box = fitLogoBox(image, { x: 0, y: 0 }, canvasSize, slot.baseBox * clampSponsorScale(entry.scale));
+    const scale = clampSponsorScale(entry.scale);
+    const box = fitLogoBox(image, { x: 0, y: 0 }, canvasSize, slot.baseBox * scale, (slot.baseHeight ?? slot.baseBox) * scale);
     ctx.save();
     ctx.translate(center.x, center.y);
     if (slot.rotation !== 0) ctx.rotate(slot.rotation);

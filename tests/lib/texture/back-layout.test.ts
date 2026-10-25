@@ -5,6 +5,7 @@ import {
   NAME_V_FRAC,
   NUMBER_V_FRAC,
   LOWER_BACK_V_FRAC,
+  UPPER_BACK_V_FRAC,
   NAME_FONT_FRACTION,
   NUMBER_FONT_FRACTION,
 } from "@/lib/builder/texture/back-layout";
@@ -46,9 +47,23 @@ describe("back layout (GEPE model, sponsors at max scale)", () => {
     expect(LOWER_BACK_V_FRAC + halfBox("lower-back")).toBeLessThanOrEqual(0.85);
   });
 
-  it("is the one source of the back sponsor's vertical position, and has no sponsor at the nape", () => {
+  it("puts the upper back sponsor between the nape logo and the number: clear of both, even at its largest", () => {
+    // Half the logo's height is at most half its width; the sponsor's own box is square.
+    expect(UPPER_BACK_V_FRAC - toV(NAPE_BRAND_BOX_FRACTION / 2)).toBeGreaterThan(NAPE_V_FRAC);
+    expect(UPPER_BACK_V_FRAC - halfBox("upper-back")).toBeGreaterThanOrEqual(NAPE_V_FRAC + toV(NAPE_BRAND_BOX_FRACTION / 2));
+    expect(UPPER_BACK_V_FRAC + halfBox("upper-back")).toBeLessThanOrEqual(numberTop);
+  });
+
+  it("keeps the name out of the upper back sponsor's way only by hiding the sponsor: they share the strip", () => {
+    // The name's top is inside the sponsor's box at its largest: that is why one hides the other.
+    expect(nameTop).toBeLessThan(UPPER_BACK_V_FRAC + halfBox("upper-back"));
+    expect(findSponsorSlot("upper-back")!.blockedBy).toBe("playerName");
+  });
+
+  it("is the one source of the back sponsors' vertical positions, and has no sponsor at the nape", () => {
+    expect(findSponsorSlot("upper-back")!.vFrac).toBe(UPPER_BACK_V_FRAC);
     expect(findSponsorSlot("lower-back")!.vFrac).toBe(LOWER_BACK_V_FRAC);
     expect(findSponsorSlot("nape")).toBeUndefined();
-    expect(SPONSOR_SLOTS.length).toBe(4);
+    expect(SPONSOR_SLOTS.length).toBe(9);
   });
 });
