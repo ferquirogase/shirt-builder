@@ -1,12 +1,8 @@
-import { STAGE_GLOW, STAGE_STOPS } from "../stage-style";
+import { STAGE_COLOR, STAGE_GLOW } from "../stage-style";
 
 // Paints the same background the stage shows on screen (see stage-style.ts).
-// CSS "to bottom right" and a corner-to-corner canvas gradient differ slightly
-// on non-square canvases; that is acceptable for the exported image.
 export function paintStageBackground(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-  const base = ctx.createLinearGradient(0, 0, width, height);
-  for (const [offset, color] of STAGE_STOPS) base.addColorStop(offset, color);
-  ctx.fillStyle = base;
+  ctx.fillStyle = STAGE_COLOR;
   ctx.fillRect(0, 0, width, height);
 
   const cx = width * 0.5;

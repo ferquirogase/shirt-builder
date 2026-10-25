@@ -1,17 +1,13 @@
 // Single source of truth for the stage background so the on-screen CSS
-// gradient and the exported PNG (canvas) look the same.
-export const STAGE_STOPS: ReadonlyArray<readonly [number, string]> = [
-  [0, "#f4f4f2"],
-  [0.5, "#ebe7de"],
-  [1, "#f6d975"],
-];
+// and the exported PNG (canvas) look the same.
+// One flat light grey: the diagonal gradient that ended in yellow is gone.
+export const STAGE_COLOR = "#f4f4f2";
 
 export const STAGE_GLOW = "rgba(255,255,255,0.85)";
 
-// Card-wide background: the warm diagonal gradient.
+// Card-wide background: the flat stage color.
 export function stageBaseCss(): string {
-  const stops = STAGE_STOPS.map(([offset, color]) => `${color} ${Math.round(offset * 100)}%`).join(", ");
-  return `linear-gradient(to bottom right, ${stops})`;
+  return STAGE_COLOR;
 }
 
 // Soft light behind the jersey. Applied to the stage container only, so it is
