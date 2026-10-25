@@ -4,7 +4,7 @@ import { useDesign } from "@/lib/builder/state/design-context";
 import {
   SPONSOR_MAX_SCALE,
   SPONSOR_MIN_SCALE,
-  SPONSOR_SLOTS,
+  availableSponsorSlots,
   sponsorNumber,
   type SponsorSlot,
 } from "@/lib/builder/catalog/sponsor-slots";
@@ -12,7 +12,7 @@ import { useImageUpload } from "@/lib/builder/io/use-image-upload";
 import { UploadIcon } from "../icons";
 import { PanelShell } from "./PanelShell";
 
-function SponsorCard({ slot }: { slot: SponsorSlot }) {
+function SponsorCard({ slot, number }: { slot: SponsorSlot; number: number }) {
   const { state, dispatch, selectedSponsor, registerSponsorUploader } = useDesign();
   const entry = state.sponsors[slot.id];
   const selected = selectedSponsor === slot.id;
@@ -45,7 +45,7 @@ function SponsorCard({ slot }: { slot: SponsorSlot }) {
           aria-hidden="true"
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-bold text-white"
         >
-          {sponsorNumber(slot.id)}
+          {number}
         </span>
         {slot.label}
       </h3>
@@ -114,7 +114,9 @@ function SponsorCard({ slot }: { slot: SponsorSlot }) {
 }
 
 export function SponsorPanel() {
-  const { setSponsorMarkers, selectSponsor } = useDesign();
+  const { state, setSponsorMarkers, selectSponsor } = useDesign();
+  // The placements offered now: the ones where nothing else is printed, numbered in GEPE's order.
+  const slots = availableSponsorSlots(state);
   // While this panel is open the shirt shows a marker on each placement.
   useEffect(() => {
     setSponsorMarkers(true);
@@ -127,8 +129,8 @@ export function SponsorPanel() {
   return (
     <PanelShell title="Sponsor" hint="Una imagen por ubicación. PNG, JPG o SVG, máximo 2 MB.">
       <div className="flex flex-col gap-3">
-        {SPONSOR_SLOTS.map((slot) => (
-          <SponsorCard key={slot.id} slot={slot} />
+        {slots.map((slot) => (
+          <SponsorCard key={slot.id} slot={slot} number={sponsorNumber(slot.id, slots)} />
         ))}
       </div>
     </PanelShell>

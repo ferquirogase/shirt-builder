@@ -12,10 +12,15 @@
 // from the mesh.)
 export const COLLAR_BAND_END_V_FRAC = 0.065;
 
-export const NAPE_V_FRAC = 0.1; // between the collar and the name
+export const NAPE_V_FRAC = 0.1; // the maker’s logo, between the collar and the name
+// GEPE’s sponsor 6, between the logo and the number. On this model there is little room there:
+// the cloth of the back starts at about 0.235 (the collar is above) and the number's top is at about 0.33.
+// The player’s name is printed on this strip too (at NAME_V_FRAC), so the sponsor is not offered
+// while there is a name.
+export const UPPER_BACK_V_FRAC = 0.275;
 export const NAME_V_FRAC = 0.25; // baseline of the player name
 export const NUMBER_V_FRAC = 0.55; // baseline of the number
-export const LOWER_BACK_V_FRAC = 0.75; // waist height
+export const LOWER_BACK_V_FRAC = 0.66; // GEPE’s sponsor 7, just under the number
 
 // Font sizes as a share of the canvas.
 export const NAME_FONT_FRACTION = 0.05;

@@ -1,7 +1,7 @@
 import type { DesignState } from "../state/design-state";
 import { UV_FLIP_Y, type UVRegions, type UVRect } from "../geometry/uv-regions";
 import { NAME_FONT_FRACTION, NAME_V_FRAC, NAPE_V_FRAC, NUMBER_FONT_FRACTION, NUMBER_V_FRAC } from "./back-layout";
-import { SPONSOR_SLOTS, clampSponsorScale, type SponsorSlotId } from "../catalog/sponsor-slots";
+import { availableSponsorSlots, clampSponsorScale, type SponsorSlotId } from "../catalog/sponsor-slots";
 import {
   OUTLINE_COLOR,
   OUTLINE_WIDTH,
@@ -176,7 +176,8 @@ function drawSponsors(
   images: CompositorImages,
   regions: UVRegions
 ): void {
-  for (const slot of SPONSOR_SLOTS) {
+  // Only the placements offered: a sponsor kept on one that something else took over is not drawn.
+  for (const slot of availableSponsorSlots(design)) {
     const entry = design.sponsors[slot.id];
     const image = images.sponsorImages?.[slot.id];
     if (!entry || !image) continue;

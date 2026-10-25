@@ -5,7 +5,7 @@ import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { firstMeshGeometry } from "@/lib/builder/geometry/jersey-geometry";
 import { GEPE_UV_REGIONS } from "@/lib/builder/geometry/uv-regions";
 import { isFacingCamera, sponsorAnchor, uvPointOnMesh } from "@/lib/builder/geometry/sponsor-anchor";
-import { findSponsorSlot } from "@/lib/builder/catalog/sponsor-slots";
+import { SPONSOR_SLOTS, findSponsorSlot } from "@/lib/builder/catalog/sponsor-slots";
 
 // One triangle in the z = 5 plane, whose UVs are the same triangle scaled by 0.1.
 function triangle() {
@@ -85,8 +85,8 @@ describe("sponsorAnchor on the GEPE shirt", () => {
   const anchorOf = (id: string) => sponsorAnchor(geometry, GEPE_UV_REGIONS, findSponsorSlot(id)!)!;
 
   it("finds a point on the cloth for every placement", () => {
-    for (const id of ["abdomen", "sleeve-left", "sleeve-right", "lower-back"]) {
-      expect(sponsorAnchor(geometry, GEPE_UV_REGIONS, findSponsorSlot(id)!), id).not.toBeNull();
+    for (const slot of SPONSOR_SLOTS) {
+      expect(sponsorAnchor(geometry, GEPE_UV_REGIONS, slot), slot.id).not.toBeNull();
     }
   });
 
@@ -96,6 +96,39 @@ describe("sponsorAnchor on the GEPE shirt", () => {
     expect(anchorOf("abdomen").normal.z).toBeGreaterThan(0.5);
     expect(anchorOf("lower-back").position.z).toBeLessThan(0);
     expect(anchorOf("lower-back").normal.z).toBeLessThan(-0.5);
+  });
+
+  it("puts the five front placements on the front, facing forward", () => {
+    for (const id of ["abdomen", "belly", "waist", "chest-right", "chest-left"]) {
+      expect(anchorOf(id).position.z, id).toBeGreaterThan(0);
+      expect(anchorOf(id).normal.z, id).toBeGreaterThan(0.5);
+    }
+  });
+
+  it("stacks the center column from the chest down to the waist", () => {
+    expect(anchorOf("abdomen").position.y).toBeGreaterThan(anchorOf("belly").position.y);
+    expect(anchorOf("belly").position.y).toBeGreaterThan(anchorOf("waist").position.y);
+    for (const id of ["belly", "waist"]) expect(Math.abs(anchorOf(id).position.x), id).toBeLessThan(5);
+  });
+
+  it("puts the upper chest ones above the center column, the player's right on the left of the front view", () => {
+    // Seen from the front, the player's right is on the viewer's left, which is -x.
+    expect(anchorOf("chest-right").position.x).toBeLessThan(0);
+    expect(anchorOf("chest-left").position.x).toBeGreaterThan(0);
+    expect(anchorOf("chest-right").position.y).toBeGreaterThan(anchorOf("abdomen").position.y);
+  });
+
+  it("puts both back placements on the back, the upper one above the lower one", () => {
+    for (const id of ["upper-back", "lower-back"]) {
+      expect(anchorOf(id).position.z, id).toBeLessThan(0);
+      expect(anchorOf(id).normal.z, id).toBeLessThan(-0.5);
+    }
+    expect(anchorOf("upper-back").position.y).toBeGreaterThan(anchorOf("lower-back").position.y);
+  });
+
+  it("puts the player's right sleeve (4) on the left of the front view, like GEPE's map", () => {
+    expect(anchorOf("sleeve-right").position.x).toBeLessThan(0);
+    expect(anchorOf("sleeve-left").position.x).toBeGreaterThan(0);
   });
 
   it("puts the sleeves on opposite sides, away from the body", () => {

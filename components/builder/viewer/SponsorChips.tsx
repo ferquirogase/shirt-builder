@@ -3,7 +3,7 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
-import { SPONSOR_SLOTS, sponsorNumber, type SponsorSlot } from "@/lib/builder/catalog/sponsor-slots";
+import { SPONSOR_SLOTS, availableSponsorSlots, sponsorNumber, type SponsorSlot } from "@/lib/builder/catalog/sponsor-slots";
 import { isFacingCamera, sponsorAnchor, type SponsorAnchor } from "@/lib/builder/geometry/sponsor-anchor";
 import type { UVRegions } from "@/lib/builder/geometry/uv-regions";
 import { useDesign } from "@/lib/builder/state/design-context";
@@ -15,7 +15,7 @@ const LIFT = 3;
 // still shows up to this far past edge-on (cosine of the angle), and goes once the cloth looks away.
 const VISIBLE_MIN_COS = -0.5;
 
-function ChipAnchor({ slot, anchor }: { slot: SponsorSlot; anchor: SponsorAnchor }) {
+function ChipAnchor({ slot, anchor, number }: { slot: SponsorSlot; anchor: SponsorAnchor; number: number }) {
   const { state, selectedSponsor, pickSponsor } = useDesign();
   const group = useRef<THREE.Group>(null);
   const chip = useRef<HTMLDivElement>(null);
@@ -39,7 +39,7 @@ function ChipAnchor({ slot, anchor }: { slot: SponsorSlot; anchor: SponsorAnchor
       <Html center zIndexRange={[10, 0]}>
         <div ref={chip}>
           <SponsorChip
-            number={sponsorNumber(slot.id)}
+            number={number}
             label={slot.label}
             image={state.sponsors[slot.id]?.dataUrl}
             selected={selectedSponsor === slot.id}
@@ -53,7 +53,8 @@ function ChipAnchor({ slot, anchor }: { slot: SponsorSlot; anchor: SponsorAnchor
 
 /** A marker on every sponsor placement of the shirt, while the Sponsor panel is open. */
 export function SponsorChips({ geometry, regions }: { geometry: THREE.BufferGeometry | null; regions: UVRegions }) {
-  const { sponsorMarkers } = useDesign();
+  const { state, sponsorMarkers } = useDesign();
+  const offered = availableSponsorSlots(state);
   const anchors = useMemo(() => {
     if (!geometry) return [];
     return SPONSOR_SLOTS.flatMap((slot) => {
@@ -65,9 +66,11 @@ export function SponsorChips({ geometry, regions }: { geometry: THREE.BufferGeom
   if (!sponsorMarkers) return null;
   return (
     <>
-      {anchors.map(({ slot, anchor }) => (
-        <ChipAnchor key={slot.id} slot={slot} anchor={anchor} />
-      ))}
+      {anchors
+        .filter(({ slot }) => offered.includes(slot))
+        .map(({ slot, anchor }) => (
+          <ChipAnchor key={slot.id} slot={slot} anchor={anchor} number={sponsorNumber(slot.id, offered)} />
+        ))}
     </>
   );
 }

@@ -647,17 +647,17 @@ describe("drawDesignToCanvas", () => {
       expect(translate[0][0]).toBeCloseTo(500, 5);
       expect(translate[0][1]).toBeCloseTo(268, 5);
       expect(rotate).toHaveLength(0);
-      expect(w).toBeCloseTo(120, 5); // baseBox 0.12 of 1000
-      expect(h).toBeCloseTo(120, 5);
-      expect(x).toBeCloseTo(-60, 5); // centered on the translated origin
-      expect(y).toBeCloseTo(-60, 5);
+      expect(w).toBeCloseTo(50, 5); // baseBox 0.05 of 1000
+      expect(h).toBeCloseTo(50, 5);
+      expect(x).toBeCloseTo(-25, 5); // centered on the translated origin
+      expect(y).toBeCloseTo(-25, 5);
     });
 
     it("scales the size with the placement's scale", () => {
       const ctx = createMockCtx();
       const img = square("abdomen");
       drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry(1.5) }), { ...base, sponsorImages: { abdomen: img } }, regions);
-      expect(drawn(ctx, img).w).toBeCloseTo(180, 5);
+      expect(drawn(ctx, img).w).toBeCloseTo(75, 5);
     });
 
     it("limits a scale outside 0.5..1.5 and treats NaN as 1 (Review Focus 1)", () => {
@@ -667,9 +667,9 @@ describe("drawDesignToCanvas", () => {
         drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry(scale) }), { ...base, sponsorImages: { abdomen: img } }, regions);
         return drawn(ctx, img).w;
       };
-      expect(sizeAt(40)).toBeCloseTo(180, 5);
-      expect(sizeAt(0)).toBeCloseTo(60, 5);
-      expect(sizeAt(Number.NaN)).toBeCloseTo(120, 5);
+      expect(sizeAt(40)).toBeCloseTo(75, 5);
+      expect(sizeAt(0)).toBeCloseTo(25, 5);
+      expect(sizeAt(Number.NaN)).toBeCloseTo(50, 5);
     });
 
     it("keeps a wide image's proportions", () => {
@@ -677,8 +677,8 @@ describe("drawDesignToCanvas", () => {
       const wide = { id: "w", naturalWidth: 400, naturalHeight: 100 } as unknown as HTMLImageElement;
       drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: wide } }, regions);
       const { w, h } = drawn(ctx, wide);
-      expect(w).toBeCloseTo(120, 5);
-      expect(h).toBeCloseTo(30, 5);
+      expect(w).toBeCloseTo(50, 5);
+      expect(h).toBeCloseTo(12.5, 5);
     });
 
     it("draws an SVG with no natural size as a square instead of failing (Review Focus 3)", () => {
@@ -686,8 +686,8 @@ describe("drawDesignToCanvas", () => {
       const svg = { id: "svg", naturalWidth: 0, naturalHeight: 0 } as unknown as HTMLImageElement;
       drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: svg } }, regions);
       const { w, h } = drawn(ctx, svg);
-      expect(w).toBeCloseTo(120, 5);
-      expect(h).toBeCloseTo(120, 5);
+      expect(w).toBeCloseTo(50, 5);
+      expect(h).toBeCloseTo(50, 5);
     });
 
     it("turns the back sponsor half a turn, like the name and number", () => {
@@ -695,11 +695,65 @@ describe("drawDesignToCanvas", () => {
       const low = square("low");
       drawDesignToCanvas(ctx, 1000, designWith({ "lower-back": entry() }), { ...base, sponsorImages: { "lower-back": low } }, regions);
       expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI]]);
-      // bodyBack u .3..0.7 -> x 500; vFrac 0.75 -> v 0.1+0.75*0.4=0.4 -> y 600.
+      // bodyBack u .3..0.7 -> x 500; vFrac 0.66 -> v 0.1+0.66*0.4=0.364 -> y 636.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       expect(t[0][0]).toBeCloseTo(500, 5);
-      expect(t[0][1]).toBeCloseTo(600, 5);
+      expect(t[0][1]).toBeCloseTo(636, 5);
       expect(drawn(ctx, low).w).toBeCloseTo(45, 5);
+    });
+
+    it("draws the rest of the front placements on GEPE's center column and upper chest", () => {
+      const ctx = createMockCtx();
+      const belly = square("belly");
+      const waist = square("waist");
+      const right = square("chest-right");
+      const left = square("chest-left");
+      drawDesignToCanvas(
+        ctx,
+        1000,
+        designWith({ belly: entry(), waist: entry(), "chest-right": entry(), "chest-left": entry() }),
+        { ...base, sponsorImages: { belly, waist, "chest-right": right, "chest-left": left } },
+        regions
+      );
+      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
+      // bodyFront u .3..0.7, v .5..0.9: belly vFrac .41 -> v .664 -> y 336; waist .24 -> v .596 -> y 404.
+      // chest-right uFrac .12 -> u .348 -> x 348, chest-left .88 -> u .652 -> x 652, both vFrac .78 -> v .812 -> y 188.
+      const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
+      expect(t.map(([x, y]) => [Math.round(x), Math.round(y)])).toEqual([
+        [500, 336],
+        [500, 404],
+        [348, 188],
+        [652, 188],
+      ]);
+    });
+
+    it("draws the upper back sponsor between the nape and the number, upside-down like the back", () => {
+      const ctx = createMockCtx();
+      const upper = square("upper");
+      drawDesignToCanvas(ctx, 1000, designWith({ "upper-back": entry() }), { ...base, sponsorImages: { "upper-back": upper } }, regions);
+      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI]]);
+      // bodyBack v .1..0.5, vFrac .275 -> v .21 -> y 790.
+      const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
+      expect(t[0][0]).toBeCloseTo(500, 5);
+      expect(t[0][1]).toBeCloseTo(790, 5);
+      expect(drawn(ctx, upper).w).toBeCloseTo(30, 5);
+    });
+
+    it("does not draw the upper back sponsor while the player has a name, but draws it again without one", () => {
+      const upper = square("upper");
+      const draw = (playerName: string) => {
+        const ctx = createMockCtx();
+        drawDesignToCanvas(
+          ctx,
+          1000,
+          { ...designWith({ "upper-back": entry() }), playerName },
+          { ...base, sponsorImages: { "upper-back": upper } },
+          regions
+        );
+        return (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
+      };
+      expect(draw("PEREZ")).not.toContain(upper);
+      expect(draw("")).toContain(upper);
     });
 
     it("turns the sleeves a quarter turn, in opposite directions, and never mirrors them", () => {
@@ -713,14 +767,15 @@ describe("drawDesignToCanvas", () => {
         { ...base, sponsorImages: { "sleeve-left": left, "sleeve-right": right } },
         regions
       );
-      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[-Math.PI / 2], [Math.PI / 2]]);
+      // Drawn in GEPE's order: the player's right sleeve (4) and then the left one (5).
+      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI / 2], [-Math.PI / 2]]);
       expect(ctx.scale).not.toHaveBeenCalled();
-      // sleeveLeft u .05..0.25 -> x 150; v .1..0.4, vFrac 0.53 -> v 0.259 -> y 741.
+      // sleeveRight u .75..0.95 -> x 850; v .1..0.4, vFrac 0.53 -> v 0.259 -> y 741.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
-      expect(t[0][0]).toBeCloseTo(150, 5);
+      expect(t[0][0]).toBeCloseTo(850, 5);
       expect(t[0][1]).toBeCloseTo(741, 5);
-      // sleeveRight u .75..0.95 -> x 850.
-      expect(t[1][0]).toBeCloseTo(850, 5);
+      // sleeveLeft u .05..0.25 -> x 150.
+      expect(t[1][0]).toBeCloseTo(150, 5);
       expect(drawn(ctx, left).w).toBeCloseTo(50, 5);
     });
 

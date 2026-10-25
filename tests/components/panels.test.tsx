@@ -240,14 +240,14 @@ describe("SponsorPanel", () => {
     fireEvent.change(screen.getByLabelText(`Subir sponsor: ${label}`), { target: { files: [file] } });
   const png = (name = "logo.png") => new File(["x"], name, { type: "image/png" });
 
-  it("lists the five placements in order, each with an upload control and nothing else yet", () => {
+  it("lists the nine placements in GEPE's order, each with an upload control and nothing else yet", () => {
     renderWithDesign(<SponsorPanel />);
     // The panel's own wrapper is a region too ("Sponsor"); the cards are what we count.
     const names = screen
       .getAllByRole("region")
       .map((r) => r.getAttribute("aria-label"))
       .filter((name) => name !== "Sponsor");
-    expect(names).toEqual(["Abdomen", "Manga izquierda", "Manga derecha", "Espalda baja"]);
+    expect(names).toEqual(["Pecho", "Abdomen", "Cintura", "Manga derecha", "Manga izquierda", "Espalda alta", "Espalda baja", "Pecho alto derecho", "Pecho alto izquierdo"]);
     // The nape is reserved for the GEPE logo.
     expect(screen.queryByLabelText("Subir sponsor: Nuca")).toBeNull();
     expect(screen.queryByRole("slider")).toBeNull();
@@ -264,20 +264,20 @@ describe("SponsorPanel", () => {
 
   it("shows the preview, the scale control and remove only for a placement that has an image", async () => {
     const { api } = renderWithDesign(<SponsorPanel />);
-    upload("Abdomen", png());
+    upload("Pecho", png());
     await waitFor(() => expect(api.current!.state.sponsors.abdomen).toBeDefined());
-    expect(screen.getByRole("img", { name: "Sponsor de Abdomen" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Tamaño del sponsor: Abdomen")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Quitar sponsor: Abdomen" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Sponsor de Pecho" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Tamaño del sponsor: Pecho")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Quitar sponsor: Pecho" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Tamaño del sponsor: Espalda baja")).toBeNull();
     expect(screen.getAllByRole("slider")).toHaveLength(1);
   });
 
   it("limits the scale control to 50%..150%", async () => {
     const { api } = renderWithDesign(<SponsorPanel />);
-    upload("Abdomen", png());
+    upload("Pecho", png());
     await waitFor(() => expect(api.current!.state.sponsors.abdomen).toBeDefined());
-    const slider = screen.getByLabelText("Tamaño del sponsor: Abdomen");
+    const slider = screen.getByLabelText("Tamaño del sponsor: Pecho");
     expect(slider).toHaveAttribute("min", "0.5");
     expect(slider).toHaveAttribute("max", "1.5");
     fireEvent.change(slider, { target: { value: "1.3" } });
@@ -286,11 +286,11 @@ describe("SponsorPanel", () => {
 
   it("replaces an image keeping the chosen scale", async () => {
     const { api } = renderWithDesign(<SponsorPanel />);
-    upload("Abdomen", png("a.png"));
+    upload("Pecho", png("a.png"));
     await waitFor(() => expect(api.current!.state.sponsors.abdomen).toBeDefined());
-    fireEvent.change(screen.getByLabelText("Tamaño del sponsor: Abdomen"), { target: { value: "1.4" } });
+    fireEvent.change(screen.getByLabelText("Tamaño del sponsor: Pecho"), { target: { value: "1.4" } });
     const first = api.current!.state.sponsors.abdomen!.dataUrl;
-    upload("Abdomen", new File(["different"], "b.png", { type: "image/png" }));
+    upload("Pecho", new File(["different"], "b.png", { type: "image/png" }));
     await waitFor(() => expect(api.current!.state.sponsors.abdomen!.dataUrl).not.toBe(first));
     expect(api.current!.state.sponsors.abdomen!.scale).toBe(1.4);
   });
@@ -316,7 +316,7 @@ describe("SponsorPanel", () => {
 
   it("rejects a file over 2 MB", () => {
     renderWithDesign(<SponsorPanel />);
-    upload("Abdomen", new File([new Uint8Array(2 * 1024 * 1024 + 1)], "big.png", { type: "image/png" }));
+    upload("Pecho", new File([new Uint8Array(2 * 1024 * 1024 + 1)], "big.png", { type: "image/png" }));
     expect(screen.getByRole("alert")).toHaveTextContent(/2 MB/);
   });
 
@@ -338,9 +338,9 @@ describe("SponsorPanel", () => {
         })
     );
     const { api } = renderWithDesign(<SponsorPanel />);
-    upload("Abdomen", new File(["a"], "a.png", { type: "image/png" }));
+    upload("Pecho", new File(["a"], "a.png", { type: "image/png" }));
     await waitFor(() => expect(pending).toHaveLength(1));
-    upload("Abdomen", new File(["b"], "b.png", { type: "image/png" }));
+    upload("Pecho", new File(["b"], "b.png", { type: "image/png" }));
     await waitFor(() => expect(pending).toHaveLength(2));
 
     pending[1].resolve();
@@ -359,7 +359,7 @@ describe("SponsorPanel", () => {
         })
     );
     const { api } = renderWithDesign(<SponsorPanel />);
-    upload("Abdomen", new File(["a"], "a.png", { type: "image/png" }));
+    upload("Pecho", new File(["a"], "a.png", { type: "image/png" }));
     await waitFor(() => expect(pending).toHaveLength(1));
     upload("Espalda baja", new File(["b"], "b.png", { type: "image/png" }));
     await waitFor(() => expect(pending).toHaveLength(2));
@@ -370,7 +370,7 @@ describe("SponsorPanel", () => {
 
   it("makes keyboard focus visible on every upload control", () => {
     renderWithDesign(<SponsorPanel />);
-    for (const label of ["Abdomen", "Manga izquierda", "Manga derecha", "Espalda baja"]) {
+    for (const label of ["Pecho", "Abdomen", "Cintura", "Manga derecha", "Manga izquierda", "Espalda alta", "Espalda baja", "Pecho alto derecho", "Pecho alto izquierdo"]) {
       const control = screen.getByLabelText(`Subir sponsor: ${label}`).closest("label");
       expect(control?.className).toContain("focus-within:ring-2");
     }

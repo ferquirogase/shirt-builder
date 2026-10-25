@@ -32,17 +32,37 @@ describe("the sponsor picker shared by the panel and the markers on the shirt", 
 
   it("numbers each card with the same number its marker has", () => {
     renderWithDesign(<SponsorPanel />);
-    const numbered = ["Abdomen", "Manga izquierda", "Manga derecha", "Espalda baja"].map((label, i) => [label, String(i + 1)]);
+    const numbered = ["Pecho", "Abdomen", "Cintura", "Manga derecha", "Manga izquierda", "Espalda alta", "Espalda baja", "Pecho alto derecho", "Pecho alto izquierdo"].map((label, i) => [label, String(i + 1)]);
     for (const [label, number] of numbered) {
       expect(within(screen.getByRole("region", { name: label })).getByText(number)).toBeInTheDocument();
     }
+  });
+
+  it("takes the upper back away when the player has a name, and the cards after it move up", () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    expect(screen.getByRole("region", { name: "Espalda alta" })).toBeInTheDocument();
+    act(() => api.current!.dispatch({ type: "SET_PLAYER_NAME", value: "PEREZ" }));
+    expect(screen.queryByRole("region", { name: "Espalda alta" })).toBeNull();
+    // Espalda baja was 7 and is now 6; the two upper chest ones were 8 and 9.
+    expect(within(screen.getByRole("region", { name: "Espalda baja" })).getByText("6")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Pecho alto izquierdo" })).getByText("8")).toBeInTheDocument();
+  });
+
+  it("keeps the sponsor of the upper back while the name hides it, and gives it back with the name gone", () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    act(() => api.current!.dispatch({ type: "SET_SPONSOR", slot: "upper-back", dataUrl: IMG }));
+    act(() => api.current!.dispatch({ type: "SET_PLAYER_NAME", value: "PEREZ" }));
+    expect(screen.queryByRole("region", { name: "Espalda alta" })).toBeNull();
+    expect(api.current!.state.sponsors["upper-back"]?.dataUrl).toBe(IMG);
+    act(() => api.current!.dispatch({ type: "SET_PLAYER_NAME", value: "" }));
+    expect(screen.getByRole("img", { name: "Sponsor de Espalda alta" })).toBeInTheDocument();
   });
 
   it("highlights the card of the selected placement, and only that one", () => {
     const { api } = renderWithDesign(<SponsorPanel />);
     act(() => api.current!.selectSponsor("sleeve-left"));
     expect(screen.getByRole("region", { name: "Manga izquierda" })).toHaveAttribute("aria-current", "true");
-    expect(screen.getByRole("region", { name: "Abdomen" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("region", { name: "Pecho" })).not.toHaveAttribute("aria-current");
   });
 
   it("forgets the selection when the panel closes", () => {
@@ -55,7 +75,7 @@ describe("the sponsor picker shared by the panel and the markers on the shirt", 
 
   it("picking an empty placement selects it and opens the file chooser, in the same tap", () => {
     const { api } = renderWithDesign(<SponsorPanel />);
-    const input = screen.getByLabelText("Subir sponsor: Abdomen");
+    const input = screen.getByLabelText("Subir sponsor: Pecho");
     const clicked = vi.fn();
     input.addEventListener("click", clicked);
     act(() => api.current!.pickSponsor("abdomen"));
@@ -66,7 +86,7 @@ describe("the sponsor picker shared by the panel and the markers on the shirt", 
   it("picking a placement that already has a sponsor only selects it", () => {
     const { api } = renderWithDesign(<SponsorPanel />);
     act(() => api.current!.dispatch({ type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG }));
-    const input = screen.getByLabelText("Subir sponsor: Abdomen");
+    const input = screen.getByLabelText("Subir sponsor: Pecho");
     const clicked = vi.fn();
     input.addEventListener("click", clicked);
     act(() => api.current!.pickSponsor("abdomen"));
