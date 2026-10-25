@@ -28,7 +28,6 @@ export function ColorsPanel() {
           <label key={slot} className="flex items-center justify-between rounded-2xl bg-white/70 p-3 text-sm font-medium">
             <span className="flex flex-col">
               {label}
-              <span className="font-mono text-xs uppercase text-muted">{view.colors[slot]}</span>
               <span className="font-mono text-xs text-muted">{formatCmyk(view.colors[slot])}</span>
             </span>
             <input
@@ -69,7 +68,6 @@ export function ColorsPanel() {
                   />
                   <span className="flex flex-col">
                     {option.label}
-                    <span className="font-mono text-xs uppercase text-muted">{state.colors[option.source]}</span>
                     <span className="font-mono text-xs text-muted">{formatCmyk(state.colors[option.source])}</span>
                   </span>
                 </button>
