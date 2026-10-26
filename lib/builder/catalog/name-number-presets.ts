@@ -1,8 +1,10 @@
 export type NameNumberStyle = {
   presetId: string;
   fill: string;
-  /** Draws a black border around the text. */
+  /** Draws a border around the text. */
   outline: boolean;
+  /** The color of that border: it is kept while the border is switched off. */
+  outlineColor: string;
 };
 
 export type NameNumberPreset = {
@@ -17,6 +19,7 @@ export type NameNumberPreset = {
 };
 
 export const DEFAULT_PRESET_ID = "classic";
+/** The border's color to begin with. */
 export const OUTLINE_COLOR = "#000000";
 /** Visible border thickness as a fraction of the font size. */
 export const OUTLINE_WIDTH = 0.04;
@@ -30,14 +33,6 @@ export const NAME_NUMBER_PRESETS: NameNumberPreset[] = [
     nameScale: 1,
     numberScale: 1,
   },
-  {
-    id: "modern",
-    label: "Moderno",
-    cssVar: "--font-nn-montserrat",
-    weight: 800,
-    nameScale: 0.9,
-    numberScale: 1,
-  },
 ];
 
 export function findNameNumberPreset(id: string): NameNumberPreset | undefined {
@@ -49,5 +44,5 @@ export function getNameNumberPreset(id: string): NameNumberPreset {
 }
 
 export function initialNameNumberStyle(): NameNumberStyle {
-  return { presetId: DEFAULT_PRESET_ID, fill: "#ffffff", outline: false };
+  return { presetId: DEFAULT_PRESET_ID, fill: "#ffffff", outline: false, outlineColor: OUTLINE_COLOR };
 }

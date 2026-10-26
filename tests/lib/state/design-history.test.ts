@@ -143,11 +143,26 @@ describe("historyReducer", () => {
 });
 
 describe("name/number style history", () => {
-  it("makes a typeface change one undoable step", () => {
-    const changed = run([{ type: "SET_NN_PRESET", id: "modern" }]);
-    expect(changed.present.nameNumberStyle.presetId).toBe("modern");
+  it("makes a border color change one undoable step", () => {
+    const changed = run([{ type: "SET_NN_OUTLINE_COLOR", value: "#ff0000" }]);
+    expect(changed.present.nameNumberStyle.outlineColor).toBe("#ff0000");
     const undone = historyReducer(changed, { type: "UNDO" });
-    expect(undone.present.nameNumberStyle.presetId).toBe("classic");
+    expect(undone.present.nameNumberStyle.outlineColor).toBe("#000000");
+  });
+
+  it("collapses a burst of border-color edits into one undo step, like the text color", () => {
+    const burst = run([
+      { type: "SET_NN_OUTLINE_COLOR", value: "#111111", at: 10_000 },
+      { type: "SET_NN_OUTLINE_COLOR", value: "#222222", at: 10_100 },
+      { type: "SET_NN_OUTLINE_COLOR", value: "#333333", at: 10_200 },
+    ]);
+    expect(burst.past).toHaveLength(1);
+    expect(burst.present.nameNumberStyle.outlineColor).toBe("#333333");
+  });
+
+  it("makes the design resettable once the border color is not the starting one", () => {
+    const changed = run([{ type: "SET_NN_OUTLINE_COLOR", value: "#ff0000" }]);
+    expect(canResetDesign(changed.present)).toBe(true);
   });
 
   it("collapses a burst of fill-color edits into one undo step (Review Focus 6)", () => {
@@ -306,7 +321,8 @@ describe("the number on the chest in the history", () => {
   });
 
   it("is restored off for an order saved before the option existed", () => {
-    const { chestNumber: _omit, ...old } = initialDesignState;
+    const old: Partial<typeof initialDesignState> = { ...initialDesignState };
+    delete old.chestNumber;
     const restored = { ...initialDesignState, ...old };
     expect(restored.chestNumber).toBe(false);
   });

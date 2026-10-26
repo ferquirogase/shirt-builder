@@ -128,10 +128,4 @@ describe("useShortsTexture", () => {
     await waitFor(() => expect(draw.mock.calls.length).toBeGreaterThan(paintsBefore));
   });
 
-  it("asks for the font of the next style when it changes", async () => {
-    const { result } = mount();
-    await waitFor(() => expect(fontsLoad).toHaveBeenCalled());
-    act(() => result.current.design.dispatch({ type: "SET_NN_PRESET", id: "modern" }));
-    await waitFor(() => expect(fontsLoad.mock.calls.length).toBeGreaterThan(1));
-  });
 });

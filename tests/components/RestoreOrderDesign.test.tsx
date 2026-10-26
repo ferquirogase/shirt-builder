@@ -33,6 +33,19 @@ describe("RestoreOrderDesign", () => {
     expect(api.current!.state.sponsors).toEqual({});
   });
 
+  it("gives the border its color for an order saved before it had one", () => {
+    const { outlineColor: omitted, ...oldStyle } = initialDesignState.nameNumberStyle;
+    void omitted;
+    saveOrder({
+      design: { ...initialDesignState, nameNumberStyle: { ...oldStyle, outline: true } as typeof initialDesignState.nameNumberStyle },
+      thumbnails: null,
+      roster: [createPlayerLine("a")],
+    });
+    const { api } = renderWithDesign(<RestoreOrderDesign />);
+    expect(api.current!.state.nameNumberStyle.outline).toBe(true);
+    expect(api.current!.state.nameNumberStyle.outlineColor).toBe("#000000");
+  });
+
   it("leaves the default design alone when there is no order", () => {
     const { api } = renderWithDesign(<RestoreOrderDesign />);
     expect(api.current!.state.projectName).toBe(initialDesignState.projectName);

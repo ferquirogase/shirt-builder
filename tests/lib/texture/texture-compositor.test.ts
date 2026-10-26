@@ -314,6 +314,30 @@ describe("drawDesignToCanvas", () => {
       expect(seen.lineWidth).toBeCloseTo(120 * OUTLINE_WIDTH * 2, 5);
     });
 
+    it("draws the border in the color the style asks for", () => {
+      const ctx = createMockCtx();
+      const strokes: unknown[] = [];
+      (ctx.strokeText as ReturnType<typeof vi.fn>).mockImplementation(() => strokes.push(ctx.strokeStyle));
+      const design = withStyle({
+        playerNumber: "10",
+        nameNumberStyle: { ...initialDesignState.nameNumberStyle, outline: true, outlineColor: "#ff00aa" },
+      });
+      drawDesignToCanvas(ctx, 1000, design, blank, regions);
+      expect(strokes.length).toBeGreaterThan(0);
+      expect(strokes.every((c) => c === "#ff00aa")).toBe(true);
+    });
+
+    it("falls back to the black border for a design saved before the border had a color", () => {
+      const ctx = createMockCtx();
+      let stroke: unknown = null;
+      (ctx.strokeText as ReturnType<typeof vi.fn>).mockImplementation(() => (stroke = ctx.strokeStyle));
+      const old: Partial<typeof initialDesignState.nameNumberStyle> = { ...initialDesignState.nameNumberStyle, outline: true };
+      delete old.outlineColor;
+      const design = withStyle({ playerNumber: "10", nameNumberStyle: old as typeof initialDesignState.nameNumberStyle });
+      drawDesignToCanvas(ctx, 1000, design, blank, regions);
+      expect(stroke).toBe(OUTLINE_COLOR);
+    });
+
     it("never draws a shadow", () => {
       const ctx = createMockCtx();
       const design = withStyle({

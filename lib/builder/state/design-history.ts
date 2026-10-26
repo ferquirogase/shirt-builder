@@ -46,6 +46,8 @@ function groupKey(action: DesignAction): string | null {
       return "number";
     case "SET_NN_FILL":
       return `${who}nn:fill`;
+    case "SET_NN_OUTLINE_COLOR":
+      return "nn:outline-color";
     default:
       return null;
   }
@@ -72,6 +74,7 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
     a.nameNumberStyle.presetId === b.nameNumberStyle.presetId &&
     a.nameNumberStyle.fill === b.nameNumberStyle.fill &&
     a.nameNumberStyle.outline === b.nameNumberStyle.outline &&
+    a.nameNumberStyle.outlineColor === b.nameNumberStyle.outlineColor &&
     a.shorts.included === b.shorts.included &&
     a.keeper.included === b.keeper.included &&
     a.keeper.nameNumberFill === b.keeper.nameNumberFill &&

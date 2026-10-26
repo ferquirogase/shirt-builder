@@ -10,24 +10,28 @@ import {
 } from "@/lib/builder/catalog/name-number-presets";
 
 describe("name-number presets", () => {
-  it("offers only Clásico (Oswald 700) and Moderno (Montserrat 800)", () => {
+  it("offers only Clásico (Oswald 700)", () => {
     expect(NAME_NUMBER_PRESETS.map((p) => [p.id, p.label, p.cssVar, p.weight])).toEqual([
       ["classic", "Clásico", "--font-nn-oswald", 700],
-      ["modern", "Moderno", "--font-nn-montserrat", 800],
     ]);
   });
 
   it("finds presets and falls back to the default for an unknown id", () => {
-    expect(findNameNumberPreset("modern")?.label).toBe("Moderno");
+    expect(findNameNumberPreset("classic")?.label).toBe("Clásico");
     expect(findNameNumberPreset("retro")).toBeUndefined();
     expect(getNameNumberPreset("nope").id).toBe(DEFAULT_PRESET_ID);
   });
 
-  it("starts white, classic and without a border", () => {
-    expect(initialNameNumberStyle()).toEqual({ presetId: "classic", fill: "#ffffff", outline: false });
+  it("gives Clásico to a design saved with the Moderno that is no longer offered", () => {
+    expect(findNameNumberPreset("modern")).toBeUndefined();
+    expect(getNameNumberPreset("modern").id).toBe("classic");
   });
 
-  it("uses one fixed black outline", () => {
+  it("starts white, classic, without a border, and with a black border color for when it is switched on", () => {
+    expect(initialNameNumberStyle()).toEqual({ presetId: "classic", fill: "#ffffff", outline: false, outlineColor: "#000000" });
+  });
+
+  it("has black as the default border color, and a visible border thickness", () => {
     expect(OUTLINE_COLOR).toBe("#000000");
     expect(OUTLINE_WIDTH).toBeGreaterThan(0);
     expect(OUTLINE_WIDTH).toBeLessThanOrEqual(0.12);

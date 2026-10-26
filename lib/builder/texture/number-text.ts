@@ -47,7 +47,8 @@ export function drawStyledText(
     // A stroke is centered on the glyph edge and the fill covers its inner
     // half, so the line is twice the visible thickness.
     ctx.lineWidth = px * OUTLINE_WIDTH * 2;
-    ctx.strokeStyle = OUTLINE_COLOR;
+    // A design saved before the border had a color has none: it keeps the black it always had.
+    ctx.strokeStyle = style.outlineColor ?? OUTLINE_COLOR;
     ctx.strokeText(text, 0, 0);
   }
 

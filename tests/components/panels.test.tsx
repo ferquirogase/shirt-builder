@@ -220,20 +220,11 @@ describe("TextPanel", () => {
     }
   });
 
-  it("offers only the Clásico and Moderno typefaces and marks the current one", () => {
+  it("offers no choice of typeface: it is Clásico only", () => {
     renderWithDesign(<TextPanel />);
-    expect(screen.getAllByRole("radio")).toHaveLength(2);
-    expect(screen.getByRole("radio", { name: "Clásico" })).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByRole("radio", { name: "Moderno" })).toHaveAttribute("aria-checked", "false");
-  });
-
-  it("switches the typeface without touching color or border", () => {
-    const { api } = renderWithDesign(<TextPanel />);
-    fireEvent.change(screen.getByLabelText("Color del texto"), { target: { value: "#ff0000" } });
-    fireEvent.click(screen.getByLabelText("Borde"));
-    fireEvent.click(screen.getByRole("radio", { name: "Moderno" }));
-    expect(api.current!.state.nameNumberStyle).toEqual({ presetId: "modern", fill: "#ff0000", outline: true });
-    expect(screen.getByRole("radio", { name: "Moderno" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(screen.queryByText("Moderno")).toBeNull();
+    expect(screen.queryByText("Clásico")).toBeNull();
   });
 
   it("toggles the border and sets the text color", () => {
@@ -245,7 +236,20 @@ describe("TextPanel", () => {
     expect(api.current!.state.nameNumberStyle.fill).toBe("#00ff00");
   });
 
-  it("no longer offers shadow, outline color or outline width", () => {
+  it("offers the border's color only while there is a border, and sets it", () => {
+    const { api } = renderWithDesign(<TextPanel />);
+    expect(screen.queryByLabelText("Color del borde")).toBeNull();
+    fireEvent.click(screen.getByLabelText("Borde"));
+    fireEvent.change(screen.getByLabelText("Color del borde"), { target: { value: "#ff00aa" } });
+    expect(api.current!.state.nameNumberStyle.outlineColor).toBe("#ff00aa");
+    expect(api.current!.state.nameNumberStyle.outline).toBe(true);
+    fireEvent.click(screen.getByLabelText("Borde"));
+    expect(screen.queryByLabelText("Color del borde")).toBeNull();
+    // Switching the border off keeps the color for when it is switched on again.
+    expect(api.current!.state.nameNumberStyle.outlineColor).toBe("#ff00aa");
+  });
+
+  it("no longer offers shadow or outline width", () => {
     renderWithDesign(<TextPanel />);
     expect(screen.queryByLabelText("Sombra")).toBeNull();
     expect(screen.queryByLabelText("Color del contorno")).toBeNull();
