@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
+import { NUMBER_PLACEHOLDER, displayNumber } from "@/lib/builder/texture/number-text";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import { NAME_V_FRAC, NUMBER_V_FRAC } from "@/lib/builder/texture/back-layout";
 import { OUTLINE_COLOR, OUTLINE_WIDTH } from "@/lib/builder/catalog/name-number-presets";
@@ -111,7 +112,7 @@ describe("drawDesignToCanvas", () => {
     expect(ctx.fillText).toHaveBeenCalledWith("10", expect.any(Number), expect.any(Number));
   });
 
-  it("does not write the player number when empty", () => {
+  it("shows a 0 where the number goes while the player has not typed one, so the design reads from the start", () => {
     const ctx = createMockCtx();
     drawDesignToCanvas(
       ctx,
@@ -120,7 +121,21 @@ describe("drawDesignToCanvas", () => {
       { bodyPatternImage: null, sleevePatternImage: null, logoImage: null },
       regions
     );
-    expect(ctx.fillText).not.toHaveBeenCalled();
+    expect(ctx.fillText).toHaveBeenCalledTimes(1);
+    expect(ctx.fillText).toHaveBeenCalledWith(NUMBER_PLACEHOLDER, expect.any(Number), expect.any(Number));
+  });
+
+  it("writes the typed number instead of the 0 once there is one", () => {
+    const ctx = createMockCtx();
+    drawDesignToCanvas(ctx, 1024, { ...initialDesignState, playerNumber: "7" }, { bodyPatternImage: null, sleevePatternImage: null, logoImage: null }, regions);
+    expect((ctx.fillText as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0])).toEqual(["7"]);
+  });
+
+  it("does not treat a blank number as typed", () => {
+    expect(displayNumber({ playerNumber: "" })).toBe(NUMBER_PLACEHOLDER);
+    expect(displayNumber({ playerNumber: "  " })).toBe(NUMBER_PLACEHOLDER);
+    expect(displayNumber({ playerNumber: "10" })).toBe("10");
+    expect(NUMBER_PLACEHOLDER).toBe("0");
   });
 
   it("converts a UV rect to exact canvas pixels, applying UV_FLIP_Y", () => {
@@ -234,7 +249,8 @@ describe("drawDesignToCanvas", () => {
       const [, fx, fy, fw, fh] = draws[0];
       expect([fx, fy, fw, fh].map((n) => Math.round(n))).toEqual([300, 100, 400, 400]);
       // Back (v 0.1..0.5 -> canvas y 500..900, center 500,700): rotated about its center.
-      expect(ctx.rotate).toHaveBeenCalledTimes(1);
+      // The pattern, and then the 0 of the number, which is turned like the back too.
+      expect(ctx.rotate).toHaveBeenCalledTimes(2);
       expect(ctx.rotate).toHaveBeenCalledWith(Math.PI);
       const [tx, ty] = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls[0];
       expect([Math.round(tx), Math.round(ty)]).toEqual([500, 700]);
@@ -314,7 +330,8 @@ describe("drawDesignToCanvas", () => {
       const ctx = createMockCtx();
       let widthAtDraw = 0;
       (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation((text: string) => {
-        widthAtDraw = ctx.measureText(text).width;
+        // Only the name: the 0 of the number is drawn too.
+        if (text.length > 1) widthAtDraw = ctx.measureText(text).width;
       });
       const longName = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
       drawDesignToCanvas(ctx, 1000, withStyle({ playerName: longName }), blank, regions);
@@ -327,7 +344,8 @@ describe("drawDesignToCanvas", () => {
       const ctx = createMockCtx();
       let widthAtDraw = 0;
       (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation((text: string) => {
-        widthAtDraw = ctx.measureText(text).width;
+        // Only the name: the 0 of the number is drawn too.
+        if (text.length > 1) widthAtDraw = ctx.measureText(text).width;
       });
       // bodyBack is 400px wide here; the garment's real back is only half of that rect.
       const narrow: UVRegions = { ...regions, backTextWidthFraction: 0.5 };
@@ -572,7 +590,8 @@ describe("drawDesignToCanvas", () => {
       it("sits at the nape, in the middle of the back, turned half a turn like the rest of the back", () => {
         const ctx = ctxWithPixels(0, 0, 0);
         drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions);
-        expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI]]);
+        // The logo at the nape, and then the 0 of the number, both turned like the back.
+        expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI], [Math.PI]]);
         // bodyBack u .3..0.7 -> x 500; NAPE_V_FRAC 0.10 -> v 0.1+0.10*0.4=0.14 -> y 860.
         const [tx, ty] = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls[0];
         expect(tx).toBeCloseTo(500, 5);
@@ -646,7 +665,7 @@ describe("drawDesignToCanvas", () => {
       // bodyFront u .3..0.7 -> center u 0.5 -> x 500; v .5..0.9, vFrac 0.58 -> v 0.732 -> y 268.
       expect(translate[0][0]).toBeCloseTo(500, 5);
       expect(translate[0][1]).toBeCloseTo(268, 5);
-      expect(rotate).toHaveLength(0);
+      expect(rotate.slice(0, -1)).toHaveLength(0); // the last turn is the number's
       expect(w).toBeCloseTo(50, 5); // baseBox 0.05 of 1000
       expect(h).toBeCloseTo(50, 5);
       expect(x).toBeCloseTo(-25, 5); // centered on the translated origin
@@ -704,7 +723,8 @@ describe("drawDesignToCanvas", () => {
       const ctx = createMockCtx();
       const low = square("low");
       drawDesignToCanvas(ctx, 1000, designWith({ "lower-back": entry() }), { ...base, sponsorImages: { "lower-back": low } }, regions);
-      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI]]);
+      // The sponsor and then the number's 0, both turned like the back.
+      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI], [Math.PI]]);
       // bodyBack u .3..0.7 -> x 500; vFrac 0.66 -> v 0.1+0.66*0.4=0.364 -> y 636.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       expect(t[0][0]).toBeCloseTo(500, 5);
@@ -725,11 +745,13 @@ describe("drawDesignToCanvas", () => {
         { ...base, sponsorImages: { belly, waist, "chest-right": right, "chest-left": left } },
         regions
       );
-      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
+      // None is turned; the only turn is the number's, drawn last.
+      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
       // bodyFront u .3..0.7, v .5..0.9: belly vFrac .41 -> v .664 -> y 336; waist .24 -> v .596 -> y 404.
       // chest-right uFrac .27 -> u .408 -> x 408, chest-left .73 -> u .592 -> x 592, both vFrac .8 -> v .82 -> y 180.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
-      expect(t.map(([x, y]) => [Math.round(x), Math.round(y)])).toEqual([
+      // The four sponsors, and then the number's 0 (translated too, to be turned).
+      expect(t.slice(0, 4).map(([x, y]) => [Math.round(x), Math.round(y)])).toEqual([
         [500, 336],
         [500, 404],
         [408, 180],
@@ -741,7 +763,8 @@ describe("drawDesignToCanvas", () => {
       const ctx = createMockCtx();
       const upper = square("upper");
       drawDesignToCanvas(ctx, 1000, designWith({ "upper-back": entry() }), { ...base, sponsorImages: { "upper-back": upper } }, regions);
-      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI]]);
+      // The sponsor and then the number's 0, both turned like the back.
+      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI], [Math.PI]]);
       // bodyBack v .1..0.5, vFrac .275 -> v .21 -> y 790.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       expect(t[0][0]).toBeCloseTo(500, 5);
@@ -778,7 +801,7 @@ describe("drawDesignToCanvas", () => {
         regions
       );
       // Drawn in GEPE's order: the player's right sleeve (4) and then the left one (5).
-      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI / 2], [-Math.PI / 2]]);
+      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI / 2], [-Math.PI / 2], [Math.PI]]); // the last is the number's 0
       expect(ctx.scale).not.toHaveBeenCalled();
       // sleeveRight u .75..0.95 -> x 850; v .1..0.4, vFrac 0.53 -> v 0.259 -> y 741.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
@@ -820,7 +843,8 @@ describe("drawDesignToCanvas", () => {
     it("never writes sponsor text", () => {
       const ctx = createMockCtx();
       drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: square("a") } }, regions);
-      expect(ctx.fillText).not.toHaveBeenCalled();
+      // The only text is the number's 0.
+      expect((ctx.fillText as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0])).toEqual([NUMBER_PLACEHOLDER]);
     });
 
     it("leaves the canvas state as it found it after each sponsor", () => {

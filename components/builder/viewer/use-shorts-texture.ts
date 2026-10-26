@@ -6,6 +6,7 @@ import { shortsColor } from "@/lib/builder/state/design-state";
 import { UV_FLIP_Y } from "@/lib/builder/geometry/uv-regions";
 import { drawShortsToCanvas } from "@/lib/builder/texture/shorts-compositor";
 import { loadSponsorImages, type SponsorImageCache, type SponsorImages } from "@/lib/builder/texture/sponsor-images";
+import { useBrandLogos, useCrestImage, useNameNumberFont } from "./use-garment-images";
 
 const CANVAS_SIZE = 2048;
 
@@ -16,8 +17,8 @@ function flagForUpload(texture: THREE.Texture): void {
   texture.needsUpdate = true;
 }
 
-// Owns the shorts' texture: a canvas with the color the shorts wear and the sponsors on their
-// legs. It repaints whenever the design or a sponsor image changes, and returns the texture to
+// Owns the shorts' texture: a canvas with the color the shorts wear, the sponsors on their legs, the
+// crest, and the number with the maker's logo under it. It repaints whenever the design or a sponsor image changes, and returns the texture to
 // put on the shorts.
 export function useShortsTexture(): THREE.CanvasTexture {
   const { state } = useDesign();
@@ -52,13 +53,24 @@ export function useShortsTexture(): THREE.CanvasTexture {
     };
   }, [state.sponsors]);
 
+  const logoImage = useCrestImage(state.logoDataUrl);
+  const brandLogos = useBrandLogos();
+  const font = useNameNumberFont(state.nameNumberStyle.presetId);
+
   const color = shortsColor(state);
   useEffect(() => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    drawShortsToCanvas(ctx, CANVAS_SIZE, state, color, { sponsorImages });
+    drawShortsToCanvas(
+      ctx,
+      CANVAS_SIZE,
+      state,
+      color,
+      { sponsorImages, logoImage, brandLogoForLight: brandLogos.forLight, brandLogoForDark: brandLogos.forDark },
+      font.family
+    );
     flagForUpload(texture);
-  }, [state, color, canvas, texture, sponsorImages]);
+  }, [state, color, canvas, texture, sponsorImages, logoImage, brandLogos, font.family, font.version]);
 
   return texture;
 }

@@ -2,7 +2,15 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { firstMeshGeometry } from "@/lib/builder/geometry/jersey-geometry";
-import { SHORTS_UV_REGIONS, SHORTS_UV_STRETCH } from "@/lib/builder/geometry/shorts-uv-regions";
+import {
+  SHORTS_CREST_BOX_FRACTION,
+  SHORTS_CREST_STRETCH,
+  SHORTS_FRONT_LAYOUT,
+  SHORTS_UV_REGIONS,
+  SHORTS_UV_STRETCH,
+} from "@/lib/builder/geometry/shorts-uv-regions";
+import { GEPE_UV_REGIONS } from "@/lib/builder/geometry/uv-regions";
+import { CREST_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
 import { uvPointOnMesh } from "@/lib/builder/geometry/sponsor-anchor";
 
 // The shorts' texture is one band: the back of one leg, the front of both and the back of the other,
@@ -69,5 +77,51 @@ describe("SHORTS_UV_STRETCH", () => {
   it("squeezes what is drawn sideways, because the texture has more cloth per unit across than up", () => {
     expect(SHORTS_UV_STRETCH).toBeGreaterThan(0.5);
     expect(SHORTS_UV_STRETCH).toBeLessThan(1);
+  });
+});
+
+// What matters to the player: the crest on the shorts looks as big as the one on the chest. The two
+// textures cover different amounts of cloth per unit, so this is measured on the models themselves.
+describe("the crest on the shorts, against the one on the chest", () => {
+  const shirt = firstMeshGeometry(new OBJLoader().parse(readFileSync("public/models/gepe_shirt.obj", "utf8")))!;
+  const shorts = firstMeshGeometry(new OBJLoader().parse(readFileSync("public/models/gepe_shorts.obj", "utf8")))!;
+
+  // Model units of cloth for a step in u and in v around a point of the texture.
+  function clothPerUnit(geometry: typeof shirt, u: number, v: number) {
+    const d = 0.01;
+    const at = (du: number, dv: number) => uvPointOnMesh(geometry, u + du, v + dv)!.position;
+    return {
+      perU: at(d, 0).distanceTo(at(-d, 0)) / (2 * d),
+      perV: at(0, d).distanceTo(at(0, -d)) / (2 * d),
+    };
+  }
+
+  const chest = (() => {
+    const f = GEPE_UV_REGIONS.bodyFront;
+    // The crest's own point on the chest (see the compositor): 0.66 across and 0.71 up.
+    const c = clothPerUnit(shirt, f.u0 + 0.66 * (f.u1 - f.u0), f.v0 + 0.71 * (f.v1 - f.v0));
+    return { width: CREST_BOX_FRACTION * c.perU, height: CREST_BOX_FRACTION * c.perV };
+  })();
+
+  const onShorts = (() => {
+    const { region, uFrac, vFrac } = SHORTS_FRONT_LAYOUT.crest;
+    const r = SHORTS_UV_REGIONS[region];
+    const c = clothPerUnit(shorts, r.u0 + uFrac * (r.u1 - r.u0), r.v0 + vFrac * (r.v1 - r.v0));
+    return {
+      width: SHORTS_CREST_BOX_FRACTION * c.perU * SHORTS_CREST_STRETCH,
+      height: SHORTS_CREST_BOX_FRACTION * c.perV,
+    };
+  })();
+
+  it("is as wide and as tall as the one on the chest, within a tenth", () => {
+    expect(onShorts.width / chest.width).toBeGreaterThan(0.9);
+    expect(onShorts.width / chest.width).toBeLessThan(1.1);
+    expect(onShorts.height / chest.height).toBeGreaterThan(0.9);
+    expect(onShorts.height / chest.height).toBeLessThan(1.1);
+  });
+
+  it("is not stretched: as wide as it is tall, as the square crest box is", () => {
+    expect(onShorts.width / onShorts.height).toBeGreaterThan(0.9);
+    expect(onShorts.width / onShorts.height).toBeLessThan(1.1);
   });
 });

@@ -24,3 +24,23 @@ export type ShortsRegionName = keyof typeof SHORTS_UV_REGIONS;
 // against about 158. A picture drawn as it is would look about 1.4 times too wide on the shorts, so
 // what is drawn on them is squeezed sideways by this much (the ratio of the two, rounded).
 export const SHORTS_UV_STRETCH = 0.74;
+
+// The front of the shorts, as GEPE draws it: the number on the player's left leg with the maker's logo
+// under it, and the crest on the right leg under sponsor 12 (see sponsor-slots.ts). Positions are within
+// each panel (0..1 across and from the hem up), tuned against GEPE's map and screenshots.
+export const SHORTS_FRONT_LAYOUT = {
+  number: { region: "shortsFrontLeft", uFrac: 0.55, vFrac: 0.16 },
+  brand: { region: "shortsFrontLeft", uFrac: 0.55, vFrac: 0.12 },
+  crest: { region: "shortsFrontRight", uFrac: 0.4, vFrac: 0.2 },
+} as const satisfies Record<string, { region: ShortsRegionName; uFrac: number; vFrac: number }>;
+
+// The crest on the shorts is drawn as big as the one on the chest. The shorts' texture covers less
+// cloth per unit than the shirt's, and by the crest the cloth is stretched more across than the
+// 0.74 that suits the sponsors, so the crest has its own size and squeeze: measured on the two OBJs
+// (a test checks that both crests come out the same size on the garment, and not stretched).
+export const SHORTS_CREST_BOX_FRACTION = 0.09;
+export const SHORTS_CREST_STRETCH = 0.64;
+
+// The size of the number on the shorts, as a share of the canvas: a lot smaller than the one on the
+// back of the shirt (0.12), like on GEPE's shorts.
+export const SHORTS_NUMBER_FONT_FRACTION = 0.085;

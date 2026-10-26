@@ -1,14 +1,9 @@
 import type { DesignState } from "../state/design-state";
 import { UV_FLIP_Y, type UVRegions, type UVRect } from "../geometry/uv-regions";
+import { displayNumber, drawStyledText } from "./number-text";
 import { NAME_FONT_FRACTION, NAME_V_FRAC, NAPE_V_FRAC, NUMBER_FONT_FRACTION, NUMBER_V_FRAC } from "./back-layout";
 import { availableSponsorSlots, clampSponsorScale, isShortsSlot, type SponsorSlotId } from "../catalog/sponsor-slots";
-import {
-  OUTLINE_COLOR,
-  OUTLINE_WIDTH,
-  getNameNumberPreset,
-  type NameNumberPreset,
-  type NameNumberStyle,
-} from "../catalog/name-number-presets";
+import { getNameNumberPreset } from "../catalog/name-number-presets";
 
 export type CompositorImages = {
   bodyPatternImage: HTMLImageElement | null;
@@ -113,7 +108,7 @@ function hexLuma(hex: string): number {
 // Is the cloth under `box` light? Reads the pixels already painted there, so a
 // pattern (e.g. a white stripe on a green shirt) is judged where the logo
 // really sits. If the pixels can't be read, the primary color stands in.
-function isLightUnder(ctx: CanvasRenderingContext2D, box: LogoBox, canvasSize: number, fallbackHex: string): boolean {
+export function isLightUnder(ctx: CanvasRenderingContext2D, box: LogoBox, canvasSize: number, fallbackHex: string): boolean {
   if (typeof ctx.getImageData === "function") {
     try {
       const x = Math.max(0, Math.floor(box.x));
@@ -135,6 +130,43 @@ function isLightUnder(ctx: CanvasRenderingContext2D, box: LogoBox, canvasSize: n
   return hexLuma(fallbackHex) >= LIGHT_BACKGROUND_LUMA;
 }
 
+export type BrandLogos = { forLight: HTMLImageElement | null; forDark: HTMLImageElement | null };
+
+// Draws the maker's logo centered on `center`, in the version that contrasts with the cloth under it
+// (the pixels already painted there, or `fallbackHex` when they can't be read). `rotation` turns it
+// about its center, and `squeeze` narrows it sideways first (the shorts' texture, see SHORTS_UV_STRETCH).
+export function drawBrandLogoAt(
+  ctx: CanvasRenderingContext2D,
+  canvasSize: number,
+  logos: BrandLogos,
+  fallbackHex: string,
+  center: { x: number; y: number },
+  boxFraction: number,
+  { rotation = 0, squeeze = 1 }: { rotation?: number; squeeze?: number } = {}
+): void {
+  const { forLight, forDark } = logos;
+  const reference = forDark ?? forLight;
+  if (!reference) return;
+
+  const box = fitLogoBox(reference, center, canvasSize, boxFraction);
+  // The cloth is judged where the logo really sits: its box is centered on `center` whatever the
+  // turn, and narrower once squeezed.
+  const seen = { ...box, x: center.x - (box.width * squeeze) / 2, width: box.width * squeeze };
+  const lightCloth = isLightUnder(ctx, seen, canvasSize, fallbackHex);
+  const chosen = (lightCloth ? forLight ?? forDark : forDark ?? forLight)!;
+  if (rotation === 0 && squeeze === 1) {
+    ctx.drawImage(chosen, box.x, box.y, box.width, box.height);
+    return;
+  }
+  const upright = fitLogoBox(reference, { x: 0, y: 0 }, canvasSize, boxFraction);
+  ctx.save();
+  ctx.translate(center.x, center.y);
+  if (squeeze !== 1) ctx.scale(squeeze, 1);
+  if (rotation !== 0) ctx.rotate(rotation);
+  ctx.drawImage(chosen, upright.x, upright.y, upright.width, upright.height);
+  ctx.restore();
+}
+
 // The maker's logo, in two places: the wearer's right chest (mirroring the crest) and the
 // back of the neck, which is reserved for it. It comes in two versions and, at each place,
 // the one that contrasts with the cloth under it is used.
@@ -145,32 +177,13 @@ function drawBrandLogos(
   images: CompositorImages,
   regions: UVRegions
 ): void {
-  const forLight = images.brandLogoForLight ?? null;
-  const forDark = images.brandLogoForDark ?? null;
-  const reference = forDark ?? forLight;
-  if (!reference) return;
-
-  const drawAt = (center: { x: number; y: number }, rotation: number, boxFraction: number) => {
-    const box = fitLogoBox(reference, center, canvasSize, boxFraction);
-    // The box is centered on `center`, so the cloth is judged where the logo really sits
-    // whatever the turn.
-    const lightCloth = isLightUnder(ctx, box, canvasSize, design.colors.primary);
-    const chosen = (lightCloth ? forLight ?? forDark : forDark ?? forLight)!;
-    if (rotation === 0) {
-      ctx.drawImage(chosen, box.x, box.y, box.width, box.height);
-      return;
-    }
-    // Turned like the rest of the back, so it reads upright on the model.
-    const upright = fitLogoBox(reference, { x: 0, y: 0 }, canvasSize, boxFraction);
-    ctx.save();
-    ctx.translate(center.x, center.y);
-    ctx.rotate(rotation);
-    ctx.drawImage(chosen, upright.x, upright.y, upright.width, upright.height);
-    ctx.restore();
-  };
-
-  drawAt(pointInRegionToCanvas(regions.bodyFront, BRAND_U_FRAC, CREST_V_FRAC, canvasSize), 0, BRAND_BOX_FRACTION);
-  drawAt(pointInRegionToCanvas(regions.bodyBack, 0.5, NAPE_V_FRAC, canvasSize), Math.PI, NAPE_BRAND_BOX_FRACTION);
+  const logos = { forLight: images.brandLogoForLight ?? null, forDark: images.brandLogoForDark ?? null };
+  const primary = design.colors.primary;
+  const chest = pointInRegionToCanvas(regions.bodyFront, BRAND_U_FRAC, CREST_V_FRAC, canvasSize);
+  drawBrandLogoAt(ctx, canvasSize, logos, primary, chest, BRAND_BOX_FRACTION);
+  // Turned like the rest of the back, so it reads upright on the model.
+  const nape = pointInRegionToCanvas(regions.bodyBack, 0.5, NAPE_V_FRAC, canvasSize);
+  drawBrandLogoAt(ctx, canvasSize, logos, primary, nape, NAPE_BRAND_BOX_FRACTION, { rotation: Math.PI });
 }
 
 // The sponsors: one image per placement. Each is fitted into its box (placement
@@ -214,7 +227,7 @@ const BRAND_U_FRAC = 0.3;
 const CREST_V_FRAC = 0.71;
 // The longer side of the crest, as a share of the canvas (it was 0.08, then 0.065 and 0.058, which still
 // reached the curve of the sleeve).
-const CREST_BOX_FRACTION = 0.052;
+export const CREST_BOX_FRACTION = 0.052;
 // The maker's mark is smaller than the crest, like a brand on a real shirt.
 export const BRAND_BOX_FRACTION = 0.03;
 // At the nape it is smaller still: it is a tag, not a brand mark.
@@ -282,25 +295,27 @@ export function drawDesignToCanvas(
     // with bodyFront's top (see logo comment above), i.e. near the collar.
     // Below the collar band and the maker's logo at the nape, above the number (see back-layout.ts).
     const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, NAME_V_FRAC, canvasSize);
-    drawBackText(ctx, design.playerName, cx, cy, {
+    drawStyledText(ctx, design.playerName, cx, cy, {
       basePx: canvasSize * NAME_FONT_FRACTION * nnPreset.nameScale,
       maxWidth: maxTextWidth,
       style: nnStyle,
       preset: nnPreset,
       fontFamily: nameNumberFontFamily,
+      rotation: Math.PI,
     });
   }
 
-  if (design.playerNumber) {
+  {
     // Below the name (further from the collar edge), larger font, centered
     // in bodyBack.
     const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, NUMBER_V_FRAC, canvasSize);
-    drawBackText(ctx, design.playerNumber, cx, cy, {
+    drawStyledText(ctx, displayNumber(design), cx, cy, {
       basePx: canvasSize * NUMBER_FONT_FRACTION * nnPreset.numberScale,
       maxWidth: maxTextWidth,
       style: nnStyle,
       preset: nnPreset,
       fontFamily: nameNumberFontFamily,
+      rotation: Math.PI,
     });
   }
 }
@@ -312,47 +327,6 @@ export function drawDesignToCanvas(
 // content is drawn rotated by PI.
 // Default share of bodyBack's width the back text may take (see UVRegions.backTextWidthFraction).
 const MAX_BACK_TEXT_WIDTH_FRACTION = 0.8;
-
-type BackTextOptions = {
-  basePx: number;
-  maxWidth: number;
-  style: NameNumberStyle;
-  preset: NameNumberPreset;
-  fontFamily: string;
-};
-
-// Draws outline -> fill, centered on (x, y), rotated 180deg.
-function drawBackText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  { basePx, maxWidth, style, preset, fontFamily }: BackTextOptions
-): void {
-  ctx.save();
-  const fontFor = (px: number) => `${preset.weight} ${px}px ${fontFamily}`;
-  ctx.font = fontFor(basePx);
-  ctx.textAlign = "center";
-  const measured = ctx.measureText(text).width;
-  const px = measured > maxWidth ? basePx * (maxWidth / measured) : basePx;
-  ctx.font = fontFor(px);
-
-  ctx.translate(x, y);
-  ctx.rotate(Math.PI);
-  ctx.lineJoin = "round";
-
-  if (style.outline) {
-    // A stroke is centered on the glyph edge and the fill covers its inner
-    // half, so the line is twice the visible thickness.
-    ctx.lineWidth = px * OUTLINE_WIDTH * 2;
-    ctx.strokeStyle = OUTLINE_COLOR;
-    ctx.strokeText(text, 0, 0);
-  }
-
-  ctx.fillStyle = style.fill;
-  ctx.fillText(text, 0, 0);
-  ctx.restore();
-}
 
 type RegionOrientation = "plain" | "rotate180" | "mirrorX";
 

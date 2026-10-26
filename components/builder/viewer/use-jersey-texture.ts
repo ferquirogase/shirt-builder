@@ -3,14 +3,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { BODY_PATTERNS, SLEEVE_PATTERNS } from "@/lib/builder/catalog/patterns";
-import { loadImage, loadPatternImage, loadTintedMask } from "@/lib/builder/texture/image-loader";
+import { loadPatternImage, loadTintedMask } from "@/lib/builder/texture/image-loader";
 import { drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
 import { UV_FLIP_Y } from "@/lib/builder/geometry/uv-regions";
 import { JERSEY_MODEL } from "@/lib/builder/geometry/jersey-model";
-import { BRAND_LOGO_URLS } from "@/lib/builder/catalog/brand-logo";
 import { loadSponsorImages, type SponsorImageCache, type SponsorImages } from "@/lib/builder/texture/sponsor-images";
-import { getNameNumberPreset } from "@/lib/builder/catalog/name-number-presets";
-import { resolveFontFamily } from "@/lib/builder/texture/resolve-font-family";
+import { useBrandLogos, useCrestImage, useNameNumberFont } from "./use-garment-images";
 
 const CANVAS_SIZE = 2048;
 // Pattern SVGs are re-fetched/re-rasterized only when the pattern choice or
@@ -40,25 +38,17 @@ function flagForUpload(texture: THREE.Texture): void {
 // images changes, and returns the texture to put on the shirt.
 export function useJerseyTexture(): THREE.CanvasTexture {
   const { viewed: state } = useDesign();
-  const logoUrlRef = useRef<string | null>(null);
   const [patternImages, setPatternImages] = useState<PatternImages>({
     bodyPatternImage: null,
     bodyBackPatternImage: null,
     sleevePatternImage: null,
     collarMaskImage: null,
   });
-  const [logoImage, setLogoImage] = useState<HTMLImageElement | null>(null);
-  const [brandLogos, setBrandLogos] = useState<{ forLight: HTMLImageElement | null; forDark: HTMLImageElement | null }>({
-    forLight: null,
-    forDark: null,
-  });
+  const logoImage = useCrestImage(state.logoDataUrl);
+  const brandLogos = useBrandLogos();
+  const font = useNameNumberFont(state.nameNumberStyle.presetId);
   const sponsorCache = useRef<SponsorImageCache>(new Map());
   const [sponsorImages, setSponsorImages] = useState<SponsorImages>({});
-  // Bumped when the name/number font finishes loading, to repaint the canvas
-  // (the first paint would otherwise keep the fallback font).
-  const [fontsVersion, setFontsVersion] = useState(0);
-  const nnPreset = getNameNumberPreset(state.nameNumberStyle.presetId);
-
   const canvas = useMemo(() => {
     const el = document.createElement("canvas");
     el.width = CANVAS_SIZE;
@@ -115,23 +105,6 @@ export function useJerseyTexture(): THREE.CanvasTexture {
     };
   }, [state.bodyPatternId, state.sleevePatternId, state.colors]);
 
-  // The maker's logo never changes: load both versions once. A broken one must
-  // not break the shirt, so each failure just leaves that version out.
-  useEffect(() => {
-    let cancelled = false;
-    const load = (src: string) =>
-      loadImage(src).catch((err) => {
-        console.error("Failed to load brand logo", err);
-        return null;
-      });
-    Promise.all([load(BRAND_LOGO_URLS.forLight), load(BRAND_LOGO_URLS.forDark)]).then(([forLight, forDark]) => {
-      if (!cancelled) setBrandLogos({ forLight, forDark });
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   // Decodes the sponsor images. Cached by data URL, so moving a scale slider
   // (which changes `state.sponsors` but not the images) decodes nothing; a result
   // that arrives after the design moved on is ignored.
@@ -144,50 +117,6 @@ export function useJerseyTexture(): THREE.CanvasTexture {
       cancelled = true;
     };
   }, [state.sponsors]);
-
-  // Undebounced: loads the logo image only when its data URL actually
-  // changes (a discrete upload, not a continuous input).
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadLogo() {
-      if (state.logoDataUrl && logoUrlRef.current !== state.logoDataUrl) {
-        const img = await loadImage(state.logoDataUrl);
-        if (cancelled) return;
-        logoUrlRef.current = state.logoDataUrl;
-        setLogoImage(img);
-      } else if (!state.logoDataUrl) {
-        logoUrlRef.current = null;
-        setLogoImage(null);
-      }
-    }
-
-    loadLogo().catch((err) => {
-      console.error("Failed to load jersey logo image", err);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [state.logoDataUrl]);
-
-  // Loads the chosen name/number font on demand (the fonts are declared with
-  // preload: false) and asks for a repaint once it is available.
-  useEffect(() => {
-    let cancelled = false;
-    const family = resolveFontFamily(nnPreset.cssVar);
-    document.fonts
-      .load(`${nnPreset.weight} 48px ${family}`, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-      .then(() => {
-        if (!cancelled) setFontsVersion((v) => v + 1);
-      })
-      .catch((err) => {
-        console.error("Failed to load name/number font", err);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [nnPreset]);
 
   // Cheap and undebounced: redraws the canvas with whatever pattern/logo
   // images are currently cached, on every design state change.
@@ -210,10 +139,10 @@ export function useJerseyTexture(): THREE.CanvasTexture {
         sponsorImages,
       },
       JERSEY_MODEL.uvRegions,
-      resolveFontFamily(nnPreset.cssVar)
+      font.family
     );
     flagForUpload(texture);
-  }, [state, canvas, texture, patternImages, logoImage, brandLogos, sponsorImages, fontsVersion, nnPreset]);
+  }, [state, canvas, texture, patternImages, logoImage, brandLogos, sponsorImages, font.family, font.version]);
 
   return texture;
 }

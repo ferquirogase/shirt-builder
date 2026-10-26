@@ -13,6 +13,7 @@ import { DesignProvider, useDesign } from "@/lib/builder/state/design-context";
 import { drawShortsToCanvas } from "@/lib/builder/texture/shorts-compositor";
 import { loadImage } from "@/lib/builder/texture/image-loader";
 import { shortsColor } from "@/lib/builder/state/design-state";
+import { BRAND_LOGO_URLS } from "@/lib/builder/catalog/brand-logo";
 import { UV_FLIP_Y } from "@/lib/builder/geometry/uv-regions";
 
 const draw = vi.mocked(drawShortsToCanvas);
@@ -24,17 +25,25 @@ const lastCall = () => draw.mock.calls.at(-1)!;
 const lastDesign = () => lastCall()[2];
 const lastColor = () => lastCall()[3];
 const lastImages = () => lastCall()[4];
+const lastFamily = () => lastCall()[5];
 const IMG = "data:image/png;base64,AAAA";
+
+let fontsLoad: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   draw.mockClear();
+  fontsLoad = vi.fn().mockResolvedValue([]);
+  Object.defineProperty(document, "fonts", { configurable: true, value: { load: fontsLoad } });
   vi.mocked(loadImage)
     .mockReset()
     .mockImplementation(async (src: string) => ({ src }) as unknown as HTMLImageElement);
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(fakeCtx as never);
 });
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  Reflect.deleteProperty(document, "fonts");
+});
 
 describe("useShortsTexture", () => {
   it("returns a 2048px canvas texture that is flipped like the UVs and read as sRGB", () => {
@@ -90,5 +99,39 @@ describe("useShortsTexture", () => {
     act(() => result.current.design.dispatch({ type: "SET_SPONSOR_SCALE", slot: "shorts-front-right", value: 1.3 }));
     await waitFor(() => expect(lastDesign().sponsors["shorts-front-right"]?.scale).toBe(1.3));
     expect(vi.mocked(loadImage).mock.calls.filter(([s]) => s === IMG).length).toBe(decoded);
+  });
+
+  it("loads both versions of the maker's logo, for the one under the number", async () => {
+    mount();
+    await waitFor(() => expect(lastImages().brandLogoForLight).toEqual({ src: BRAND_LOGO_URLS.forLight }));
+    expect(lastImages().brandLogoForDark).toEqual({ src: BRAND_LOGO_URLS.forDark });
+  });
+
+  it("decodes the crest once there is one, and drops it when it is removed", async () => {
+    const { result } = mount();
+    expect(lastCall()).toBeDefined();
+    expect(lastImages().logoImage ?? null).toBeNull();
+    act(() => result.current.design.dispatch({ type: "SET_LOGO", dataUrl: IMG }));
+    await waitFor(() => expect(lastImages().logoImage).toEqual({ src: IMG }));
+    act(() => result.current.design.dispatch({ type: "SET_LOGO", dataUrl: null }));
+    await waitFor(() => expect(lastImages().logoImage ?? null).toBeNull());
+  });
+
+  it("paints the number in the font of the chosen style, and repaints once it has loaded", async () => {
+    let release: () => void = () => {};
+    fontsLoad.mockReturnValue(new Promise((resolve) => (release = () => resolve([]))));
+    mount();
+    await waitFor(() => expect(fontsLoad).toHaveBeenCalledWith(expect.stringMatching(/^700 48px /), expect.any(String)));
+    expect(lastFamily()).toBe("sans-serif");
+    const paintsBefore = draw.mock.calls.length;
+    await act(async () => release());
+    await waitFor(() => expect(draw.mock.calls.length).toBeGreaterThan(paintsBefore));
+  });
+
+  it("asks for the font of the next style when it changes", async () => {
+    const { result } = mount();
+    await waitFor(() => expect(fontsLoad).toHaveBeenCalled());
+    act(() => result.current.design.dispatch({ type: "SET_NN_PRESET", id: "modern" }));
+    await waitFor(() => expect(fontsLoad.mock.calls.length).toBeGreaterThan(1));
   });
 });
