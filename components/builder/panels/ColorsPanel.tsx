@@ -1,10 +1,12 @@
 "use client";
+import { useState } from "react";
 import { useDesign, useEditedLook } from "@/lib/builder/state/design-context";
 import { formatCmyk } from "@/lib/builder/color/cmyk";
 import { visibleColors } from "@/lib/builder/catalog/patterns";
 import type { ShortsColorSource } from "@/lib/builder/state/design-state";
 import type { ColorSlot } from "@/lib/builder/texture/svg-recolor";
 import { EditingBadge } from "./EditingBadge";
+import { ColorField } from "./ColorField";
 import { PanelShell } from "./PanelShell";
 
 const SHORTS_COLOR_OPTIONS: { source: ShortsColorSource; label: string }[] = [
@@ -15,6 +17,8 @@ const SHORTS_COLOR_OPTIONS: { source: ShortsColorSource; label: string }[] = [
 export function ColorsPanel() {
   const { state, dispatch, editing } = useDesign();
   const { view, dispatchLook } = useEditedLook();
+  // Which color's palette is open: one at a time, so the panel stays short.
+  const [openSlot, setOpenSlot] = useState<ColorSlot | null>(null);
   const rows: { slot: ColorSlot; label: string }[] = [
     ...visibleColors(view.bodyPatternId, view.sleevePatternId).map((c) => ({ slot: c.role, label: c.label })),
     { slot: "collar", label: "Color del cuello" },
@@ -25,19 +29,14 @@ export function ColorsPanel() {
       <EditingBadge />
       <div className="flex flex-col gap-3">
         {rows.map(({ slot, label }) => (
-          <label key={slot} className="flex items-center justify-between rounded-2xl bg-white/70 p-3 text-sm font-medium">
-            <span className="flex flex-col">
-              {label}
-              <span className="font-mono text-xs text-muted">{formatCmyk(view.colors[slot])}</span>
-            </span>
-            <input
-              type="color"
-              aria-label={label}
-              value={view.colors[slot]}
-              onChange={(e) => dispatchLook({ type: "SET_COLOR", slot, value: e.target.value })}
-              className="h-10 w-14 cursor-pointer rounded-lg border border-line bg-transparent"
-            />
-          </label>
+          <ColorField
+            key={slot}
+            label={label}
+            value={view.colors[slot]}
+            open={openSlot === slot}
+            onOpenChange={(open) => setOpenSlot(open ? slot : null)}
+            onChange={(value) => dispatchLook({ type: "SET_COLOR", slot, value })}
+          />
         ))}
       </div>
 

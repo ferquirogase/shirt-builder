@@ -312,3 +312,37 @@ describe("CheckoutView keeper", () => {
     expect(screen.getByLabelText("Arquero: jugador 1")).toBeInTheDocument();
   });
 });
+
+describe("the size guide in the order", () => {
+  it("has a Ver talles button by the roster, where the sizes are chosen", () => {
+    render(<CheckoutView initial={makeOrder()} />);
+    const roster = screen.getByRole("region", { name: "Plantel" });
+    expect(within(roster).getByRole("button", { name: "Ver talles" })).toBeInTheDocument();
+  });
+
+  it("opens GEPE's chart of the shirt from it, and closes it again", () => {
+    render(<CheckoutView initial={makeOrder()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
+    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
+    expect(within(dialog).getByRole("img", { name: /camiseta/i })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Short" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("adds the shorts' chart when the order is a full kit", () => {
+    const kit = makeOrder();
+    render(<CheckoutView initial={{ ...kit, design: { ...kit.design, shorts: { included: true, colorSource: "primary" } } }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Short" }));
+    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
+    expect((within(dialog).getByRole("img", { name: /corto|short/i }) as HTMLImageElement).getAttribute("src")).toBe("/talles/short.webp");
+  });
+
+  it("does not submit the order or touch the roster when it is opened", () => {
+    render(<CheckoutView initial={makeOrder()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
+    expect(payWithRipple).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Nombre del jugador 1")).toHaveValue("Leo");
+  });
+});

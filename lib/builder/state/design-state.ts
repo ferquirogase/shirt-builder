@@ -28,8 +28,9 @@ export type KeeperConfig = {
   nameNumberFill: string | null;
 };
 
-// Colors a keeper traditionally wears, in no particular order.
-const KEEPER_PRIMARIES = ["#f5b700", "#e8202a", "#1d9bf0", "#7b2cbf", "#ff7a00", "#111111"];
+// Colors a keeper traditionally wears, in no particular order. They are all on the palette, so the
+// keeper's first color is one the player can find in it.
+const KEEPER_PRIMARIES = ["#f5b700", "#e8202a", "#1d9bf0", "#7b2cbf", "#ff7a00", "#000000"];
 
 // The candidate farthest from both of the team's colors, so the keeper is never mistaken for a player.
 export function pickKeeperPrimary(team: { primary: string; secondary: string }): string {

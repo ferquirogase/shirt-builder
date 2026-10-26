@@ -72,10 +72,17 @@ export function Header({ onReview, onShare, reviewing = false, sharing = false }
           type="button"
           disabled={reviewing || sharing}
           aria-busy={reviewing}
+          aria-label={reviewing ? "Preparando…" : "Hacer pedido"}
           onClick={() => onReview(state, setEditing)}
           className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-3 text-sm font-semibold transition-colors enabled:hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60 md:px-5"
         >
-          <span className="sr-only md:not-sr-only">{reviewing ? "Preparando…" : "Hacer pedido"}</span>
+          {/* A short word on a phone, where an arrow alone is easy to miss; the whole label on wider screens. */}
+          <span aria-hidden="true" className="md:hidden">
+            Pedido
+          </span>
+          <span aria-hidden="true" className="hidden md:inline">
+            {reviewing ? "Preparando…" : "Hacer pedido"}
+          </span>
           {reviewing ? (
             <span
               data-testid="order-spinner"

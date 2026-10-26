@@ -12,6 +12,7 @@ import { CHECKOUT_FORM_ID, ContactForm } from "./ContactForm";
 import { DesignPreview } from "./DesignPreview";
 import { OrderSummary } from "./OrderSummary";
 import { RosterTable } from "./RosterTable";
+import { SizeGuideDialog } from "@/components/size-guide/SizeGuideDialog";
 import { CARD } from "./styles";
 
 const PAYMENT_ERROR = "No pudimos procesar el pago. Probá de nuevo.";
@@ -34,6 +35,7 @@ export function CheckoutView({ initial }: { initial: Order }) {
   const [attempted, setAttempted] = useState(false);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | undefined>();
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [payButtonRef, payButtonInView] = useInView<HTMLButtonElement>(`0px 0px -${TOTAL_BAR_CLEARANCE_PX}px 0px`);
 
   useEffect(() => {
@@ -74,14 +76,24 @@ export function CheckoutView({ initial }: { initial: Order }) {
 
   return (
     <CheckoutShell title="Tu pedido" splitScroll>
+      <SizeGuideDialog open={sizeGuideOpen} withShorts={withShorts} onClose={() => setSizeGuideOpen(false)} />
       {/* On desktop each column scrolls on its own and the page stays still. The negative margin and padding keep shadows and focus rings from being clipped. */}
       <div className="grid gap-6 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,1fr)_24rem] md:grid-rows-[minmax(0,1fr)]">
         <div className="thin-scroll space-y-6 md:-m-1 md:overflow-y-auto md:p-1">
           <DesignPreview order={order} />
           <section aria-labelledby="roster-title" className={CARD}>
-            <h2 id="roster-title" className="mb-1 text-lg font-bold">
-              Plantel
-            </h2>
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <h2 id="roster-title" className="text-lg font-bold">
+                Plantel
+              </h2>
+              <button
+                type="button"
+                onClick={() => setSizeGuideOpen(true)}
+                className="inline-flex h-11 shrink-0 items-center rounded-full border border-foreground/80 bg-white/70 px-4 text-sm font-semibold hover:bg-accent-soft"
+              >
+                Ver talles
+              </button>
+            </div>
             <p className="mb-4 text-sm text-muted">
               {withShorts
                 ? "Cada fila es una camiseta y un short con este diseño. Agregá un jugador por cada integrante."

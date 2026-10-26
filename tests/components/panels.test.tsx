@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithDesign } from "../helpers/render-with-design";
 import { DesignPanel } from "@/components/builder/panels/DesignPanel";
 import { ColorsPanel } from "@/components/builder/panels/ColorsPanel";
@@ -13,12 +13,22 @@ import { initialDesignState } from "@/lib/builder/state/design-state";
 import { CREST_SHAPES } from "@/lib/builder/catalog/crest-shapes";
 import { crestDataUrl } from "@/lib/builder/crest/crest-svg";
 import { INITIAL_CREST } from "@/lib/builder/crest/crest-config";
+import { PALETTE } from "@/lib/builder/color/palette";
+import { formatCmyk } from "@/lib/builder/color/cmyk";
 
 // jsdom never decodes images, so the crest's "can this actually be drawn?"
 // check is driven by this mock.
 vi.mock("@/lib/builder/texture/image-loader", () => ({ loadImage: vi.fn() }));
 
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="primary" fill="#000"/></svg>`;
+
+// Opens a color's palette and taps one of its colors, as a player does.
+function pickColor(label: string, color: string) {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${escaped}:`) }));
+  fireEvent.click(screen.getByRole("radio", { name: color }));
+}
+const hexOf = (name: string) => PALETTE.find((c) => c.name === name)!.hex;
 
 beforeEach(() => {
   vi.mocked(loadImage).mockResolvedValue({} as HTMLImageElement);
@@ -67,52 +77,65 @@ describe("DesignPanel", () => {
 describe("ColorsPanel", () => {
   it("updates primary and secondary colors", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
-    fireEvent.change(screen.getByLabelText("Color primario"), { target: { value: "#ff0000" } });
-    fireEvent.change(screen.getByLabelText("Color secundario"), { target: { value: "#00ff00" } });
-    expect(api.current!.state.colors.primary).toBe("#ff0000");
-    expect(api.current!.state.colors.secondary).toBe("#00ff00");
+    pickColor("Color primario", "Rojo");
+    pickColor("Color secundario", "Verde claro");
+    expect(api.current!.state.colors.primary).toBe(hexOf("Rojo"));
+    expect(api.current!.state.colors.secondary).toBe(hexOf("Verde claro"));
   });
 
-  it("shows each color in CMYK, and no longer in hexadecimal", () => {
+  it("opens one color's palette at a time, and closes it once a color is picked", () => {
     renderWithDesign(<ColorsPanel />);
-    fireEvent.change(screen.getByLabelText("Color primario"), { target: { value: "#ff0000" } });
-    fireEvent.change(screen.getByLabelText("Color del cuello"), { target: { value: "#123456" } });
-    expect(screen.getByText("C 0 M 100 Y 100 K 0")).toBeInTheDocument();
-    expect(screen.getByText("C 79 M 40 Y 0 K 66")).toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup", { name: "Color primario" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^Color primario:/ }));
+    expect(screen.getByRole("radiogroup", { name: "Color primario" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Color secundario:/ }));
+    expect(screen.queryByRole("radiogroup", { name: "Color primario" })).toBeNull();
+    expect(screen.getByRole("radiogroup", { name: "Color secundario" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: "Rojo" }));
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+  });
+
+  it("offers no free color picker: only the palette", () => {
+    const { container } = renderWithDesign(<ColorsPanel />);
+    fireEvent.click(screen.getByRole("button", { name: /^Color primario:/ }));
+    expect(container.querySelector('input[type="color"]')).toBeNull();
+  });
+  it("shows each color in CMYK and by name, and no longer in hexadecimal", () => {
+    renderWithDesign(<ColorsPanel />);
+    pickColor("Color primario", "Rojo");
+    pickColor("Color del cuello", "Azul marino");
+    expect(screen.getByText(formatCmyk(hexOf("Rojo")))).toBeInTheDocument();
+    expect(screen.getByText(formatCmyk(hexOf("Azul marino")))).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Color primario: Rojo" })).toBeInTheDocument();
     expect(screen.queryByText(/#[0-9a-f]{6}/i)).toBeNull();
   });
-
   it("updates the collar color on its own, leaving the pattern colors alone", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
     const before = { ...api.current!.state.colors };
-    fireEvent.change(screen.getByLabelText("Color del cuello"), { target: { value: "#0000ff" } });
-    expect(api.current!.state.colors).toEqual({ ...before, collar: "#0000ff" });
+    pickColor("Color del cuello", "Azul");
+    expect(api.current!.state.colors).toEqual({ ...before, collar: hexOf("Azul") });
   });
-
   it("shows only the colors the chosen patterns use, plus the collar", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
+    const field = (label: string) => screen.queryByRole("button", { name: new RegExp(`^${label}:`) });
     // initial: stripes-v1 + sleeve-plain -> primary, secondary
-    expect(screen.queryByLabelText("Color primario")).not.toBeNull();
-    expect(screen.queryByLabelText("Color secundario")).not.toBeNull();
-    expect(screen.queryByLabelText("Color del cuello")).not.toBeNull();
+    expect(field("Color primario")).not.toBeNull();
+    expect(field("Color secundario")).not.toBeNull();
+    expect(field("Color del cuello")).not.toBeNull();
 
     act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "plain-body" }));
     act(() => api.current!.dispatch({ type: "SET_SLEEVE_PATTERN", id: "sleeve-primary" }));
     // plain-body + sleeve-primary -> primary only
-    expect(screen.queryByLabelText("Color primario")).not.toBeNull();
-    expect(screen.queryByLabelText("Color secundario")).toBeNull();
-    expect(screen.queryByLabelText("Color del cuello")).not.toBeNull();
+    expect(field("Color primario")).not.toBeNull();
+    expect(field("Color secundario")).toBeNull();
+    expect(field("Color del cuello")).not.toBeNull();
   });
-
   it("does not duplicate a role used by both the torso and the sleeves (Review Focus 2)", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
     act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "stripes-three" }));
     act(() => api.current!.dispatch({ type: "SET_SLEEVE_PATTERN", id: "sleeve-accent" }));
     // stripes-three and sleeve-accent both use accent, with different labels: the torso's wins
-    expect(screen.getAllByLabelText("Línea fina")).toHaveLength(1);
-    expect(screen.queryByLabelText("Color de las mangas")).toBeNull();
-    expect(screen.getAllByLabelText("Franja principal")).toHaveLength(1);
-    expect(screen.getAllByLabelText("Franja alterna")).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^Línea fina:/ })).toHaveLength(1);
   });
 });
 
@@ -238,26 +261,33 @@ describe("TextPanel", () => {
   it("starts with the border on, in black, and lets it be switched off, and the text color be set", () => {
     const { api } = renderWithDesign(<TextPanel />);
     expect(screen.getByLabelText("Borde")).toBeChecked();
-    expect(screen.getByLabelText("Color del borde")).toHaveValue("#000000");
+    expect(screen.getByRole("button", { name: "Color del borde: Negro" })).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Borde"));
     expect(api.current!.state.nameNumberStyle.outline).toBe(false);
-    fireEvent.change(screen.getByLabelText("Color del texto"), { target: { value: "#00ff00" } });
-    expect(api.current!.state.nameNumberStyle.fill).toBe("#00ff00");
+    pickColor("Color del texto", "Verde claro");
+    expect(api.current!.state.nameNumberStyle.fill).toBe(hexOf("Verde claro"));
   });
-
   it("offers the border's color only while there is a border, and sets it", () => {
     const { api } = renderWithDesign(<TextPanel />);
-    fireEvent.change(screen.getByLabelText("Color del borde"), { target: { value: "#ff00aa" } });
-    expect(api.current!.state.nameNumberStyle.outlineColor).toBe("#ff00aa");
+    pickColor("Color del borde", "Rosa");
+    expect(api.current!.state.nameNumberStyle.outlineColor).toBe(hexOf("Rosa"));
     expect(api.current!.state.nameNumberStyle.outline).toBe(true);
     fireEvent.click(screen.getByLabelText("Borde"));
-    expect(screen.queryByLabelText("Color del borde")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Color del borde:/ })).toBeNull();
     // Switching the border off keeps the color for when it is switched on again.
-    expect(api.current!.state.nameNumberStyle.outlineColor).toBe("#ff00aa");
+    expect(api.current!.state.nameNumberStyle.outlineColor).toBe(hexOf("Rosa"));
     fireEvent.click(screen.getByLabelText("Borde"));
-    expect(screen.getByLabelText("Color del borde")).toHaveValue("#ff00aa");
+    expect(screen.getByRole("button", { name: "Color del borde: Rosa" })).toBeInTheDocument();
   });
 
+  it("opens the text color and the border color one at a time", () => {
+    renderWithDesign(<TextPanel />);
+    fireEvent.click(screen.getByRole("button", { name: /^Color del texto:/ }));
+    expect(screen.getByRole("radiogroup", { name: "Color del texto" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Color del borde:/ }));
+    expect(screen.queryByRole("radiogroup", { name: "Color del texto" })).toBeNull();
+    expect(screen.getByRole("radiogroup", { name: "Color del borde" })).toBeInTheDocument();
+  });
   it("no longer offers shadow or outline width", () => {
     renderWithDesign(<TextPanel />);
     expect(screen.queryByLabelText("Sombra")).toBeNull();
@@ -417,6 +447,55 @@ describe("SponsorPanel", () => {
   });
 });
 
+describe("GarmentsPanel, the size guide", () => {
+  it("has a Ver talles button on the same row as the question of what to buy, in view without scrolling", () => {
+    renderWithDesign(<GarmentsPanel />);
+    const button = screen.getByRole("button", { name: "Ver talles" });
+    const row = button.parentElement as HTMLElement;
+    expect(within(row).getByText("¿Qué querés comprar?")).toBeInTheDocument();
+    expect(button.className).toMatch(/h-11/);
+  });
+
+  it("opens GEPE's chart of the shirt, and gives the focus back to the button when it closes", () => {
+    renderWithDesign(<GarmentsPanel />);
+    const button = screen.getByRole("button", { name: "Ver talles" });
+    button.focus();
+    fireEvent.click(button);
+    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
+    expect(within(dialog).getByRole("img", { name: /camiseta/i })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("tab", { name: "Short" })).toBeNull();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cerrar" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(button);
+  });
+
+  it("adds the shorts' chart once the kit has shorts", () => {
+    const { api } = renderWithDesign(<GarmentsPanel />);
+    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
+    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
+    fireEvent.click(within(dialog).getByRole("tab", { name: "Short" }));
+    expect((within(dialog).getByRole("img", { name: /corto|short/i }) as HTMLImageElement).getAttribute("src")).toBe("/talles/short.webp");
+  });
+
+  it("is drawn over the whole page, not inside the panel: the panel's blur would cut it to the panel's size", () => {
+    const { container } = renderWithDesign(<GarmentsPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
+    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
+    expect(container.contains(dialog)).toBe(false);
+    expect(document.body.contains(dialog)).toBe(true);
+  });
+
+  it("changes nothing of what is bought by being opened and closed", () => {
+    const { api } = renderWithDesign(<GarmentsPanel />);
+    const before = api.current!.state;
+    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar" }));
+    expect(api.current!.state).toBe(before);
+    expect(screen.getByRole("radio", { name: "Solo camiseta" })).toBeChecked();
+  });
+});
+
 describe("GarmentsPanel", () => {
   it("asks what to buy, with the price per player on each option", () => {
     renderWithDesign(<GarmentsPanel />);
@@ -511,11 +590,10 @@ describe("keeper in the panels", () => {
     expect(api.current!.state.keeper.look!.bodyPatternId).toBe("diagonal");
     expect(api.current!.state.bodyPatternId).toBe(initialDesignState.bodyPatternId);
 
-    fireEvent.change(screen.getByLabelText("Color primario"), { target: { value: "#123456" } });
-    expect(api.current!.state.keeper.look!.colors.primary).toBe("#123456");
+    pickColor("Color primario", "Marrón");
+    expect(api.current!.state.keeper.look!.colors.primary).toBe(hexOf("Marrón"));
     expect(api.current!.state.colors.primary).toBe(initialDesignState.colors.primary);
   });
-
   it("hides the shorts color while the keeper is shown, since the shorts follow the team", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
     act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
@@ -529,8 +607,8 @@ describe("keeper in the panels", () => {
     const { api } = renderWithDesign(<TextPanel />);
     act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
     act(() => api.current!.setEditing("keeper"));
-    fireEvent.change(screen.getByLabelText("Color del texto (arquero)"), { target: { value: "#ff00ff" } });
-    expect(api.current!.state.keeper.nameNumberFill).toBe("#ff00ff");
+    pickColor("Color del texto (arquero)", "Fucsia");
+    expect(api.current!.state.keeper.nameNumberFill).toBe(hexOf("Fucsia"));
     expect(api.current!.state.nameNumberStyle.fill).toBe(initialDesignState.nameNumberStyle.fill);
   });
 });
