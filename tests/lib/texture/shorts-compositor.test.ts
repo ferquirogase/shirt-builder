@@ -1,20 +1,40 @@
 import { describe, it, expect, vi } from "vitest";
 import { drawShortsToCanvas } from "@/lib/builder/texture/shorts-compositor";
 import { initialDesignState } from "@/lib/builder/state/design-state";
-import { SHORTS_UV_STRETCH } from "@/lib/builder/geometry/shorts-uv-regions";
+import {
+  SHORTS_FRONT_LAYOUT,
+  SHORTS_NUMBER_FONT_FRACTION,
+  SHORTS_UV_REGIONS,
+  SHORTS_UV_STRETCH,
+} from "@/lib/builder/geometry/shorts-uv-regions";
+import { CREST_BOX_FRACTION, BRAND_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
+import { NUMBER_PLACEHOLDER } from "@/lib/builder/texture/number-text";
 
 function createMockCtx() {
-  return {
+  const ctx = {
     clearRect: vi.fn(),
     fillRect: vi.fn(),
     drawImage: vi.fn(),
+    fillText: vi.fn(),
+    strokeText: vi.fn(),
+    // Width grows with the font size, like a real font: 0.6 px per character per px of size.
+    measureText: vi.fn((text: string) => {
+      const px = parseFloat(/([\d.]+)px/.exec(ctx.font)?.[1] ?? "10");
+      return { width: text.length * px * 0.6 };
+    }),
     save: vi.fn(),
     restore: vi.fn(),
     translate: vi.fn(),
     rotate: vi.fn(),
     scale: vi.fn(),
     fillStyle: "",
-  } as unknown as CanvasRenderingContext2D;
+    strokeStyle: "",
+    lineWidth: 0,
+    lineJoin: "miter",
+    font: "",
+    textAlign: "left",
+  };
+  return ctx as unknown as CanvasRenderingContext2D;
 }
 
 const square = (id: string) => ({ id, naturalWidth: 100, naturalHeight: 100 }) as unknown as HTMLImageElement;
@@ -30,13 +50,14 @@ const calls = (fn: unknown) => (fn as ReturnType<typeof vi.fn>).mock.calls;
 describe("drawShortsToCanvas", () => {
   it("fills the whole canvas with the color of the shorts", () => {
     const ctx = createMockCtx();
+    let paintedWith: unknown = null;
+    (ctx.fillRect as ReturnType<typeof vi.fn>).mockImplementation(() => (paintedWith = ctx.fillStyle));
     drawShortsToCanvas(ctx, 1000, kit({}), "#123456", {});
     expect(calls(ctx.fillRect)[0]).toEqual([0, 0, 1000, 1000]);
-    // The fill color was set before the rect was drawn (the mock keeps the last one).
-    expect(ctx.fillStyle).toBe("#123456");
+    expect(paintedWith).toBe("#123456");
   });
 
-  it("draws nothing else when there are no sponsors", () => {
+  it("draws no image when there are no sponsors, no crest and no logo", () => {
     const ctx = createMockCtx();
     drawShortsToCanvas(ctx, 1000, kit({}), "#123456", {});
     expect(ctx.drawImage).not.toHaveBeenCalled();
@@ -63,7 +84,11 @@ describe("drawShortsToCanvas", () => {
     drawShortsToCanvas(ctx, 1000, kit({ "shorts-front-right": entry() }), "#000", {
       sponsorImages: { "shorts-front-right": square("front") },
     });
-    expect(calls(ctx.scale)).toEqual([[SHORTS_UV_STRETCH, 1]]);
+    // The sponsor, and then the number (drawn squeezed too).
+    expect(calls(ctx.scale)).toEqual([
+      [SHORTS_UV_STRETCH, 1],
+      [SHORTS_UV_STRETCH, 1],
+    ]);
   });
 
   it("draws the back sponsors as they are, neither turned nor mirrored: the shorts' back reads upright from behind", () => {
@@ -72,16 +97,18 @@ describe("drawShortsToCanvas", () => {
       sponsorImages: { "shorts-back-left": square("bl"), "shorts-back-right": square("br") },
     });
     expect(ctx.rotate).not.toHaveBeenCalled();
+    // The two sponsors, and then the number.
     expect(calls(ctx.scale)).toEqual([
+      [SHORTS_UV_STRETCH, 1],
       [SHORTS_UV_STRETCH, 1],
       [SHORTS_UV_STRETCH, 1],
     ]);
     // shortsBackLeft u .72..0.88 -> x 800; shortsBackRight u .13..0.28 -> x 205 (both at the middle of the panel).
     const xs = calls(ctx.translate).map(([x]) => Math.round(x));
-    expect(xs).toEqual([800, 205]);
+    expect(xs.slice(0, 2)).toEqual([800, 205]);
     // Both low on the leg, near the hem, below the front one (y 742): vFrac .14 -> v .113 -> y 887.
     const ys = calls(ctx.translate).map(([, y]) => Math.round(y));
-    expect(ys).toEqual([887, 887]);
+    expect(ys.slice(0, 2)).toEqual([887, 887]);
   });
 
   it("draws a wide logo on the back across the leg, in a rectangle (0.105 x 0.04 of the canvas)", () => {
@@ -120,7 +147,8 @@ describe("drawShortsToCanvas", () => {
       sponsorImages: { "shorts-front-right": square("f"), "shorts-back-left": square("b") },
     });
     expect(calls(ctx.save).length).toBe(calls(ctx.restore).length);
-    expect(calls(ctx.save).length).toBe(2);
+    // The two sponsors and the number.
+    expect(calls(ctx.save).length).toBe(3);
   });
 
   it("does not draw the shirt's sponsors", () => {
@@ -134,5 +162,142 @@ describe("drawShortsToCanvas", () => {
     const design = { ...kit({ "shorts-front-right": entry() }), shorts: { ...initialDesignState.shorts, included: false } };
     drawShortsToCanvas(ctx, 1000, design, "#000", { sponsorImages: { "shorts-front-right": square("f") } });
     expect(ctx.drawImage).not.toHaveBeenCalled();
+  });
+});
+
+const brand = {
+  brandLogoForLight: { id: "black", naturalWidth: 512, naturalHeight: 381 } as unknown as HTMLImageElement,
+  brandLogoForDark: { id: "white", naturalWidth: 512, naturalHeight: 381 } as unknown as HTMLImageElement,
+};
+const crest = { id: "crest", naturalWidth: 100, naturalHeight: 100 } as unknown as HTMLImageElement;
+const withNumber = (playerNumber: string) => ({ ...kit({}), playerNumber });
+// Where a point of a region lands on a 1000px canvas (v is flipped).
+const at = (region: keyof typeof SHORTS_UV_REGIONS, uFrac: number, vFrac: number) => {
+  const r = SHORTS_UV_REGIONS[region];
+  return { x: (r.u0 + uFrac * (r.u1 - r.u0)) * 1000, y: (1 - (r.v0 + vFrac * (r.v1 - r.v0))) * 1000 };
+};
+
+describe("the front of the shorts: number, maker's logo and crest", () => {
+  const { number: numberAt, brand: brandAt, crest: crestAt } = SHORTS_FRONT_LAYOUT;
+
+  it("writes the player's number on the front of the player's left leg, upright and squeezed like the rest", () => {
+    const ctx = createMockCtx();
+    drawShortsToCanvas(ctx, 1000, withNumber("10"), "#000", {});
+    expect(calls(ctx.fillText)).toEqual([["10", 0, 0]]);
+    const target = at(numberAt.region, numberAt.uFrac, numberAt.vFrac);
+    const [tx, ty] = calls(ctx.translate)[0];
+    expect(tx).toBeCloseTo(target.x, 5);
+    expect(ty).toBeCloseTo(target.y, 5);
+    expect(calls(ctx.scale)).toEqual([[SHORTS_UV_STRETCH, 1]]);
+    expect(ctx.rotate).not.toHaveBeenCalled();
+    expect(numberAt.region).toBe("shortsFrontLeft");
+  });
+
+  it("shows a 0 while the player has not typed a number, like the back", () => {
+    const ctx = createMockCtx();
+    drawShortsToCanvas(ctx, 1000, withNumber(""), "#000", {});
+    expect(calls(ctx.fillText)).toEqual([[NUMBER_PLACEHOLDER, 0, 0]]);
+  });
+
+  it("draws it smaller than the one on the back, in the same style", () => {
+    const ctx = createMockCtx();
+    const fonts: string[] = [];
+    (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
+    drawShortsToCanvas(ctx, 1000, withNumber("10"), "#000", {}, "'Oswald', sans-serif");
+    // classic: weight 700, scale 1.
+    expect(fonts).toEqual([`700 ${1000 * SHORTS_NUMBER_FONT_FRACTION}px 'Oswald', sans-serif`]);
+    expect(SHORTS_NUMBER_FONT_FRACTION).toBeLessThan(0.12);
+  });
+
+  it("fills with the style's fill color and outlines it when the style asks for it", () => {
+    const ctx = createMockCtx();
+    let fill = "";
+    (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => (fill = ctx.fillStyle as string));
+    const design = { ...withNumber("10"), nameNumberStyle: { ...initialDesignState.nameNumberStyle, fill: "#abcdef", outline: true } };
+    drawShortsToCanvas(ctx, 1000, design, "#000", {});
+    expect(fill).toBe("#abcdef");
+    expect(ctx.strokeText).toHaveBeenCalledTimes(1);
+  });
+
+  it("puts the maker's logo under the number, white over dark cloth and black over light cloth", () => {
+    const dark = createMockCtx();
+    drawShortsToCanvas(dark, 1000, withNumber("10"), "#0a5c36", brand);
+    expect(calls(dark.drawImage)).toHaveLength(1);
+    expect(calls(dark.drawImage)[0][0]).toBe(brand.brandLogoForDark);
+
+    const light = createMockCtx();
+    drawShortsToCanvas(light, 1000, withNumber("10"), "#f5f0e0", brand);
+    expect(calls(light.drawImage)[0][0]).toBe(brand.brandLogoForLight);
+  });
+
+  it("places the logo below the number, on the same leg, squeezed like the rest", () => {
+    const ctx = createMockCtx();
+    drawShortsToCanvas(ctx, 1000, withNumber("10"), "#000", brand);
+    const target = at(brandAt.region, brandAt.uFrac, brandAt.vFrac);
+    const numberTarget = at(numberAt.region, numberAt.uFrac, numberAt.vFrac);
+    expect(brandAt.region).toBe(numberAt.region);
+    // Lower on the leg is a larger y on the canvas.
+    expect(target.y).toBeGreaterThan(numberTarget.y);
+    const translates = calls(ctx.translate).map(([x, y]) => [Math.round(x), Math.round(y)]);
+    expect(translates).toContainEqual([Math.round(target.x), Math.round(target.y)]);
+    const [, x, y, w, h] = calls(ctx.drawImage)[0];
+    expect(w).toBeCloseTo(1000 * BRAND_BOX_FRACTION, 5);
+    expect(h).toBeCloseTo(1000 * BRAND_BOX_FRACTION * (381 / 512), 5);
+    expect(x + w / 2).toBeCloseTo(0, 5);
+    expect(y + h / 2).toBeCloseTo(0, 5);
+  });
+
+  it("draws the crest under sponsor 12, on the player's right leg, the same size as the one on the chest", () => {
+    const ctx = createMockCtx();
+    drawShortsToCanvas(ctx, 1000, kit({}), "#000", { logoImage: crest });
+    const target = at(crestAt.region, crestAt.uFrac, crestAt.vFrac);
+    const [tx, ty] = calls(ctx.translate)[0];
+    expect(tx).toBeCloseTo(target.x, 5);
+    expect(ty).toBeCloseTo(target.y, 5);
+    const [img, x, y, w, h] = calls(ctx.drawImage)[0];
+    expect(img).toBe(crest);
+    expect(w).toBeCloseTo(1000 * CREST_BOX_FRACTION, 5);
+    expect(h).toBeCloseTo(1000 * CREST_BOX_FRACTION, 5);
+    expect(x + w / 2).toBeCloseTo(0, 5);
+    expect(y + h / 2).toBeCloseTo(0, 5);
+    expect(crestAt.region).toBe("shortsFrontRight");
+    // Under sponsor 12 (its vFrac is the front sponsor's), in the same column.
+    expect(crestAt.vFrac).toBeLessThan(0.4);
+    expect(crestAt.uFrac).toBe(0.4);
+  });
+
+  it("keeps the crest clear of sponsor 12 even at its largest", () => {
+    const front = SHORTS_UV_REGIONS.shortsFrontRight;
+    const height = front.v1 - front.v0;
+    const sponsorBottom = 0.4 - ((0.06 * 1.5) / 2) / height;
+    const crestTop = crestAt.vFrac + (CREST_BOX_FRACTION / 2) / height;
+    expect(crestTop).toBeLessThan(sponsorBottom);
+  });
+
+  it("squeezes the crest sideways like everything else on the shorts", () => {
+    const ctx = createMockCtx();
+    drawShortsToCanvas(ctx, 1000, kit({}), "#000", { logoImage: crest });
+    expect(calls(ctx.scale)[0]).toEqual([SHORTS_UV_STRETCH, 1]);
+  });
+
+  it("draws no crest when there is none, and no logo before it has loaded", () => {
+    const ctx = createMockCtx();
+    drawShortsToCanvas(ctx, 1000, kit({}), "#000", { logoImage: null });
+    expect(ctx.drawImage).not.toHaveBeenCalled();
+  });
+
+  it("draws none of it when the kit has no shorts", () => {
+    const ctx = createMockCtx();
+    const design = { ...withNumber("10"), shorts: { ...initialDesignState.shorts, included: false } };
+    drawShortsToCanvas(ctx, 1000, design, "#000", { logoImage: crest, ...brand });
+    expect(ctx.fillText).not.toHaveBeenCalled();
+    expect(ctx.drawImage).not.toHaveBeenCalled();
+  });
+
+  it("leaves the canvas state as it found it", () => {
+    const ctx = createMockCtx();
+    drawShortsToCanvas(ctx, 1000, withNumber("10"), "#000", { logoImage: crest, ...brand });
+    expect(calls(ctx.save).length).toBe(calls(ctx.restore).length);
+    expect(calls(ctx.save).length).toBeGreaterThanOrEqual(3);
   });
 });
