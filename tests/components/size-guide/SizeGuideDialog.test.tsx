@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { useState } from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { SizeGuideDialog } from "@/components/checkout/SizeGuideDialog";
+import { SizeGuideDialog } from "@/components/size-guide/SizeGuideDialog";
 
 function Harness({ withShorts = false, onClose = () => {} }: { withShorts?: boolean; onClose?: () => void }) {
   const [open, setOpen] = useState(false);
@@ -26,6 +26,14 @@ describe("SizeGuideDialog", () => {
   it("shows nothing while it is closed", () => {
     render(<SizeGuideDialog open={false} withShorts={false} onClose={() => {}} />);
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("is drawn in the body of the page, so no ancestor can cut it down to its own size", () => {
+    const { container } = render(<Harness />);
+    open();
+    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
+    expect(container.contains(dialog)).toBe(false);
+    expect(document.body.contains(dialog)).toBe(true);
   });
 
   it("is a modal dialog named Guía de talles", () => {

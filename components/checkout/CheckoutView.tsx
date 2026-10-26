@@ -12,7 +12,7 @@ import { CHECKOUT_FORM_ID, ContactForm } from "./ContactForm";
 import { DesignPreview } from "./DesignPreview";
 import { OrderSummary } from "./OrderSummary";
 import { RosterTable } from "./RosterTable";
-import { SizeGuideDialog } from "./SizeGuideDialog";
+import { SizeGuideDialog } from "@/components/size-guide/SizeGuideDialog";
 import { CARD } from "./styles";
 
 const PAYMENT_ERROR = "No pudimos procesar el pago. Probá de nuevo.";

@@ -1,6 +1,8 @@
 "use client";
+import { useState } from "react";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { formatMoney, pricePerPlayer } from "@/lib/checkout/pricing";
+import { SizeGuideDialog } from "@/components/size-guide/SizeGuideDialog";
 import { PanelShell } from "./PanelShell";
 
 // What is bought comes first: it decides the price, what the viewer shows and the
@@ -16,12 +18,24 @@ const border = (checked: boolean) => (checked ? "border-foreground" : "border-tr
 export function GarmentsPanel() {
   const { state, dispatch } = useDesign();
   const { included } = state.shorts;
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   return (
     <PanelShell title="Prendas" hint="Elegí qué llevás. El diseño viene después.">
-      <p id="kit-question" className="mb-3 text-sm font-semibold">
-        ¿Qué querés comprar?
-      </p>
+      {/* The size chart is at hand where what is bought is chosen, in view without scrolling on a phone. */}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p id="kit-question" className="text-sm font-semibold">
+          ¿Qué querés comprar?
+        </p>
+        <button
+          type="button"
+          onClick={() => setSizeGuideOpen(true)}
+          className="inline-flex h-11 shrink-0 items-center rounded-full border border-foreground/80 bg-white/70 px-4 text-sm font-semibold hover:bg-accent-soft"
+        >
+          Ver talles
+        </button>
+      </div>
+      <SizeGuideDialog open={sizeGuideOpen} withShorts={included} onClose={() => setSizeGuideOpen(false)} />
       {/* Side by side on a phone, where the panel is short and both options must be in view at once. */}
       <div role="radiogroup" aria-labelledby="kit-question" className="grid grid-cols-2 gap-3 md:grid-cols-1">
         {KIT_OPTIONS.map((option) => {

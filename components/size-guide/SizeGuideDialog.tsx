@@ -1,15 +1,17 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { guidesFor } from "@/lib/checkout/size-guides";
 
 const FOCUSABLE = "button:not([disabled]), [href], [tabindex]:not([tabindex='-1'])";
 
 // GEPE's size charts in a window over the order. It opens on the shirt's chart; when the order has
 // shorts there is a tab for theirs too. The charts are pictures, so a link opens one at full size to
-// zoom in on a phone.
+// zoom in on a phone. It is drawn in the body of the page: inside a panel, a blur or a transform on an
+// ancestor would make "fixed" mean the panel, and cut it down to the panel's size.
 export function SizeGuideDialog({ open, withShorts, onClose }: { open: boolean; withShorts: boolean; onClose: () => void }) {
   // Mounted only while open, so it starts on the shirt every time.
-  return open ? <Content withShorts={withShorts} onClose={onClose} /> : null;
+  return open ? createPortal(<Content withShorts={withShorts} onClose={onClose} />, document.body) : null;
 }
 
 function Content({ withShorts, onClose }: { withShorts: boolean; onClose: () => void }) {

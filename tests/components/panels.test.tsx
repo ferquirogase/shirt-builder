@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithDesign } from "../helpers/render-with-design";
 import { DesignPanel } from "@/components/builder/panels/DesignPanel";
 import { ColorsPanel } from "@/components/builder/panels/ColorsPanel";
@@ -444,6 +444,55 @@ describe("SponsorPanel", () => {
       const control = screen.getByLabelText(`Subir sponsor: ${label}`).closest("label");
       expect(control?.className).toContain("focus-within:ring-2");
     }
+  });
+});
+
+describe("GarmentsPanel, the size guide", () => {
+  it("has a Ver talles button on the same row as the question of what to buy, in view without scrolling", () => {
+    renderWithDesign(<GarmentsPanel />);
+    const button = screen.getByRole("button", { name: "Ver talles" });
+    const row = button.parentElement as HTMLElement;
+    expect(within(row).getByText("¿Qué querés comprar?")).toBeInTheDocument();
+    expect(button.className).toMatch(/h-11/);
+  });
+
+  it("opens GEPE's chart of the shirt, and gives the focus back to the button when it closes", () => {
+    renderWithDesign(<GarmentsPanel />);
+    const button = screen.getByRole("button", { name: "Ver talles" });
+    button.focus();
+    fireEvent.click(button);
+    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
+    expect(within(dialog).getByRole("img", { name: /camiseta/i })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("tab", { name: "Short" })).toBeNull();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cerrar" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(button);
+  });
+
+  it("adds the shorts' chart once the kit has shorts", () => {
+    const { api } = renderWithDesign(<GarmentsPanel />);
+    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
+    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
+    fireEvent.click(within(dialog).getByRole("tab", { name: "Short" }));
+    expect((within(dialog).getByRole("img", { name: /corto|short/i }) as HTMLImageElement).getAttribute("src")).toBe("/talles/short.webp");
+  });
+
+  it("is drawn over the whole page, not inside the panel: the panel's blur would cut it to the panel's size", () => {
+    const { container } = renderWithDesign(<GarmentsPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
+    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
+    expect(container.contains(dialog)).toBe(false);
+    expect(document.body.contains(dialog)).toBe(true);
+  });
+
+  it("changes nothing of what is bought by being opened and closed", () => {
+    const { api } = renderWithDesign(<GarmentsPanel />);
+    const before = api.current!.state;
+    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar" }));
+    expect(api.current!.state).toBe(before);
+    expect(screen.getByRole("radio", { name: "Solo camiseta" })).toBeChecked();
   });
 });
 
