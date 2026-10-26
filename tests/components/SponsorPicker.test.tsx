@@ -58,6 +58,30 @@ describe("the sponsor picker shared by the panel and the markers on the shirt", 
     expect(screen.getByRole("img", { name: "Sponsor de Espalda alta" })).toBeInTheDocument();
   });
 
+  it("adds the three cards of the shorts, numbered 10 to 12, only when the kit has shorts", () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    for (const label of ["Short atrás izquierda", "Short atrás derecha", "Short frente"]) {
+      expect(screen.queryByRole("region", { name: label })).toBeNull();
+    }
+    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
+    const numbered = ["Short atrás izquierda", "Short atrás derecha", "Short frente"].map((label, i) => [label, String(10 + i)]);
+    for (const [label, number] of numbered) {
+      expect(within(screen.getByRole("region", { name: label })).getByText(number)).toBeInTheDocument();
+    }
+  });
+
+  it("keeps a shorts sponsor when the shorts are taken off, and gives it back when they return", () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
+    act(() => api.current!.dispatch({ type: "SET_SPONSOR", slot: "shorts-front-right", dataUrl: IMG }));
+    expect(screen.getByRole("img", { name: "Sponsor de Short frente" })).toBeInTheDocument();
+    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: false }));
+    expect(screen.queryByRole("region", { name: "Short frente" })).toBeNull();
+    expect(api.current!.state.sponsors["shorts-front-right"]?.dataUrl).toBe(IMG);
+    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
+    expect(screen.getByRole("img", { name: "Sponsor de Short frente" })).toBeInTheDocument();
+  });
+
   it("highlights the card of the selected placement, and only that one", () => {
     const { api } = renderWithDesign(<SponsorPanel />);
     act(() => api.current!.selectSponsor("sleeve-left"));

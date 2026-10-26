@@ -5,7 +5,9 @@ import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { firstMeshGeometry } from "@/lib/builder/geometry/jersey-geometry";
 import { GEPE_UV_REGIONS } from "@/lib/builder/geometry/uv-regions";
 import { isFacingCamera, sponsorAnchor, uvPointOnMesh } from "@/lib/builder/geometry/sponsor-anchor";
-import { SPONSOR_SLOTS, findSponsorSlot } from "@/lib/builder/catalog/sponsor-slots";
+import { SPONSOR_SLOTS, findSponsorSlot, isShortsSlot } from "@/lib/builder/catalog/sponsor-slots";
+import { SHORTS_UV_REGIONS } from "@/lib/builder/geometry/shorts-uv-regions";
+import { JERSEY_BOTTOM_Y } from "@/lib/builder/geometry/jersey-model";
 
 // One triangle in the z = 5 plane, whose UVs are the same triangle scaled by 0.1.
 function triangle() {
@@ -85,7 +87,7 @@ describe("sponsorAnchor on the GEPE shirt", () => {
   const anchorOf = (id: string) => sponsorAnchor(geometry, GEPE_UV_REGIONS, findSponsorSlot(id)!)!;
 
   it("finds a point on the cloth for every placement", () => {
-    for (const slot of SPONSOR_SLOTS) {
+    for (const slot of SPONSOR_SLOTS.filter((s) => !isShortsSlot(s))) {
       expect(sponsorAnchor(geometry, GEPE_UV_REGIONS, slot), slot.id).not.toBeNull();
     }
   });
@@ -168,5 +170,49 @@ describe("sponsorAnchor on the GEPE shirt", () => {
     expect(abdomenY).toBeLessThan(294.91);
     expect(lowerBackY).toBeGreaterThan(167.17);
     expect(lowerBackY).toBeLessThan(294.91);
+  });
+});
+
+describe("sponsorAnchor on the GEPE shorts", () => {
+  const obj = new OBJLoader().parse(readFileSync("public/models/gepe_shorts.obj", "utf8"));
+  const geometry = firstMeshGeometry(obj)!;
+  const anchorOf = (id: string) => sponsorAnchor(geometry, SHORTS_UV_REGIONS, findSponsorSlot(id)!)!;
+
+  it("finds a point on the cloth for each of the three placements", () => {
+    for (const slot of SPONSOR_SLOTS.filter(isShortsSlot)) {
+      expect(sponsorAnchor(geometry, SHORTS_UV_REGIONS, slot), slot.id).not.toBeNull();
+    }
+  });
+
+  it("puts the front one on the front of the player's right leg: -x seen from the front, facing forward", () => {
+    expect(anchorOf("shorts-front-right").position.x).toBeLessThan(0);
+    expect(anchorOf("shorts-front-right").normal.z).toBeGreaterThan(0.5);
+  });
+
+  it("puts the back ones on the back, the left leg on +x (the left of the back view) and the right on -x", () => {
+    expect(anchorOf("shorts-back-left").position.x).toBeGreaterThan(0);
+    expect(anchorOf("shorts-back-right").position.x).toBeLessThan(0);
+    for (const id of ["shorts-back-left", "shorts-back-right"]) {
+      expect(anchorOf(id).normal.z, id).toBeLessThan(-0.5);
+    }
+  });
+
+  it("puts all three on the visible thigh: under the shirt's hem, which covers the top of the shorts", () => {
+    // The shirt's hem is at JERSEY_BOTTOM_Y (167.17) and the shorts' waist is inside the shirt, at
+    // about 205: a sponsor above the hem would be under the shirt. The shorts' hem is at 113.74.
+    for (const id of ["shorts-back-left", "shorts-back-right", "shorts-front-right"]) {
+      const y = anchorOf(id).position.y;
+      expect(y, id).toBeGreaterThan(113.74 + 20);
+      expect(y, id).toBeLessThan(JERSEY_BOTTOM_Y - 10);
+    }
+  });
+
+  it("finds nothing for a placement of the shirt: the shorts have no such region", () => {
+    expect(sponsorAnchor(geometry, SHORTS_UV_REGIONS, findSponsorSlot("abdomen")!)).toBeNull();
+  });
+
+  it("finds nothing on the shirt for a placement of the shorts", () => {
+    const shirt = firstMeshGeometry(new OBJLoader().parse(readFileSync("public/models/gepe_shirt.obj", "utf8")))!;
+    expect(sponsorAnchor(shirt, GEPE_UV_REGIONS, findSponsorSlot("shorts-front-right")!)).toBeNull();
   });
 });

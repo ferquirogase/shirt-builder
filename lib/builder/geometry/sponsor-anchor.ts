@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { SponsorSlot } from "../catalog/sponsor-slots";
-import type { UVRegions } from "./uv-regions";
+import type { UVRect } from "./uv-regions";
 
 export type SponsorAnchor = {
   /** A point on the cloth, in the model's own units. */
@@ -60,10 +60,13 @@ export function uvPointOnMesh(geometry: THREE.BufferGeometry, u: number, v: numb
 // compositor does it when it paints the sponsor, so the marker and the image coincide.
 export function sponsorAnchor(
   geometry: THREE.BufferGeometry,
-  regions: UVRegions,
+  /** The regions of the garment the geometry belongs to: the shirt's or the shorts'. */
+  regions: Partial<Record<SponsorSlot["region"], UVRect>>,
   slot: Pick<SponsorSlot, "region" | "uFrac" | "vFrac" | "marker">
 ): SponsorAnchor | null {
   const region = regions[slot.region];
+  // A placement of the other garment has no region here, so no cloth.
+  if (!region) return null;
   // Where the image is painted can fall where the model has no cloth of its own (by the neck);
   // the marker then sits on the nearest cloth, which the placement names.
   const point = slot.marker ?? slot;

@@ -3,9 +3,15 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
-import { SPONSOR_SLOTS, availableSponsorSlots, sponsorNumber, type SponsorSlot } from "@/lib/builder/catalog/sponsor-slots";
+import {
+  SPONSOR_SLOTS,
+  availableSponsorSlots,
+  isShortsSlot,
+  sponsorNumber,
+  type SponsorSlot,
+} from "@/lib/builder/catalog/sponsor-slots";
 import { isFacingCamera, sponsorAnchor, type SponsorAnchor } from "@/lib/builder/geometry/sponsor-anchor";
-import type { UVRegions } from "@/lib/builder/geometry/uv-regions";
+import type { UVRect } from "@/lib/builder/geometry/uv-regions";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { SponsorChip } from "./SponsorChip";
 
@@ -51,17 +57,28 @@ function ChipAnchor({ slot, anchor, number }: { slot: SponsorSlot; anchor: Spons
   );
 }
 
-/** A marker on every sponsor placement of the shirt, while the Sponsor panel is open. */
-export function SponsorChips({ geometry, regions }: { geometry: THREE.BufferGeometry | null; regions: UVRegions }) {
+/**
+ * A marker on every sponsor placement of one garment, while the Sponsor panel is open. The shirt and
+ * the shorts each render their own, anchored to their own mesh; the numbers run across both.
+ */
+export function SponsorChips({
+  geometry,
+  regions,
+  garment,
+}: {
+  geometry: THREE.BufferGeometry | null;
+  regions: Partial<Record<SponsorSlot["region"], UVRect>>;
+  garment: "shirt" | "shorts";
+}) {
   const { state, sponsorMarkers } = useDesign();
   const offered = availableSponsorSlots(state);
   const anchors = useMemo(() => {
     if (!geometry) return [];
-    return SPONSOR_SLOTS.flatMap((slot) => {
+    return SPONSOR_SLOTS.filter((slot) => isShortsSlot(slot) === (garment === "shorts")).flatMap((slot) => {
       const anchor = sponsorAnchor(geometry, regions, slot);
       return anchor ? [{ slot, anchor }] : [];
     });
-  }, [geometry, regions]);
+  }, [geometry, regions, garment]);
 
   if (!sponsorMarkers) return null;
   return (

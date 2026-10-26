@@ -64,6 +64,7 @@ describe("back layout (GEPE model, sponsors at max scale)", () => {
     expect(findSponsorSlot("upper-back")!.vFrac).toBe(UPPER_BACK_V_FRAC);
     expect(findSponsorSlot("lower-back")!.vFrac).toBe(LOWER_BACK_V_FRAC);
     expect(findSponsorSlot("nape")).toBeUndefined();
-    expect(SPONSOR_SLOTS.length).toBe(9);
+    // Nine on the shirt and three on the shorts.
+    expect(SPONSOR_SLOTS.length).toBe(12);
   });
 });

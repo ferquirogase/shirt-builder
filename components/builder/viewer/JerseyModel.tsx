@@ -108,7 +108,7 @@ export function JerseyModel() {
         </>
       )}
       {/* The markers share the shirt's group, so they sit on the cloth in the model's own units. */}
-      <SponsorChips geometry={bodyGeometry} regions={JERSEY_MODEL.uvRegions} />
+      <SponsorChips geometry={bodyGeometry} regions={JERSEY_MODEL.uvRegions} garment="shirt" />
       {modelCollarGeometry && (
         // Its UVs sit inside the body island of the same atlas, so it takes the
         // same texture and the pattern continues up to the collar.

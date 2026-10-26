@@ -1,7 +1,7 @@
 import type { DesignState } from "../state/design-state";
 import { UV_FLIP_Y, type UVRegions, type UVRect } from "../geometry/uv-regions";
 import { NAME_FONT_FRACTION, NAME_V_FRAC, NAPE_V_FRAC, NUMBER_FONT_FRACTION, NUMBER_V_FRAC } from "./back-layout";
-import { availableSponsorSlots, clampSponsorScale, type SponsorSlotId } from "../catalog/sponsor-slots";
+import { availableSponsorSlots, clampSponsorScale, isShortsSlot, type SponsorSlotId } from "../catalog/sponsor-slots";
 import {
   OUTLINE_COLOR,
   OUTLINE_WIDTH,
@@ -60,7 +60,7 @@ function rectToCanvas(rect: UVRect, canvasSize: number): CanvasRect {
 // Converts a point given in UV-space fractions (uFrac, vFrac measured
 // *within* a region, i.e. both in [0,1] relative to the region's own
 // bounds) into absolute canvas pixel coordinates, applying the same flip.
-function pointInRegionToCanvas(
+export function pointInRegionToCanvas(
   region: UVRect,
   uFrac: number,
   vFrac: number,
@@ -71,12 +71,15 @@ function pointInRegionToCanvas(
   return { x: u * canvasSize, y: vToY(v) * canvasSize };
 }
 
+// The regions of the shirt: the shorts have their own texture and their own regions.
+type ShirtRegionName = "bodyFront" | "bodyBack" | "sleeveLeft" | "sleeveRight";
+
 type LogoBox = { x: number; y: number; width: number; height: number };
 
 // Fits a logo inside a box of `boxFraction` x `heightFraction` of the canvas (square when
 // the height is not given), keeping its aspect ratio, centered on `center`. The logo is as big
 // as the box lets it be: a wide banner is limited by the width, a tall one by the height.
-function fitLogoBox(
+export function fitLogoBox(
   image: HTMLImageElement,
   center: { x: number; y: number },
   canvasSize: number,
@@ -182,11 +185,13 @@ function drawSponsors(
 ): void {
   // Only the placements offered: a sponsor kept on one that something else took over is not drawn.
   for (const slot of availableSponsorSlots(design)) {
+    // The shorts' placements are painted on the shorts' own texture.
+    if (isShortsSlot(slot)) continue;
     const entry = design.sponsors[slot.id];
     const image = images.sponsorImages?.[slot.id];
     if (!entry || !image) continue;
 
-    const center = pointInRegionToCanvas(regions[slot.region], slot.uFrac, slot.vFrac, canvasSize);
+    const center = pointInRegionToCanvas(regions[slot.region as ShirtRegionName], slot.uFrac, slot.vFrac, canvasSize);
     const scale = clampSponsorScale(entry.scale);
     const box = fitLogoBox(image, { x: 0, y: 0 }, canvasSize, slot.baseBox * scale, (slot.baseHeight ?? slot.baseBox) * scale);
     ctx.save();
