@@ -155,8 +155,17 @@ describe("colorsAfterPatternChange", () => {
 });
 
 describe("name/number style", () => {
-  it("starts classic, white and without a border", () => {
-    expect(initialDesignState.nameNumberStyle).toEqual({ presetId: "classic", fill: "#ffffff", outline: false, outlineColor: "#000000" });
+  it("starts classic, white and with a black border", () => {
+    expect(initialDesignState.nameNumberStyle).toEqual({ presetId: "classic", fill: "#ffffff", outline: true, outlineColor: "#000000" });
+  });
+
+  it("goes back to the border on and black when the design is reset", () => {
+    const tweaked = designReducer(
+      designReducer(initialDesignState, { type: "SET_NN_OUTLINE", value: false }),
+      { type: "SET_NN_OUTLINE_COLOR", value: "#ff0000" }
+    );
+    expect(designReducer(tweaked, { type: "RESET_DESIGN" }).nameNumberStyle.outline).toBe(true);
+    expect(designReducer(tweaked, { type: "RESET_DESIGN" }).nameNumberStyle.outlineColor).toBe("#000000");
   });
 
   it("changing the border color keeps the text color and whether there is a border", () => {
@@ -177,10 +186,7 @@ describe("name/number style", () => {
   });
 
   it("the keeper's shirt wears the same border as the team's, with its own text color", () => {
-    const withBorder = designReducer(
-      designReducer(initialDesignState, { type: "SET_NN_OUTLINE", value: true }),
-      { type: "SET_NN_OUTLINE_COLOR", value: "#123456" }
-    );
+    const withBorder = designReducer(initialDesignState, { type: "SET_NN_OUTLINE_COLOR", value: "#123456" });
     const withKeeper = designReducer(withBorder, { type: "SET_KEEPER_INCLUDED", value: true });
     const view = lookFor(withKeeper, "keeper").nameNumberStyle;
     expect(view.outline).toBe(true);
@@ -190,8 +196,8 @@ describe("name/number style", () => {
   it("changes only the targeted field", () => {
     const fill = designReducer(initialDesignState, { type: "SET_NN_FILL", value: "#123456" });
     expect(fill.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, fill: "#123456" });
-    const outline = designReducer(initialDesignState, { type: "SET_NN_OUTLINE", value: true });
-    expect(outline.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, outline: true });
+    const outline = designReducer(initialDesignState, { type: "SET_NN_OUTLINE", value: false });
+    expect(outline.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, outline: false });
     const color = designReducer(initialDesignState, { type: "SET_NN_OUTLINE_COLOR", value: "#abcdef" });
     expect(color.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, outlineColor: "#abcdef" });
   });

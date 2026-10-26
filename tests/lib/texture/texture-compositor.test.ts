@@ -287,7 +287,8 @@ describe("drawDesignToCanvas", () => {
 
     it("does not stroke when the border is off (Review Focus 5)", () => {
       const ctx = createMockCtx();
-      drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10", playerName: "PEREZ" }), blank, regions);
+      const off = { ...initialDesignState.nameNumberStyle, outline: false };
+      drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10", playerName: "PEREZ", nameNumberStyle: off }), blank, regions);
       expect(ctx.strokeText).not.toHaveBeenCalled();
     });
 
@@ -336,6 +337,24 @@ describe("drawDesignToCanvas", () => {
       const design = withStyle({ playerNumber: "10", nameNumberStyle: old as typeof initialDesignState.nameNumberStyle });
       drawDesignToCanvas(ctx, 1000, design, blank, regions);
       expect(stroke).toBe(OUTLINE_COLOR);
+    });
+
+    it("draws a black border around the number and the name from the start, with no setting touched", () => {
+      const ctx = createMockCtx();
+      const strokes: unknown[] = [];
+      (ctx.strokeText as ReturnType<typeof vi.fn>).mockImplementation((text: string) => strokes.push([text, ctx.strokeStyle]));
+      drawDesignToCanvas(ctx, 1000, { ...initialDesignState, playerName: "PEREZ", playerNumber: "10" }, blank, regions);
+      expect(strokes).toEqual([
+        ["PEREZ", "#000000"],
+        ["10", "#000000"],
+      ]);
+    });
+
+    it("draws no border when it is switched off", () => {
+      const ctx = createMockCtx();
+      const design = withStyle({ playerNumber: "10", nameNumberStyle: { ...initialDesignState.nameNumberStyle, outline: false } });
+      drawDesignToCanvas(ctx, 1000, design, blank, regions);
+      expect(ctx.strokeText).not.toHaveBeenCalled();
     });
 
     it("never draws a shadow", () => {

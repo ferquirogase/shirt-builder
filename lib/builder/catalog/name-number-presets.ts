@@ -43,6 +43,7 @@ export function getNameNumberPreset(id: string): NameNumberPreset {
   return findNameNumberPreset(id) ?? findNameNumberPreset(DEFAULT_PRESET_ID)!;
 }
 
+// The border is on from the start, in black, so the text does not get lost against the cloth.
 export function initialNameNumberStyle(): NameNumberStyle {
-  return { presetId: DEFAULT_PRESET_ID, fill: "#ffffff", outline: false, outlineColor: OUTLINE_COLOR };
+  return { presetId: DEFAULT_PRESET_ID, fill: "#ffffff", outline: true, outlineColor: OUTLINE_COLOR };
 }

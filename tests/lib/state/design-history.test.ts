@@ -176,14 +176,14 @@ describe("name/number style history", () => {
   });
 
   it("toggling the border is an undoable step", () => {
-    const changed = run([{ type: "SET_NN_OUTLINE", value: true }]);
-    expect(changed.present.nameNumberStyle.outline).toBe(true);
-    expect(historyReducer(changed, { type: "UNDO" }).present.nameNumberStyle.outline).toBe(false);
+    const changed = run([{ type: "SET_NN_OUTLINE", value: false }]);
+    expect(changed.present.nameNumberStyle.outline).toBe(false);
+    expect(historyReducer(changed, { type: "UNDO" }).present.nameNumberStyle.outline).toBe(true);
   });
 
   it("ignores a change that leaves the style identical", () => {
     const base = createHistory();
-    expect(historyReducer(base, { type: "SET_NN_OUTLINE", value: false })).toBe(base);
+    expect(historyReducer(base, { type: "SET_NN_OUTLINE", value: true })).toBe(base);
   });
 });
 

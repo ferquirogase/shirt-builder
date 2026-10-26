@@ -27,8 +27,8 @@ describe("name-number presets", () => {
     expect(getNameNumberPreset("modern").id).toBe("classic");
   });
 
-  it("starts white, classic, without a border, and with a black border color for when it is switched on", () => {
-    expect(initialNameNumberStyle()).toEqual({ presetId: "classic", fill: "#ffffff", outline: false, outlineColor: "#000000" });
+  it("starts white, classic and with a black border, so the text does not get lost against the cloth", () => {
+    expect(initialNameNumberStyle()).toEqual({ presetId: "classic", fill: "#ffffff", outline: true, outlineColor: "#000000" });
   });
 
   it("has black as the default border color, and a visible border thickness", () => {
