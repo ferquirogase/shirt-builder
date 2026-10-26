@@ -247,6 +247,22 @@ describe("the front of the shorts: number, maker's logo and crest", () => {
     expect(y + h / 2).toBeCloseTo(0, 5);
   });
 
+  it("keeps the number close above the logo: they read together, without touching", () => {
+    const numberY = at(numberAt.region, numberAt.uFrac, numberAt.vFrac).y;
+    const brandY = at(brandAt.region, brandAt.uFrac, brandAt.vFrac).y;
+    // The number rests on its baseline, which is the point it is placed at: the digits are above it.
+    // The logo is centered on its point and BRAND_BOX_FRACTION * 381/512 tall.
+    const numberBottom = numberY;
+    const logoTop = brandY - 1000 * BRAND_BOX_FRACTION * (381 / 512) * 0.5;
+    const gap = logoTop - numberBottom;
+    expect(gap).toBeGreaterThan(0);
+    expect(gap).toBeLessThan(15);
+  });
+
+  it("makes the number big enough to read on the leg: at least 8% of the canvas", () => {
+    expect(SHORTS_NUMBER_FONT_FRACTION).toBeGreaterThanOrEqual(0.08);
+  });
+
   it("draws the crest under sponsor 12, on the player's right leg, the same size as the one on the chest", () => {
     const ctx = createMockCtx();
     drawShortsToCanvas(ctx, 1000, kit({}), "#000", { logoImage: crest });
