@@ -4,7 +4,7 @@ import { useDesign } from "@/lib/builder/state/design-context";
 import { UndoIcon } from "../icons";
 
 const SHIRTS = [
-  { target: "player", label: "Jugador", icon: "/icons/sections/kit-shirt.webp" },
+  { target: "player", label: "Jugador", icon: "/icons/sections/kit-shirt-v2.webp" },
   { target: "keeper", label: "Arquero", icon: "/icons/sections/kit-gloves.webp" },
 ] as const;
 
