@@ -236,6 +236,14 @@ describe("TextPanel, the number on the chest", () => {
 });
 
 describe("TextPanel", () => {
+  it("shows the example name and number in the fields while they are empty", () => {
+    renderWithDesign(<TextPanel />);
+    expect(screen.getByLabelText("Nombre")).toHaveAttribute("placeholder", "NOMBRE");
+    expect(screen.getByLabelText("Número")).toHaveAttribute("placeholder", "10");
+    expect(screen.getByLabelText("Nombre")).toHaveValue("");
+    expect(screen.getByLabelText("Número")).toHaveValue("");
+  });
+
   it("makes keyboard focus visible on the text fields", () => {
     renderWithDesign(<TextPanel />);
     for (const name of ["Nombre", "Número"]) {

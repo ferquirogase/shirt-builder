@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useDesign, useEditedLook } from "@/lib/builder/state/design-context";
+import { NAME_PLACEHOLDER, NUMBER_PLACEHOLDER } from "@/lib/builder/texture/number-text";
 import { ColorField } from "./ColorField";
 import { PanelShell } from "./PanelShell";
 
@@ -21,6 +22,7 @@ export function TextPanel() {
           Nombre
           <input
             type="text"
+            placeholder={NAME_PLACEHOLDER}
             value={state.playerName}
             onChange={(e) => dispatch({ type: "SET_PLAYER_NAME", value: e.target.value.toUpperCase() })}
             className={INPUT}
@@ -31,6 +33,7 @@ export function TextPanel() {
           <input
             type="text"
             inputMode="numeric"
+            placeholder={NUMBER_PLACEHOLDER}
             maxLength={2}
             value={state.playerNumber}
             onChange={(e) => dispatch({ type: "SET_PLAYER_NUMBER", value: e.target.value.replace(/\D/g, "") })}

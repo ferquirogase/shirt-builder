@@ -1,6 +1,6 @@
 import type { DesignState } from "../state/design-state";
 import { UV_FLIP_Y, type UVRegions, type UVRect } from "../geometry/uv-regions";
-import { displayNumber, drawStyledText } from "./number-text";
+import { displayName, displayNumber, drawStyledText, showsNamePlaceholder } from "./number-text";
 import { NAME_FONT_FRACTION, NAME_V_FRAC, NAPE_V_FRAC, NUMBER_FONT_FRACTION, NUMBER_V_FRAC } from "./back-layout";
 import {
   availableSponsorSlots,
@@ -325,12 +325,13 @@ export function drawDesignToCanvas(
     });
   }
 
-  if (design.playerName) {
+  // The typed name or, while there is none and the upper back is free, an example of one.
+  if (design.playerName.trim() !== "" || showsNamePlaceholder(design)) {
     // Upper portion of bodyBack: vFrac=0 is bodyBack.v0, the edge shared
     // with bodyFront's top (see logo comment above), i.e. near the collar.
     // Below the collar band and the maker's logo at the nape, above the number (see back-layout.ts).
     const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, NAME_V_FRAC, canvasSize);
-    drawStyledText(ctx, design.playerName, cx, cy, {
+    drawStyledText(ctx, displayName(design), cx, cy, {
       basePx: canvasSize * NAME_FONT_FRACTION * nnPreset.nameScale,
       maxWidth: maxTextWidth,
       style: nnStyle,
