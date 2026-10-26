@@ -45,8 +45,10 @@ export type SponsorSlot = {
 
 // How far up the leg the shorts' placements are, within the hem (0) and the waist (1). GEPE draws
 // them on the upper thigh, but here the shirt's hem covers the top of the shorts (the waist is
-// inside the shirt): only below about 0.6 shows. This is the middle of the thigh that does.
-const SHORTS_THIGH_V_FRAC = 0.4;
+// inside the shirt): only below about 0.6 shows. The front one is in the middle of the thigh that
+// does; the two on the back go lower, under where the front one is.
+const SHORTS_FRONT_V_FRAC = 0.4;
+const SHORTS_BACK_V_FRAC = 0.27;
 
 export const SPONSOR_MIN_SCALE = 0.5;
 export const SPONSOR_MAX_SCALE = 1.5;
@@ -128,15 +130,14 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     baseHeight: 0.035,
   },
   // The shorts (10, 11, 12). The left leg is on the left seen from behind, which is the +x side;
-  // the player's right leg is on the left seen from the front, the -x side. All three sit at the
-  // same height on the thigh, as GEPE draws them. The shorts' texture is not turned on the back
+  // the player's right leg is on the left seen from the front, the -x side. The shorts' texture is not turned on the back
   // like the shirt's: seen from behind u runs to the right and v up, so nothing is turned or mirrored.
   {
     id: "shorts-back-left",
     label: "Short atrás izquierda",
     region: "shortsBackLeft",
     uFrac: 0.5,
-    vFrac: SHORTS_THIGH_V_FRAC,
+    vFrac: SHORTS_BACK_V_FRAC,
     rotation: 0,
     baseBox: 0.06,
   },
@@ -145,7 +146,7 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     label: "Short atrás derecha",
     region: "shortsBackRight",
     uFrac: 0.5,
-    vFrac: SHORTS_THIGH_V_FRAC,
+    vFrac: SHORTS_BACK_V_FRAC,
     rotation: 0,
     baseBox: 0.06,
   },
@@ -154,7 +155,7 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     label: "Short frente",
     region: "shortsFrontRight",
     uFrac: 0.4,
-    vFrac: SHORTS_THIGH_V_FRAC,
+    vFrac: SHORTS_FRONT_V_FRAC,
     rotation: 0,
     baseBox: 0.06,
   },

@@ -51,15 +51,23 @@ describe("sponsor slots", () => {
     expect(SPONSOR_SLOTS.filter(isShortsSlot).length).toBe(3);
   });
 
-  it("puts the shorts' placements on their leg panels, at the same height on the thigh", () => {
+  it("puts the shorts' placements on their leg panels", () => {
     expect(findSponsorSlot("shorts-back-left")!.region).toBe("shortsBackLeft");
     expect(findSponsorSlot("shorts-back-right")!.region).toBe("shortsBackRight");
     expect(findSponsorSlot("shorts-front-right")!.region).toBe("shortsFrontRight");
-    const heights = SHORTS_IDS.map((id) => findSponsorSlot(id)!.vFrac);
-    expect(new Set(heights).size).toBe(1);
-    // Low on the thigh: the top of the shorts is under the shirt, so only the lower part shows.
-    expect(heights[0]).toBeGreaterThan(0.2);
-    expect(heights[0]).toBeLessThan(0.55);
+  });
+
+  it("puts the two on the back lower on the leg than the one on the front, both on the part of the thigh that shows", () => {
+    const front = findSponsorSlot("shorts-front-right")!.vFrac;
+    const backLeft = findSponsorSlot("shorts-back-left")!.vFrac;
+    const backRight = findSponsorSlot("shorts-back-right")!.vFrac;
+    expect(backLeft).toBe(backRight);
+    expect(backLeft).toBeLessThan(front);
+    // The top of the shorts is under the shirt, so only the lower part of the leg shows.
+    for (const v of [front, backLeft]) {
+      expect(v).toBeGreaterThan(0.2);
+      expect(v).toBeLessThan(0.55);
+    }
   });
 
   it("gives the three center placements a wide, short rectangle, like a sponsor's banner", () => {

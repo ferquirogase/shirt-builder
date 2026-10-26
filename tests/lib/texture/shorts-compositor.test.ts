@@ -79,6 +79,9 @@ describe("drawShortsToCanvas", () => {
     // shortsBackLeft u .72..0.88 -> x 800; shortsBackRight u .13..0.28 -> x 205 (both at the middle of the panel).
     const xs = calls(ctx.translate).map(([x]) => Math.round(x));
     expect(xs).toEqual([800, 205]);
+    // Both a good way down the leg, below the front one (y 742): vFrac .27 -> v .1854 -> y 815.
+    const ys = calls(ctx.translate).map(([, y]) => Math.round(y));
+    expect(ys).toEqual([815, 815]);
   });
 
   it("scales a sponsor with its scale, up to one and a half times", () => {
