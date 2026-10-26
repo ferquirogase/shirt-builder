@@ -141,7 +141,8 @@ export type BrandLogos = { forLight: HTMLImageElement | null; forDark: HTMLImage
 
 // Draws the maker's logo centered on `center`, in the version that contrasts with the cloth under it
 // (the pixels already painted there, or `fallbackHex` when they can't be read). `rotation` turns it
-// about its center, and `squeeze` narrows it sideways first (the shorts' texture, see SHORTS_UV_STRETCH).
+// about its center, `squeeze` narrows it sideways first (the shorts' texture, see SHORTS_UV_STRETCH) and
+// `squeezeY` makes it shorter (cloth that is stretched upwards, as at the nape).
 export function drawBrandLogoAt(
   ctx: CanvasRenderingContext2D,
   canvasSize: number,
@@ -149,7 +150,7 @@ export function drawBrandLogoAt(
   fallbackHex: string,
   center: { x: number; y: number },
   boxFraction: number,
-  { rotation = 0, squeeze = 1 }: { rotation?: number; squeeze?: number } = {}
+  { rotation = 0, squeeze = 1, squeezeY = 1 }: { rotation?: number; squeeze?: number; squeezeY?: number } = {}
 ): void {
   const { forLight, forDark } = logos;
   const reference = forDark ?? forLight;
@@ -158,17 +159,22 @@ export function drawBrandLogoAt(
   const box = fitLogoBox(reference, center, canvasSize, boxFraction);
   // The cloth is judged where the logo really sits: its box is centered on `center` whatever the
   // turn, and narrower once squeezed.
-  const seen = { ...box, x: center.x - (box.width * squeeze) / 2, width: box.width * squeeze };
+  const seen = {
+    x: center.x - (box.width * squeeze) / 2,
+    y: center.y - (box.height * squeezeY) / 2,
+    width: box.width * squeeze,
+    height: box.height * squeezeY,
+  };
   const lightCloth = isLightUnder(ctx, seen, canvasSize, fallbackHex);
   const chosen = (lightCloth ? forLight ?? forDark : forDark ?? forLight)!;
-  if (rotation === 0 && squeeze === 1) {
+  if (rotation === 0 && squeeze === 1 && squeezeY === 1) {
     ctx.drawImage(chosen, box.x, box.y, box.width, box.height);
     return;
   }
   const upright = fitLogoBox(reference, { x: 0, y: 0 }, canvasSize, boxFraction);
   ctx.save();
   ctx.translate(center.x, center.y);
-  if (squeeze !== 1) ctx.scale(squeeze, 1);
+  if (squeeze !== 1 || squeezeY !== 1) ctx.scale(squeeze, squeezeY);
   if (rotation !== 0) ctx.rotate(rotation);
   ctx.drawImage(chosen, upright.x, upright.y, upright.width, upright.height);
   ctx.restore();
@@ -190,7 +196,10 @@ function drawBrandLogos(
   drawBrandLogoAt(ctx, canvasSize, logos, primary, chest, BRAND_BOX_FRACTION);
   // Turned like the rest of the back, so it reads upright on the model.
   const nape = pointInRegionToCanvas(regions.bodyBack, 0.5, NAPE_V_FRAC, canvasSize);
-  drawBrandLogoAt(ctx, canvasSize, logos, primary, nape, NAPE_BRAND_BOX_FRACTION, { rotation: Math.PI });
+  drawBrandLogoAt(ctx, canvasSize, logos, primary, nape, NAPE_BRAND_BOX_FRACTION, {
+    rotation: Math.PI,
+    squeezeY: NAPE_BRAND_SQUEEZE_Y,
+  });
 }
 
 // The sponsors: one image per placement. Each is fitted into its box (placement
@@ -239,6 +248,9 @@ export const CREST_BOX_FRACTION = 0.052;
 export const BRAND_BOX_FRACTION = 0.03;
 // At the nape it is smaller still: it is a tag, not a brand mark.
 export const NAPE_BRAND_BOX_FRACTION = 0.022;
+// The collar has more cloth up the neck than across it (about 1.37 times at the nape), which would
+// stretch the logo upwards: it is drawn this much shorter so it looks as it should (a test measures it).
+export const NAPE_BRAND_SQUEEZE_Y = 0.74;
 // Cloth at least this bright (0..1) gets the logo version meant for light backgrounds.
 const LIGHT_BACKGROUND_LUMA = 0.5;
 

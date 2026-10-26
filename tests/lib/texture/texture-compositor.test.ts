@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
+import { NAPE_BRAND_SQUEEZE_Y, drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
 import { NUMBER_PLACEHOLDER, displayNumber } from "@/lib/builder/texture/number-text";
 import { CHEST_NUMBER_FONT_FRACTION } from "@/lib/builder/texture/front-layout";
 import { initialDesignState } from "@/lib/builder/state/design-state";
@@ -626,6 +626,8 @@ describe("drawDesignToCanvas", () => {
         // Smaller than the logo on the chest (30px): 2.2% of the canvas. Centered on the translated point.
         expect(w).toBeCloseTo(22, 5);
         expect(h).toBeCloseTo(22 * (381 / 512), 5);
+        // Made shorter on the canvas, because the collar stretches the cloth upwards there.
+        expect((ctx.scale as ReturnType<typeof vi.fn>).mock.calls).toEqual([[1, NAPE_BRAND_SQUEEZE_Y]]);
         const chestWidth = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0][3];
         expect(w).toBeLessThan(chestWidth);
         expect(x + w / 2).toBeCloseTo(0, 5);
