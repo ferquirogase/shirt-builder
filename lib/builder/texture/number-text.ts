@@ -1,12 +1,27 @@
 import { OUTLINE_COLOR, OUTLINE_WIDTH, type NameNumberPreset, type NameNumberStyle } from "../catalog/name-number-presets";
 
-// What the number shows while the player has not typed one: a 0, so the design reads from the
-// start and the user sees where the number goes. It is only drawn: the order keeps what was typed.
-export const NUMBER_PLACEHOLDER = "0";
+// What the back shows while the player has typed no name and no number: an example of each, so the
+// design reads from the start and the user sees where they go. They are only drawn: the order keeps
+// what was typed.
+export const NAME_PLACEHOLDER = "NOMBRE";
+export const NUMBER_PLACEHOLDER = "10";
 
 export function displayNumber(design: { playerNumber: string }): string {
   const typed = design.playerNumber.trim();
   return typed === "" ? NUMBER_PLACEHOLDER : typed;
+}
+
+export function displayName(design: { playerName: string }): string {
+  return design.playerName.trim() === "" ? NAME_PLACEHOLDER : design.playerName;
+}
+
+// The example name is shown while there is no name, unless the sponsor of the upper back is in use:
+// it is printed on the same strip of the back, so the example makes way for it.
+export function showsNamePlaceholder(design: {
+  playerName: string;
+  sponsors: Partial<Record<string, unknown>>;
+}): boolean {
+  return design.playerName.trim() === "" && !design.sponsors["upper-back"];
 }
 
 export type StyledTextOptions = {
