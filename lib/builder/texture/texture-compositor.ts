@@ -1,14 +1,9 @@
 import type { DesignState } from "../state/design-state";
 import { UV_FLIP_Y, type UVRegions, type UVRect } from "../geometry/uv-regions";
+import { displayNumber, drawStyledText } from "./number-text";
 import { NAME_FONT_FRACTION, NAME_V_FRAC, NAPE_V_FRAC, NUMBER_FONT_FRACTION, NUMBER_V_FRAC } from "./back-layout";
 import { availableSponsorSlots, clampSponsorScale, isShortsSlot, type SponsorSlotId } from "../catalog/sponsor-slots";
-import {
-  OUTLINE_COLOR,
-  OUTLINE_WIDTH,
-  getNameNumberPreset,
-  type NameNumberPreset,
-  type NameNumberStyle,
-} from "../catalog/name-number-presets";
+import { getNameNumberPreset } from "../catalog/name-number-presets";
 
 export type CompositorImages = {
   bodyPatternImage: HTMLImageElement | null;
@@ -282,25 +277,27 @@ export function drawDesignToCanvas(
     // with bodyFront's top (see logo comment above), i.e. near the collar.
     // Below the collar band and the maker's logo at the nape, above the number (see back-layout.ts).
     const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, NAME_V_FRAC, canvasSize);
-    drawBackText(ctx, design.playerName, cx, cy, {
+    drawStyledText(ctx, design.playerName, cx, cy, {
       basePx: canvasSize * NAME_FONT_FRACTION * nnPreset.nameScale,
       maxWidth: maxTextWidth,
       style: nnStyle,
       preset: nnPreset,
       fontFamily: nameNumberFontFamily,
+      rotation: Math.PI,
     });
   }
 
-  if (design.playerNumber) {
+  {
     // Below the name (further from the collar edge), larger font, centered
     // in bodyBack.
     const { x: cx, y: cy } = pointInRegionToCanvas(regions.bodyBack, 0.5, NUMBER_V_FRAC, canvasSize);
-    drawBackText(ctx, design.playerNumber, cx, cy, {
+    drawStyledText(ctx, displayNumber(design), cx, cy, {
       basePx: canvasSize * NUMBER_FONT_FRACTION * nnPreset.numberScale,
       maxWidth: maxTextWidth,
       style: nnStyle,
       preset: nnPreset,
       fontFamily: nameNumberFontFamily,
+      rotation: Math.PI,
     });
   }
 }
@@ -312,47 +309,6 @@ export function drawDesignToCanvas(
 // content is drawn rotated by PI.
 // Default share of bodyBack's width the back text may take (see UVRegions.backTextWidthFraction).
 const MAX_BACK_TEXT_WIDTH_FRACTION = 0.8;
-
-type BackTextOptions = {
-  basePx: number;
-  maxWidth: number;
-  style: NameNumberStyle;
-  preset: NameNumberPreset;
-  fontFamily: string;
-};
-
-// Draws outline -> fill, centered on (x, y), rotated 180deg.
-function drawBackText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  { basePx, maxWidth, style, preset, fontFamily }: BackTextOptions
-): void {
-  ctx.save();
-  const fontFor = (px: number) => `${preset.weight} ${px}px ${fontFamily}`;
-  ctx.font = fontFor(basePx);
-  ctx.textAlign = "center";
-  const measured = ctx.measureText(text).width;
-  const px = measured > maxWidth ? basePx * (maxWidth / measured) : basePx;
-  ctx.font = fontFor(px);
-
-  ctx.translate(x, y);
-  ctx.rotate(Math.PI);
-  ctx.lineJoin = "round";
-
-  if (style.outline) {
-    // A stroke is centered on the glyph edge and the fill covers its inner
-    // half, so the line is twice the visible thickness.
-    ctx.lineWidth = px * OUTLINE_WIDTH * 2;
-    ctx.strokeStyle = OUTLINE_COLOR;
-    ctx.strokeText(text, 0, 0);
-  }
-
-  ctx.fillStyle = style.fill;
-  ctx.fillText(text, 0, 0);
-  ctx.restore();
-}
 
 type RegionOrientation = "plain" | "rotate180" | "mirrorX";
 
