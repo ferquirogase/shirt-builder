@@ -185,6 +185,33 @@ describe("CrestPanel", () => {
   });
 });
 
+describe("TextPanel, the number on the chest", () => {
+  it("offers a switch for it, off to begin with", () => {
+    renderWithDesign(<TextPanel />);
+    expect(screen.getByRole("switch", { name: "Número en el pecho" })).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("switches it on and off", () => {
+    const { api } = renderWithDesign(<TextPanel />);
+    const toggle = screen.getByRole("switch", { name: "Número en el pecho" });
+    fireEvent.click(toggle);
+    expect(api.current!.state.chestNumber).toBe(true);
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(toggle);
+    expect(api.current!.state.chestNumber).toBe(false);
+  });
+
+  it("says it takes the place of sponsor 1", () => {
+    renderWithDesign(<TextPanel />);
+    expect(screen.getByText(/en lugar del sponsor 1/i)).toBeInTheDocument();
+  });
+
+  it("says where the number and the name go: on the back, and the number on the shorts too", () => {
+    renderWithDesign(<TextPanel />);
+    expect(screen.getByText(/el número también va en el short/i)).toBeInTheDocument();
+  });
+});
+
 describe("TextPanel", () => {
   it("makes keyboard focus visible on the text fields", () => {
     renderWithDesign(<TextPanel />);

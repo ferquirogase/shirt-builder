@@ -82,6 +82,25 @@ describe("the sponsor picker shared by the panel and the markers on the shirt", 
     expect(screen.getByRole("img", { name: "Sponsor de Short frente" })).toBeInTheDocument();
   });
 
+  it("takes sponsor 1 away when the number goes on the chest, and the cards after it move up", () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    expect(screen.getByRole("region", { name: "Pecho" })).toBeInTheDocument();
+    act(() => api.current!.dispatch({ type: "SET_CHEST_NUMBER", value: true }));
+    expect(screen.queryByRole("region", { name: "Pecho" })).toBeNull();
+    expect(within(screen.getByRole("region", { name: "Abdomen" })).getByText("1")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Pecho alto izquierdo" })).getByText("8")).toBeInTheDocument();
+  });
+
+  it("keeps the sponsor of the chest while the number hides it, and gives it back when the number goes", () => {
+    const { api } = renderWithDesign(<SponsorPanel />);
+    act(() => api.current!.dispatch({ type: "SET_SPONSOR", slot: "abdomen", dataUrl: IMG }));
+    act(() => api.current!.dispatch({ type: "SET_CHEST_NUMBER", value: true }));
+    expect(screen.queryByRole("region", { name: "Pecho" })).toBeNull();
+    expect(api.current!.state.sponsors.abdomen?.dataUrl).toBe(IMG);
+    act(() => api.current!.dispatch({ type: "SET_CHEST_NUMBER", value: false }));
+    expect(screen.getByRole("img", { name: "Sponsor de Pecho" })).toBeInTheDocument();
+  });
+
   it("highlights the card of the selected placement, and only that one", () => {
     const { api } = renderWithDesign(<SponsorPanel />);
     act(() => api.current!.selectSponsor("sleeve-left"));

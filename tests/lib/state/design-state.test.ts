@@ -425,3 +425,36 @@ describe("keeper", () => {
     expect(resetOut.keeper).toEqual(initialDesignState.keeper);
   });
 });
+
+describe("the number on the chest", () => {
+  it("is off to begin with", () => {
+    expect(initialDesignState.chestNumber).toBe(false);
+  });
+
+  it("is switched on and off on its own, touching nothing else", () => {
+    const on = designReducer(initialDesignState, { type: "SET_CHEST_NUMBER", value: true });
+    expect(on).toEqual({ ...initialDesignState, chestNumber: true });
+    expect(designReducer(on, { type: "SET_CHEST_NUMBER", value: false })).toEqual(initialDesignState);
+  });
+
+  it("keeps the same state when it is already as asked", () => {
+    expect(designReducer(initialDesignState, { type: "SET_CHEST_NUMBER", value: false })).toBe(initialDesignState);
+  });
+
+  it("goes back to off when the design is reset", () => {
+    const on = designReducer(initialDesignState, { type: "SET_CHEST_NUMBER", value: true });
+    expect(designReducer(on, { type: "RESET_DESIGN" }).chestNumber).toBe(false);
+  });
+
+  it("is the same for the keeper's shirt: one switch for both", () => {
+    const on = designReducer(initialDesignState, { type: "SET_CHEST_NUMBER", value: true });
+    const withKeeper = designReducer(on, { type: "SET_KEEPER_INCLUDED", value: true });
+    expect(lookFor(withKeeper, "keeper").chestNumber).toBe(true);
+  });
+
+  it("does not hide a sponsor already uploaded on the chest: it is kept for when the number goes", () => {
+    const withSponsor = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "abdomen", dataUrl: "data:image/png;base64,AAAA" });
+    const on = designReducer(withSponsor, { type: "SET_CHEST_NUMBER", value: true });
+    expect(on.sponsors.abdomen?.dataUrl).toBe("data:image/png;base64,AAAA");
+  });
+});

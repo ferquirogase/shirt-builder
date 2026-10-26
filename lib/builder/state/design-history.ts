@@ -68,6 +68,7 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
     sameSponsors(a.sponsors, b.sponsors) &&
     a.playerName === b.playerName &&
     a.playerNumber === b.playerNumber &&
+    a.chestNumber === b.chestNumber &&
     a.nameNumberStyle.presetId === b.nameNumberStyle.presetId &&
     a.nameNumberStyle.fill === b.nameNumberStyle.fill &&
     a.nameNumberStyle.outline === b.nameNumberStyle.outline &&

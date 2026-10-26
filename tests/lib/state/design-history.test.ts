@@ -288,3 +288,26 @@ describe("keeper history", () => {
     expect(canResetDesign(added.present)).toBe(false);
   });
 });
+
+describe("the number on the chest in the history", () => {
+  it("can be undone and redone, as a step of its own", () => {
+    const on = historyReducer(createHistory(), { type: "SET_CHEST_NUMBER", value: true, at: 1000 });
+    expect(on.present.chestNumber).toBe(true);
+    const undone = historyReducer(on, { type: "UNDO" });
+    expect(undone.present.chestNumber).toBe(false);
+    expect(historyReducer(undone, { type: "REDO" }).present.chestNumber).toBe(true);
+  });
+
+  it("makes the design resettable, since it is no longer the starting one", () => {
+    const on = historyReducer(createHistory(), { type: "SET_CHEST_NUMBER", value: true, at: 1000 });
+    expect(canResetDesign(on.present)).toBe(true);
+    const off = historyReducer(on, { type: "SET_CHEST_NUMBER", value: false, at: 5000 });
+    expect(canResetDesign(off.present)).toBe(false);
+  });
+
+  it("is restored off for an order saved before the option existed", () => {
+    const { chestNumber: _omit, ...old } = initialDesignState;
+    const restored = { ...initialDesignState, ...old };
+    expect(restored.chestNumber).toBe(false);
+  });
+});

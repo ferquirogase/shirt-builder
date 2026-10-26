@@ -210,6 +210,23 @@ describe("which placements can be used", () => {
     expect(availableSponsorSlots(noShorts("   ")).map((s) => s.id)).toContain("upper-back");
   });
 
+  it("takes the first placement away when the number goes on the chest: it is printed there", () => {
+    const ids = availableSponsorSlots({ ...noShorts(), chestNumber: true }).map((s) => s.id);
+    expect(ids).not.toContain("abdomen");
+    expect(ids).toEqual(SHIRT_IDS.filter((id) => id !== "abdomen"));
+  });
+
+  it("keeps it while the number is not on the chest", () => {
+    expect(availableSponsorSlots({ ...noShorts(), chestNumber: false }).map((s) => s.id)).toContain("abdomen");
+  });
+
+  it("takes both away at once: the name and the number on the chest", () => {
+    const ids = availableSponsorSlots({ ...withShorts("PEREZ"), chestNumber: true }).map((s) => s.id);
+    expect(ids).not.toContain("abdomen");
+    expect(ids).not.toContain("upper-back");
+    expect(ids).toHaveLength(10);
+  });
+
   it("the name takes only the upper back: the shorts keep their three", () => {
     const ids = availableSponsorSlots(withShorts("PEREZ")).map((s) => s.id);
     for (const id of SHORTS_IDS) expect(ids).toContain(id);
@@ -226,6 +243,15 @@ describe("sponsorNumber", () => {
     const withName = availableSponsorSlots(withShorts("PEREZ"));
     expect(sponsorNumber("shorts-front-right", withName)).toBe(11);
     expect(sponsorNumber("shorts-back-left", withName)).toBe(9);
+  });
+
+  it("renumbers everything after sponsor 1 when the number goes on the chest", () => {
+    const offered = availableSponsorSlots({ ...withShorts(), chestNumber: true });
+    expect(sponsorNumber("abdomen", offered)).toBe(0);
+    expect(sponsorNumber("belly", offered)).toBe(1);
+    expect(sponsorNumber("waist", offered)).toBe(2);
+    expect(sponsorNumber("chest-left", offered)).toBe(8);
+    expect(sponsorNumber("shorts-front-right", offered)).toBe(11);
   });
 
   it("renumbers the shirt's when a placement is taken away", () => {

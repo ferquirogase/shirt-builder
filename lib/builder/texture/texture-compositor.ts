@@ -2,7 +2,14 @@ import type { DesignState } from "../state/design-state";
 import { UV_FLIP_Y, type UVRegions, type UVRect } from "../geometry/uv-regions";
 import { displayNumber, drawStyledText } from "./number-text";
 import { NAME_FONT_FRACTION, NAME_V_FRAC, NAPE_V_FRAC, NUMBER_FONT_FRACTION, NUMBER_V_FRAC } from "./back-layout";
-import { availableSponsorSlots, clampSponsorScale, isShortsSlot, type SponsorSlotId } from "../catalog/sponsor-slots";
+import {
+  availableSponsorSlots,
+  clampSponsorScale,
+  findSponsorSlot,
+  isShortsSlot,
+  type SponsorSlotId,
+} from "../catalog/sponsor-slots";
+import { CHEST_NUMBER_FONT_FRACTION, CHEST_NUMBER_MAX_WIDTH_FRACTION } from "./front-layout";
 import { getNameNumberPreset } from "../catalog/name-number-presets";
 
 export type CompositorImages = {
@@ -290,6 +297,22 @@ export function drawDesignToCanvas(
   const backWidth = (regions.bodyBack.u1 - regions.bodyBack.u0) * canvasSize;
   const maxTextWidth = backWidth * (regions.backTextWidthFraction ?? MAX_BACK_TEXT_WIDTH_FRACTION);
 
+  if (design.chestNumber) {
+    // The number goes where sponsor 1 would be, upright (the back's is turned). Its point is the
+    // middle of the digits, and the text rests on its baseline, so it is lowered by half their height.
+    const slot = findSponsorSlot("abdomen")!;
+    const center = pointInRegionToCanvas(regions.bodyFront, slot.uFrac, slot.vFrac, canvasSize);
+    const basePx = canvasSize * CHEST_NUMBER_FONT_FRACTION * nnPreset.numberScale;
+    const frontWidth = (regions.bodyFront.u1 - regions.bodyFront.u0) * canvasSize;
+    drawStyledText(ctx, displayNumber(design), center.x, center.y + basePx * DIGIT_HALF_HEIGHT, {
+      basePx,
+      maxWidth: frontWidth * CHEST_NUMBER_MAX_WIDTH_FRACTION,
+      style: nnStyle,
+      preset: nnPreset,
+      fontFamily: nameNumberFontFamily,
+    });
+  }
+
   if (design.playerName) {
     // Upper portion of bodyBack: vFrac=0 is bodyBack.v0, the edge shared
     // with bodyFront's top (see logo comment above), i.e. near the collar.
@@ -325,6 +348,8 @@ export function drawDesignToCanvas(
 // back it shrinks; and u runs right-to-left as seen from behind). Content
 // drawn upright into bodyBack would show upside-down on the model, so back
 // content is drawn rotated by PI.
+// The digits are about 0.72 of the font size tall: half of that, to center them on a point.
+const DIGIT_HALF_HEIGHT = 0.36;
 // Default share of bodyBack's width the back text may take (see UVRegions.backTextWidthFraction).
 const MAX_BACK_TEXT_WIDTH_FRACTION = 0.8;
 

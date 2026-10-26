@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
 import { NUMBER_PLACEHOLDER, displayNumber } from "@/lib/builder/texture/number-text";
+import { CHEST_NUMBER_FONT_FRACTION } from "@/lib/builder/texture/front-layout";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import { NAME_V_FRAC, NUMBER_V_FRAC } from "@/lib/builder/texture/back-layout";
 import { OUTLINE_COLOR, OUTLINE_WIDTH } from "@/lib/builder/catalog/name-number-presets";
@@ -859,6 +860,72 @@ describe("drawDesignToCanvas", () => {
       const saves = (ctx.save as ReturnType<typeof vi.fn>).mock.calls.length;
       const restores = (ctx.restore as ReturnType<typeof vi.fn>).mock.calls.length;
       expect(saves).toBe(restores);
+    });
+  });
+
+  describe("the number on the chest", () => {
+    const blank = { bodyPatternImage: null, sleevePatternImage: null, logoImage: null };
+    const withChest = (patch: Partial<typeof initialDesignState> = {}) => ({ ...initialDesignState, chestNumber: true, ...patch });
+    const texts = (ctx: CanvasRenderingContext2D) => (ctx.fillText as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
+
+    it("is not written while the option is off: only the back's number is", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, { ...initialDesignState, playerNumber: "10" }, blank, regions);
+      expect(texts(ctx)).toEqual(["10"]);
+    });
+
+    it("is written on the chest, besides the back's, when the option is on", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, withChest({ playerNumber: "10" }), blank, regions);
+      expect(texts(ctx)).toEqual(["10", "10"]);
+    });
+
+    it("shows a 0 there too until the player types a number", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, withChest(), blank, regions);
+      expect(texts(ctx)).toEqual([NUMBER_PLACEHOLDER, NUMBER_PLACEHOLDER]);
+    });
+
+    it("sits where sponsor 1 would be, upright (the back's is turned)", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, withChest({ playerNumber: "10" }), blank, regions);
+      // bodyFront u .3..0.7 -> x 500; v .5..0.9, vFrac .58 -> v .732 -> y 268. Drawn first, before the back.
+      const [tx, ty] = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls[0];
+      expect(tx).toBeCloseTo(500, 5);
+      expect(ty).toBeGreaterThan(200);
+      expect(ty).toBeLessThan(330);
+      // The only turn is the back's number.
+      expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI]]);
+    });
+
+    it("is smaller than the one on the back, and in the same style", () => {
+      const ctx = createMockCtx();
+      const fonts: string[] = [];
+      (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
+      drawDesignToCanvas(ctx, 1000, withChest({ playerNumber: "10" }), blank, regions, "'Oswald', sans-serif");
+      const px = (font: string) => parseFloat(/([\d.]+)px/.exec(font)![1]);
+      expect(fonts[0]).toMatch(/^700 .*'Oswald', sans-serif$/);
+      expect(px(fonts[0])).toBeLessThan(px(fonts[1]));
+      expect(px(fonts[0])).toBeCloseTo(1000 * CHEST_NUMBER_FONT_FRACTION, 5);
+    });
+
+    it("takes the place of sponsor 1: its sponsor is not drawn while the option is on, and is again when off", () => {
+      const img = { id: "s", naturalWidth: 100, naturalHeight: 100 } as unknown as HTMLImageElement;
+      const entry = { dataUrl: "data:image/png;base64,AAAA", scale: 1 };
+      const drawnImages = (design: typeof initialDesignState) => {
+        const ctx = createMockCtx();
+        drawDesignToCanvas(ctx, 1000, design, { ...blank, sponsorImages: { abdomen: img } }, regions);
+        return (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
+      };
+      const design = { ...initialDesignState, sponsors: { abdomen: entry } };
+      expect(drawnImages(design)).toContain(img);
+      expect(drawnImages({ ...design, chestNumber: true })).not.toContain(img);
+    });
+
+    it("leaves the canvas state as it found it", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, withChest({ playerNumber: "10" }), blank, regions);
+      expect((ctx.save as ReturnType<typeof vi.fn>).mock.calls.length).toBe((ctx.restore as ReturnType<typeof vi.fn>).mock.calls.length);
     });
   });
 
