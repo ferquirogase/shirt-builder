@@ -4,6 +4,7 @@ import { INITIAL_CREST } from "@/lib/builder/crest/crest-config";
 import { colorDistance, contrastColor } from "@/lib/builder/color/contrast";
 import { defaultKeeperLook, lookFor, pickKeeperPrimary } from "@/lib/builder/state/design-state";
 import { crestDataUrl } from "@/lib/builder/crest/crest-svg";
+import { findPaletteColor } from "@/lib/builder/color/palette";
 
 describe("designReducer", () => {
   it("sets a color for the given slot", () => {
@@ -478,5 +479,18 @@ describe("the number on the chest", () => {
     const withSponsor = designReducer(initialDesignState, { type: "SET_SPONSOR", slot: "abdomen", dataUrl: "data:image/png;base64,AAAA" });
     const on = designReducer(withSponsor, { type: "SET_CHEST_NUMBER", value: true });
     expect(on.sponsors.abdomen?.dataUrl).toBe("data:image/png;base64,AAAA");
+  });
+});
+
+describe("the keeper's default colors are on the palette", () => {
+  it("picks a primary and trims that the player can find in the palette", () => {
+    for (const team of [
+      { primary: "#0a5c36", secondary: "#ffffff" },
+      { primary: "#f5b700", secondary: "#e8202a" },
+      { primary: "#1d9bf0", secondary: "#000000" },
+    ]) {
+      const look = defaultKeeperLook(team);
+      for (const hex of Object.values(look.colors)) expect(findPaletteColor(hex), hex).toBeDefined();
+    }
   });
 });
