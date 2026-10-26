@@ -221,6 +221,15 @@ describe("the front of the shorts: number, maker's logo and crest", () => {
     expect(ctx.strokeText).toHaveBeenCalledTimes(1);
   });
 
+  it("draws the number's border in the color the style asks for", () => {
+    const ctx = createMockCtx();
+    let stroke: unknown = null;
+    (ctx.strokeText as ReturnType<typeof vi.fn>).mockImplementation(() => (stroke = ctx.strokeStyle));
+    const design = { ...withNumber("10"), nameNumberStyle: { ...initialDesignState.nameNumberStyle, outline: true, outlineColor: "#ff00aa" } };
+    drawShortsToCanvas(ctx, 1000, design, "#000", {});
+    expect(stroke).toBe("#ff00aa");
+  });
+
   it("puts the maker's logo under the number, white over dark cloth and black over light cloth", () => {
     const dark = createMockCtx();
     drawShortsToCanvas(dark, 1000, withNumber("10"), "#0a5c36", brand);
