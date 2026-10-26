@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { renderWithDesign } from "../helpers/render-with-design";
 import { Header } from "@/components/builder/Header";
 
@@ -10,6 +10,25 @@ describe("Header", () => {
     expect(screen.getByRole("button", { name: "Compartir" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Hacer pedido" })).toBeEnabled();
     expect(screen.queryByText("Guardado")).toBeNull();
+  });
+
+  it("keeps a word on the order button on a phone, not only an arrow: it is how the player moves on", () => {
+    renderWithDesign(<Header onReview={() => {}} onShare={() => {}} />);
+    const button = screen.getByRole("button", { name: "Hacer pedido" });
+    const phoneWord = within(button).getByText("Pedido");
+    // Not hidden from sight (the old label was "sr-only" below the medium breakpoint).
+    expect(phoneWord.className).not.toContain("sr-only");
+    expect(phoneWord.className).toContain("md:hidden");
+    // The long label is for wider screens.
+    expect(within(button).getByText("Hacer pedido").className).toContain("md:inline");
+    expect(within(button).getByText("Hacer pedido").className).toContain("hidden");
+  });
+
+  it("says it is getting ready while it takes the photos, in both sizes", () => {
+    renderWithDesign(<Header onReview={() => {}} onShare={() => {}} reviewing />);
+    const button = screen.getByRole("button", { name: "Preparando…" });
+    expect(within(button).getByText("Preparando…")).toBeInTheDocument();
+    expect(within(button).getByTestId("order-spinner")).toBeInTheDocument();
   });
 
   it("calls onShare when Compartir is pressed", () => {
@@ -53,15 +72,11 @@ describe("Header", () => {
     expect(screen.queryByRole("button", { name: "Hacer pedido" })).toBeNull();
   });
 
-  it("keeps 'Hacer pedido' visible on mobile as an icon, with its text only on wide screens", () => {
+  it("never hides the order button on a phone", () => {
     renderWithDesign(<Header onReview={() => {}} onShare={() => {}} />);
     const button = screen.getByRole("button", { name: "Hacer pedido" });
-    // Not hidden below md (it used to be `hidden md:inline-flex`), and the label
-    // is screen-reader-only until md.
-    expect(button.className).not.toMatch(/(^|\s)hidden(\s|$)/);
-    const label = screen.getByText("Hacer pedido");
-    expect(label.className).toContain("sr-only");
-    expect(label.className).toContain("md:not-sr-only");
+    // Not hidden below md (it used to be `hidden md:inline-flex`).
+    expect(button.className).not.toMatch(/(^|s)hidden(s|$)/);
   });
 
   it("renames the project on blur", () => {
