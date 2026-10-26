@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { act, fireEvent, screen } from "@testing-library/react";
+import { existsSync } from "node:fs";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { renderWithDesign } from "../../helpers/render-with-design";
 import { StageToolbar } from "@/components/builder/viewer/StageToolbar";
+import { GarmentsPanel } from "@/components/builder/panels/GarmentsPanel";
 
 describe("StageToolbar", () => {
   it("replaces undo/redo with a reset button", () => {
@@ -57,6 +59,23 @@ describe("shirt selector", () => {
     expect(screen.queryByRole("radiogroup", { name: "Camiseta" })).toBeNull();
     act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
     expect(screen.getByRole("radio", { name: "Jugador" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("shows the shirt icon of Prendas, not an older one: the same picture for the same shirt", () => {
+    const panel = renderWithDesign(<GarmentsPanel />);
+    const solo = within(screen.getByRole("radio", { name: /Solo camiseta/ })).getByRole("presentation", { hidden: true }) as HTMLImageElement;
+    const soloIcon = solo.getAttribute("src");
+    panel.unmount();
+
+    const { api } = renderWithDesign(<StageToolbar />);
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    const player = within(screen.getByRole("radio", { name: "Jugador" })).getByRole("presentation", { hidden: true }) as HTMLImageElement;
+    expect(player.getAttribute("src")).toBe(soloIcon);
+    expect(soloIcon).toBe("/icons/sections/kit-shirt-v2.webp");
+  });
+
+  it("leaves no icon file that nothing uses any more", () => {
+    expect(existsSync("public/icons/sections/kit-shirt.webp")).toBe(false);
   });
 
   it("switches what is shown", () => {
