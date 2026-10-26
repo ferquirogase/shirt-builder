@@ -2,12 +2,14 @@ import { describe, it, expect, vi } from "vitest";
 import { drawShortsToCanvas } from "@/lib/builder/texture/shorts-compositor";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import {
+  SHORTS_CREST_BOX_FRACTION,
+  SHORTS_CREST_STRETCH,
   SHORTS_FRONT_LAYOUT,
   SHORTS_NUMBER_FONT_FRACTION,
   SHORTS_UV_REGIONS,
   SHORTS_UV_STRETCH,
 } from "@/lib/builder/geometry/shorts-uv-regions";
-import { CREST_BOX_FRACTION, BRAND_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
+import { BRAND_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
 import { NUMBER_PLACEHOLDER } from "@/lib/builder/texture/number-text";
 
 function createMockCtx() {
@@ -263,7 +265,7 @@ describe("the front of the shorts: number, maker's logo and crest", () => {
     expect(SHORTS_NUMBER_FONT_FRACTION).toBeGreaterThanOrEqual(0.08);
   });
 
-  it("draws the crest under sponsor 12, on the player's right leg, the same size as the one on the chest", () => {
+  it("draws the crest under sponsor 12, on the player's right leg", () => {
     const ctx = createMockCtx();
     drawShortsToCanvas(ctx, 1000, kit({}), "#000", { logoImage: crest });
     const target = at(crestAt.region, crestAt.uFrac, crestAt.vFrac);
@@ -272,8 +274,8 @@ describe("the front of the shorts: number, maker's logo and crest", () => {
     expect(ty).toBeCloseTo(target.y, 5);
     const [img, x, y, w, h] = calls(ctx.drawImage)[0];
     expect(img).toBe(crest);
-    expect(w).toBeCloseTo(1000 * CREST_BOX_FRACTION, 5);
-    expect(h).toBeCloseTo(1000 * CREST_BOX_FRACTION, 5);
+    expect(w).toBeCloseTo(1000 * SHORTS_CREST_BOX_FRACTION, 5);
+    expect(h).toBeCloseTo(1000 * SHORTS_CREST_BOX_FRACTION, 5);
     expect(x + w / 2).toBeCloseTo(0, 5);
     expect(y + h / 2).toBeCloseTo(0, 5);
     expect(crestAt.region).toBe("shortsFrontRight");
@@ -286,14 +288,15 @@ describe("the front of the shorts: number, maker's logo and crest", () => {
     const front = SHORTS_UV_REGIONS.shortsFrontRight;
     const height = front.v1 - front.v0;
     const sponsorBottom = 0.4 - ((0.06 * 1.5) / 2) / height;
-    const crestTop = crestAt.vFrac + (CREST_BOX_FRACTION / 2) / height;
+    const crestTop = crestAt.vFrac + (SHORTS_CREST_BOX_FRACTION / 2) / height;
     expect(crestTop).toBeLessThan(sponsorBottom);
   });
 
-  it("squeezes the crest sideways like everything else on the shorts", () => {
+  it("squeezes the crest sideways by its own amount: the cloth by the crest is stretched more than the sponsors' zone", () => {
     const ctx = createMockCtx();
     drawShortsToCanvas(ctx, 1000, kit({}), "#000", { logoImage: crest });
-    expect(calls(ctx.scale)[0]).toEqual([SHORTS_UV_STRETCH, 1]);
+    expect(calls(ctx.scale)[0]).toEqual([SHORTS_CREST_STRETCH, 1]);
+    expect(SHORTS_CREST_STRETCH).toBeLessThan(SHORTS_UV_STRETCH);
   });
 
   it("draws no crest when there is none, and no logo before it has loaded", () => {

@@ -1,4 +1,6 @@
 import {
+  SHORTS_CREST_BOX_FRACTION,
+  SHORTS_CREST_STRETCH,
   SHORTS_FRONT_LAYOUT,
   SHORTS_NUMBER_FONT_FRACTION,
   SHORTS_UV_REGIONS,
@@ -7,7 +9,7 @@ import {
 import { getNameNumberPreset } from "../catalog/name-number-presets";
 import { availableSponsorSlots, clampSponsorScale, isShortsSlot, type SponsorSlotId } from "../catalog/sponsor-slots";
 import type { DesignState } from "../state/design-state";
-import { BRAND_BOX_FRACTION, CREST_BOX_FRACTION, drawBrandLogoAt, fitLogoBox, pointInRegionToCanvas } from "./texture-compositor";
+import { BRAND_BOX_FRACTION, drawBrandLogoAt, fitLogoBox, pointInRegionToCanvas } from "./texture-compositor";
 import { displayNumber, drawStyledText } from "./number-text";
 
 export type ShortsCompositorImages = {
@@ -72,11 +74,11 @@ function drawFront(
 
   if (images.logoImage) {
     const center = place(SHORTS_FRONT_LAYOUT.crest);
-    // The same size as the crest on the chest, squeezed like everything on the shorts.
-    const box = fitLogoBox(images.logoImage, { x: 0, y: 0 }, canvasSize, CREST_BOX_FRACTION);
+    // As big on the garment as the crest on the chest (see SHORTS_CREST_BOX_FRACTION).
+    const box = fitLogoBox(images.logoImage, { x: 0, y: 0 }, canvasSize, SHORTS_CREST_BOX_FRACTION);
     ctx.save();
     ctx.translate(center.x, center.y);
-    ctx.scale(SHORTS_UV_STRETCH, 1);
+    ctx.scale(SHORTS_CREST_STRETCH, 1);
     ctx.drawImage(images.logoImage, box.x, box.y, box.width, box.height);
     ctx.restore();
   }

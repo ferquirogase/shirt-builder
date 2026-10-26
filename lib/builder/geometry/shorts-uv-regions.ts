@@ -34,6 +34,13 @@ export const SHORTS_FRONT_LAYOUT = {
   crest: { region: "shortsFrontRight", uFrac: 0.4, vFrac: 0.2 },
 } as const satisfies Record<string, { region: ShortsRegionName; uFrac: number; vFrac: number }>;
 
+// The crest on the shorts is drawn as big as the one on the chest. The shorts' texture covers less
+// cloth per unit than the shirt's, and by the crest the cloth is stretched more across than the
+// 0.74 that suits the sponsors, so the crest has its own size and squeeze: measured on the two OBJs
+// (a test checks that both crests come out the same size on the garment, and not stretched).
+export const SHORTS_CREST_BOX_FRACTION = 0.09;
+export const SHORTS_CREST_STRETCH = 0.64;
+
 // The size of the number on the shorts, as a share of the canvas: a lot smaller than the one on the
 // back of the shirt (0.12), like on GEPE's shorts.
 export const SHORTS_NUMBER_FONT_FRACTION = 0.085;
