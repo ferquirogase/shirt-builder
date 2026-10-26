@@ -7,13 +7,14 @@ import { addShortsSwayWeights } from "@/lib/builder/geometry/cloth-sway";
 import { JERSEY_CENTER_Y } from "@/lib/builder/geometry/jersey-model";
 import { firstMeshGeometry } from "@/lib/builder/geometry/jersey-geometry";
 import { SHORTS_MODEL } from "@/lib/builder/geometry/shorts-model";
+import { SHORTS_UV_REGIONS } from "@/lib/builder/geometry/shorts-uv-regions";
 import { buildKitCollider } from "@/lib/builder/geometry/shorts-collider";
-import { useDesign } from "@/lib/builder/state/design-context";
-import { shortsColor } from "@/lib/builder/state/design-state";
 import { createBlendedNormalTexture } from "@/lib/builder/texture/fabric-texture";
 import { applyClothSway, setClothCollider } from "./cloth-sway-shader";
 import { useClothSway } from "./ClothSwayProvider";
 import { FABRIC_REPEAT, LINING_COLOR, WEAVE_STRENGTH } from "./fabric-look";
+import { SponsorChips } from "./SponsorChips";
+import { useShortsTexture } from "./use-shorts-texture";
 
 // The shorts wear one of the shirt's colors, with the model's wrinkle normal map
 // and the fine knit on top, like the shirt. The OBJ is in the shirt's own
@@ -21,8 +22,8 @@ import { FABRIC_REPEAT, LINING_COLOR, WEAVE_STRENGTH } from "./fabric-look";
 // still, and the shirt's swaying hem is kept out of it (see shorts-collider.ts);
 // the legs' bottom edge swings with the same sway as the shirt.
 export function ShortsModel() {
-  const { state } = useDesign();
-  const color = shortsColor(state);
+  // The shorts' color and the sponsors on their legs are painted on one texture.
+  const texture = useShortsTexture();
   const obj = useLoader(OBJLoader, SHORTS_MODEL.url);
   const [wrinkleSource] = useLoader(THREE.TextureLoader, [SHORTS_MODEL.normalMapUrl]);
 
@@ -57,7 +58,7 @@ export function ShortsModel() {
   const material = useMemo(
     () =>
       new THREE.MeshPhysicalMaterial({
-        color,
+        map: texture,
         normalMap: wrinkleNormal,
         normalScale: new THREE.Vector2(SHORTS_MODEL.normalMapStrength, SHORTS_MODEL.normalMapStrength),
         roughness: 0.78,
@@ -65,7 +66,7 @@ export function ShortsModel() {
         sheenRoughness: 0.55,
         sheenColor: new THREE.Color("#ffffff"),
       }),
-    [color, wrinkleNormal]
+    [texture, wrinkleNormal]
   );
   const liningMaterial = useMemo(
     () => new THREE.MeshStandardMaterial({ color: LINING_COLOR, roughness: 0.9, side: THREE.BackSide }),
@@ -83,6 +84,7 @@ export function ShortsModel() {
     <group scale={0.01} position={[0, -JERSEY_CENTER_Y * 0.01, 0]}>
       <mesh geometry={swayingGeometry} material={material} dispose={null} />
       <mesh geometry={swayingGeometry} material={liningMaterial} dispose={null} />
+      <SponsorChips geometry={geometry} regions={SHORTS_UV_REGIONS} garment="shorts" />
     </group>
   );
 }

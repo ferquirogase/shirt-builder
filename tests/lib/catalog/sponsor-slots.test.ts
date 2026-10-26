@@ -6,13 +6,21 @@ import {
   availableSponsorSlots,
   clampSponsorScale,
   findSponsorSlot,
+  isShortsSlot,
   isSponsorSlotId,
   sponsorNumber,
 } from "@/lib/builder/catalog/sponsor-slots";
 import { GEPE_UV_REGIONS } from "@/lib/builder/geometry/uv-regions";
+import { SHORTS_UV_REGIONS, SHORTS_UV_STRETCH } from "@/lib/builder/geometry/shorts-uv-regions";
+
+const ALL_REGIONS = { ...GEPE_UV_REGIONS, ...SHORTS_UV_REGIONS };
+const SHIRT_IDS = ["abdomen", "belly", "waist", "sleeve-right", "sleeve-left", "upper-back", "lower-back", "chest-right", "chest-left"];
+const SHORTS_IDS = ["shorts-back-left", "shorts-back-right", "shorts-front-right"];
+const withShorts = (playerName = "") => ({ playerName, shorts: { included: true } });
+const noShorts = (playerName = "") => ({ playerName, shorts: { included: false } });
 
 describe("sponsor slots", () => {
-  it("lists GEPE's nine shirt placements in GEPE's order, with their labels", () => {
+  it("lists GEPE's twelve placements in GEPE's order, with their labels", () => {
     expect(SPONSOR_SLOTS.map((s) => [s.id, s.label])).toEqual([
       ["abdomen", "Pecho"], // GEPE 1
       ["belly", "Abdomen"], // 2
@@ -23,7 +31,52 @@ describe("sponsor slots", () => {
       ["lower-back", "Espalda baja"], // 7
       ["chest-right", "Pecho alto derecho"], // 8
       ["chest-left", "Pecho alto izquierdo"], // 9
+      ["shorts-back-left", "Short atrás izquierda"], // 10: the left leg is on the left seen from behind
+      ["shorts-back-right", "Short atrás derecha"], // 11
+      ["shorts-front-right", "Short frente"], // 12: the player's right leg, on the left seen from the front
     ]);
+  });
+
+  it("knows which placements are on the shorts", () => {
+    expect(SPONSOR_SLOTS.filter(isShortsSlot).map((s) => s.id)).toEqual(SHORTS_IDS);
+    expect(SPONSOR_SLOTS.filter((s) => !isShortsSlot(s)).map((s) => s.id)).toEqual(SHIRT_IDS);
+  });
+
+  it("does not turn or mirror anything on the shorts: their texture reads upright on both sides", () => {
+    // Unlike the shirt's back, the shorts' back is not turned in the texture: seen from behind, u runs
+    // to the right and v up, like on the front (checked on the OBJ and on screenshots).
+    for (const id of ["shorts-back-left", "shorts-back-right", "shorts-front-right"]) {
+      expect(findSponsorSlot(id)!.rotation, id).toBe(0);
+    }
+    expect(SPONSOR_SLOTS.filter(isShortsSlot).length).toBe(3);
+  });
+
+  it("puts the shorts' placements on their leg panels", () => {
+    expect(findSponsorSlot("shorts-back-left")!.region).toBe("shortsBackLeft");
+    expect(findSponsorSlot("shorts-back-right")!.region).toBe("shortsBackRight");
+    expect(findSponsorSlot("shorts-front-right")!.region).toBe("shortsFrontRight");
+  });
+
+  it("puts the two on the back low on the leg, near the hem, and the one on the front higher", () => {
+    const front = findSponsorSlot("shorts-front-right")!.vFrac;
+    const backLeft = findSponsorSlot("shorts-back-left")!.vFrac;
+    const backRight = findSponsorSlot("shorts-back-right")!.vFrac;
+    expect(backLeft).toBe(backRight);
+    expect(backLeft).toBeLessThan(front);
+    // The top of the shorts is under the shirt, so only the lower part of the leg shows.
+    expect(front).toBeGreaterThan(0.2);
+    expect(front).toBeLessThan(0.55);
+    expect(backLeft).toBeGreaterThan(0.05);
+    expect(backLeft).toBeLessThan(0.2);
+  });
+
+  it("makes the two on the back wide, short rectangles that almost cross the leg, and the front one square", () => {
+    for (const id of ["shorts-back-left", "shorts-back-right"]) {
+      const slot = findSponsorSlot(id)!;
+      expect(slot.baseBox, id).toBeGreaterThan(0.09);
+      expect(slot.baseHeight, id).toBeLessThan(slot.baseBox / 2);
+    }
+    expect(findSponsorSlot("shorts-front-right")!.baseHeight).toBeUndefined();
   });
 
   it("gives the three center placements a wide, short rectangle, like a sponsor's banner", () => {
@@ -88,6 +141,10 @@ describe("sponsor slots", () => {
     expect(rotation("sleeve-right")).toBe(Math.PI / 2);
   });
 
+  it("makes the one on the front of the shorts a size that fits its leg", () => {
+    expect(findSponsorSlot("shorts-front-right")!.baseBox).toBe(0.06);
+  });
+
   it("keeps every anchor inside its region", () => {
     for (const s of SPONSOR_SLOTS) {
       expect(s.uFrac).toBeGreaterThanOrEqual(0);
@@ -99,17 +156,21 @@ describe("sponsor slots", () => {
 
   it("fits every placement's maximum size inside its zone on the GEPE model", () => {
     for (const s of SPONSOR_SLOTS) {
-      const region = GEPE_UV_REGIONS[s.region];
+      const region = ALL_REGIONS[s.region];
       // The sleeves are rotated: a square box must fit along the sleeve's short axis (u).
       const room = region.u1 - region.u0;
       const share = s.region === "sleeveLeft" || s.region === "sleeveRight" ? 0.8 : 0.7;
-      expect(s.baseBox * SPONSOR_MAX_SCALE).toBeLessThanOrEqual(room * share);
+      // What is drawn on the shorts is squeezed sideways, and a panel runs into the leg's side.
+      const wide = isShortsSlot(s) ? SHORTS_UV_STRETCH : 1;
+      const limit = isShortsSlot(s) ? room * 0.9 : room * share;
+      expect(s.baseBox * SPONSOR_MAX_SCALE * wide, s.id).toBeLessThanOrEqual(limit);
     }
   });
 
   it("recognizes ids", () => {
     expect(isSponsorSlotId("lower-back")).toBe(true);
     expect(isSponsorSlotId("upper-back")).toBe(true);
+    expect(isSponsorSlotId("shorts-front-right")).toBe(true);
     // The nape belongs to the GEPE logo: it is not a placement for a sponsor.
     expect(isSponsorSlotId("nape")).toBe(false);
     expect(isSponsorSlotId("nope")).toBe(false);
@@ -127,29 +188,48 @@ describe("sponsor slots", () => {
 });
 
 describe("which placements can be used", () => {
-  it("offers all nine while the player has no name", () => {
-    expect(availableSponsorSlots({ playerName: "" }).map((s) => s.id)).toEqual(SPONSOR_SLOTS.map((s) => s.id));
+  it("offers the nine of the shirt when the kit has no shorts, while the player has no name", () => {
+    expect(availableSponsorSlots(noShorts()).map((s) => s.id)).toEqual(SHIRT_IDS);
+  });
+
+  it("asks nothing about the shorts of a design that does not say (only the shirt)", () => {
+    expect(availableSponsorSlots({ playerName: "" }).map((s) => s.id)).toEqual(SHIRT_IDS);
+  });
+
+  it("adds the three of the shorts, after the shirt's, when the kit has them", () => {
+    expect(availableSponsorSlots(withShorts()).map((s) => s.id)).toEqual([...SHIRT_IDS, ...SHORTS_IDS]);
   });
 
   it("takes the upper back away when the player has a name: the name goes where the 6 would", () => {
-    const ids = availableSponsorSlots({ playerName: "PEREZ" }).map((s) => s.id);
+    const ids = availableSponsorSlots(noShorts("PEREZ")).map((s) => s.id);
     expect(ids).not.toContain("upper-back");
     expect(ids).toHaveLength(8);
   });
 
   it("does not count a name of only spaces", () => {
-    expect(availableSponsorSlots({ playerName: "   " }).map((s) => s.id)).toContain("upper-back");
+    expect(availableSponsorSlots(noShorts("   ")).map((s) => s.id)).toContain("upper-back");
+  });
+
+  it("the name takes only the upper back: the shorts keep their three", () => {
+    const ids = availableSponsorSlots(withShorts("PEREZ")).map((s) => s.id);
+    for (const id of SHORTS_IDS) expect(ids).toContain(id);
   });
 });
 
 describe("sponsorNumber", () => {
-  it("is GEPE's number when everything is available", () => {
-    const all = availableSponsorSlots({ playerName: "" });
-    expect(all.map((s) => sponsorNumber(s.id, all))).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  it("is GEPE's number when everything is available, the shorts' ones being 10, 11 and 12", () => {
+    const all = availableSponsorSlots(withShorts());
+    expect(all.map((s) => sponsorNumber(s.id, all))).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
   });
 
-  it("renumbers the rest when a placement is taken away", () => {
-    const withName = availableSponsorSlots({ playerName: "PEREZ" });
+  it("renumbers the rest when a placement is taken away, the shorts' too", () => {
+    const withName = availableSponsorSlots(withShorts("PEREZ"));
+    expect(sponsorNumber("shorts-front-right", withName)).toBe(11);
+    expect(sponsorNumber("shorts-back-left", withName)).toBe(9);
+  });
+
+  it("renumbers the shirt's when a placement is taken away", () => {
+    const withName = availableSponsorSlots(noShorts("PEREZ"));
     // 6 is gone: lower back (GEPE 7) becomes 6, and the upper chest ones become 7 and 8.
     expect(sponsorNumber("lower-back", withName)).toBe(6);
     expect(sponsorNumber("chest-right", withName)).toBe(7);
@@ -158,6 +238,7 @@ describe("sponsorNumber", () => {
   });
 
   it("is 0 for a placement that is not offered", () => {
-    expect(sponsorNumber("upper-back", availableSponsorSlots({ playerName: "PEREZ" }))).toBe(0);
+    expect(sponsorNumber("upper-back", availableSponsorSlots(noShorts("PEREZ")))).toBe(0);
+    expect(sponsorNumber("shorts-front-right", availableSponsorSlots(noShorts()))).toBe(0);
   });
 });

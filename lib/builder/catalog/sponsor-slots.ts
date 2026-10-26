@@ -1,4 +1,5 @@
 import { LOWER_BACK_V_FRAC, UPPER_BACK_V_FRAC } from "../texture/back-layout";
+import type { ShortsRegionName } from "../geometry/shorts-uv-regions";
 
 export type SponsorSlotId =
   | "abdomen"
@@ -9,7 +10,10 @@ export type SponsorSlotId =
   | "upper-back"
   | "lower-back"
   | "chest-right"
-  | "chest-left";
+  | "chest-left"
+  | "shorts-back-left"
+  | "shorts-back-right"
+  | "shorts-front-right";
 export type SponsorEntry = { dataUrl: string; scale: number };
 export type SponsorMap = Partial<Record<SponsorSlotId, SponsorEntry>>;
 
@@ -19,8 +23,8 @@ export type SponsorBlocker = "playerName";
 export type SponsorSlot = {
   id: SponsorSlotId;
   label: string;
-  /** Which UV region of the texture atlas the sponsor is printed in. */
-  region: "bodyFront" | "bodyBack" | "sleeveLeft" | "sleeveRight";
+  /** Which UV region of the texture atlas the sponsor is printed in (the shirt's or the shorts'). */
+  region: "bodyFront" | "bodyBack" | "sleeveLeft" | "sleeveRight" | ShortsRegionName;
   /** Center of the sponsor within the region (0..1 on each axis, like the crest). */
   uFrac: number;
   vFrac: number;
@@ -38,6 +42,13 @@ export type SponsorSlot = {
    */
   marker?: { uFrac: number; vFrac: number };
 };
+
+// How far up the leg the shorts' placements are, within the hem (0) and the waist (1). GEPE draws
+// them on the upper thigh, but here the shirt's hem covers the top of the shorts (the waist is
+// inside the shirt): only below about 0.6 shows. The front one is in the middle of the thigh that
+// does; the two on the back are wide rectangles close to the hem.
+const SHORTS_FRONT_V_FRAC = 0.4;
+const SHORTS_BACK_V_FRAC = 0.14;
 
 export const SPONSOR_MIN_SCALE = 0.5;
 export const SPONSOR_MAX_SCALE = 1.5;
@@ -118,16 +129,57 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     baseBox: 0.045,
     baseHeight: 0.035,
   },
+  // The shorts (10, 11, 12). The left leg is on the left seen from behind, which is the +x side;
+  // the player's right leg is on the left seen from the front, the -x side. The shorts' texture is not turned on the back
+  // like the shirt's: seen from behind u runs to the right and v up, so nothing is turned or mirrored.
+  {
+    id: "shorts-back-left",
+    label: "Short atrás izquierda",
+    region: "shortsBackLeft",
+    uFrac: 0.5,
+    vFrac: SHORTS_BACK_V_FRAC,
+    rotation: 0,
+    baseBox: 0.105,
+    baseHeight: 0.04,
+  },
+  {
+    id: "shorts-back-right",
+    label: "Short atrás derecha",
+    region: "shortsBackRight",
+    uFrac: 0.5,
+    vFrac: SHORTS_BACK_V_FRAC,
+    rotation: 0,
+    baseBox: 0.105,
+    baseHeight: 0.04,
+  },
+  {
+    id: "shorts-front-right",
+    label: "Short frente",
+    region: "shortsFrontRight",
+    uFrac: 0.4,
+    vFrac: SHORTS_FRONT_V_FRAC,
+    rotation: 0,
+    baseBox: 0.06,
+  },
 ];
 
 export function findSponsorSlot(id: string): SponsorSlot | undefined {
   return SPONSOR_SLOTS.find((s) => s.id === id);
 }
 
-// The placements a design can use right now: all of them, except those where something else
-// is printed. A sponsor already uploaded on one that is not offered is kept, only not shown.
-export function availableSponsorSlots(design: { playerName: string }): SponsorSlot[] {
-  return SPONSOR_SLOTS.filter((slot) => slot.blockedBy !== "playerName" || design.playerName.trim() === "");
+/** Is this placement on the shorts, not on the shirt? */
+export function isShortsSlot(slot: Pick<SponsorSlot, "region">): boolean {
+  return slot.region.startsWith("shorts");
+}
+
+// The placements a design can use right now: the shirt's, plus the shorts' when the kit has them,
+// except those where something else is printed. A sponsor already uploaded on one that is not
+// offered is kept, only not shown.
+export function availableSponsorSlots(design: { playerName: string; shorts?: { included: boolean } }): SponsorSlot[] {
+  const shortsIn = design.shorts?.included === true;
+  return SPONSOR_SLOTS.filter(
+    (slot) => (shortsIn || !isShortsSlot(slot)) && (slot.blockedBy !== "playerName" || design.playerName.trim() === "")
+  );
 }
 
 // The number a placement is shown with, on its marker and on its card: its place among the
