@@ -11,7 +11,7 @@ import {
   sponsorNumber,
 } from "@/lib/builder/catalog/sponsor-slots";
 import { GEPE_UV_REGIONS } from "@/lib/builder/geometry/uv-regions";
-import { SHORTS_UV_REGIONS } from "@/lib/builder/geometry/shorts-uv-regions";
+import { SHORTS_UV_REGIONS, SHORTS_UV_STRETCH } from "@/lib/builder/geometry/shorts-uv-regions";
 
 const ALL_REGIONS = { ...GEPE_UV_REGIONS, ...SHORTS_UV_REGIONS };
 const SHIRT_IDS = ["abdomen", "belly", "waist", "sleeve-right", "sleeve-left", "upper-back", "lower-back", "chest-right", "chest-left"];
@@ -57,17 +57,26 @@ describe("sponsor slots", () => {
     expect(findSponsorSlot("shorts-front-right")!.region).toBe("shortsFrontRight");
   });
 
-  it("puts the two on the back lower on the leg than the one on the front, both on the part of the thigh that shows", () => {
+  it("puts the two on the back low on the leg, near the hem, and the one on the front higher", () => {
     const front = findSponsorSlot("shorts-front-right")!.vFrac;
     const backLeft = findSponsorSlot("shorts-back-left")!.vFrac;
     const backRight = findSponsorSlot("shorts-back-right")!.vFrac;
     expect(backLeft).toBe(backRight);
     expect(backLeft).toBeLessThan(front);
     // The top of the shorts is under the shirt, so only the lower part of the leg shows.
-    for (const v of [front, backLeft]) {
-      expect(v).toBeGreaterThan(0.2);
-      expect(v).toBeLessThan(0.55);
+    expect(front).toBeGreaterThan(0.2);
+    expect(front).toBeLessThan(0.55);
+    expect(backLeft).toBeGreaterThan(0.05);
+    expect(backLeft).toBeLessThan(0.2);
+  });
+
+  it("makes the two on the back wide, short rectangles that almost cross the leg, and the front one square", () => {
+    for (const id of ["shorts-back-left", "shorts-back-right"]) {
+      const slot = findSponsorSlot(id)!;
+      expect(slot.baseBox, id).toBeGreaterThan(0.09);
+      expect(slot.baseHeight, id).toBeLessThan(slot.baseBox / 2);
     }
+    expect(findSponsorSlot("shorts-front-right")!.baseHeight).toBeUndefined();
   });
 
   it("gives the three center placements a wide, short rectangle, like a sponsor's banner", () => {
@@ -132,10 +141,8 @@ describe("sponsor slots", () => {
     expect(rotation("sleeve-right")).toBe(Math.PI / 2);
   });
 
-  it("makes every placement of the shorts a size that fits its leg", () => {
-    for (const id of SHORTS_IDS) {
-      expect(findSponsorSlot(id)!.baseBox, id).toBe(0.06);
-    }
+  it("makes the one on the front of the shorts a size that fits its leg", () => {
+    expect(findSponsorSlot("shorts-front-right")!.baseBox).toBe(0.06);
   });
 
   it("keeps every anchor inside its region", () => {
@@ -153,7 +160,10 @@ describe("sponsor slots", () => {
       // The sleeves are rotated: a square box must fit along the sleeve's short axis (u).
       const room = region.u1 - region.u0;
       const share = s.region === "sleeveLeft" || s.region === "sleeveRight" ? 0.8 : 0.7;
-      expect(s.baseBox * SPONSOR_MAX_SCALE).toBeLessThanOrEqual(room * share);
+      // What is drawn on the shorts is squeezed sideways, and a panel runs into the leg's side.
+      const wide = isShortsSlot(s) ? SHORTS_UV_STRETCH : 1;
+      const limit = isShortsSlot(s) ? room * 0.9 : room * share;
+      expect(s.baseBox * SPONSOR_MAX_SCALE * wide, s.id).toBeLessThanOrEqual(limit);
     }
   });
 

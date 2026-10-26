@@ -202,9 +202,11 @@ describe("sponsorAnchor on the GEPE shorts", () => {
     // about 205: a sponsor above the hem would be under the shirt. The shorts' hem is at 113.74.
     for (const id of ["shorts-back-left", "shorts-back-right", "shorts-front-right"]) {
       const y = anchorOf(id).position.y;
-      expect(y, id).toBeGreaterThan(113.74 + 20);
+      // The two on the back are close to the hem, as the wide rectangles on GEPE's shorts are.
+      expect(y, id).toBeGreaterThan(113.74 + 5);
       expect(y, id).toBeLessThan(JERSEY_BOTTOM_Y - 10);
     }
+    expect(anchorOf("shorts-front-right").position.y).toBeGreaterThan(113.74 + 20);
   });
 
   it("finds nothing for a placement of the shirt: the shorts have no such region", () => {

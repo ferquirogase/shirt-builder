@@ -79,9 +79,18 @@ describe("drawShortsToCanvas", () => {
     // shortsBackLeft u .72..0.88 -> x 800; shortsBackRight u .13..0.28 -> x 205 (both at the middle of the panel).
     const xs = calls(ctx.translate).map(([x]) => Math.round(x));
     expect(xs).toEqual([800, 205]);
-    // Both a good way down the leg, below the front one (y 742): vFrac .27 -> v .1854 -> y 815.
+    // Both low on the leg, near the hem, below the front one (y 742): vFrac .14 -> v .113 -> y 887.
     const ys = calls(ctx.translate).map(([, y]) => Math.round(y));
-    expect(ys).toEqual([815, 815]);
+    expect(ys).toEqual([887, 887]);
+  });
+
+  it("draws a wide logo on the back across the leg, in a rectangle (0.105 x 0.04 of the canvas)", () => {
+    const ctx = createMockCtx();
+    const wide = { id: "w", naturalWidth: 400, naturalHeight: 100 } as unknown as HTMLImageElement;
+    drawShortsToCanvas(ctx, 1000, kit({ "shorts-back-left": entry() }), "#000", { sponsorImages: { "shorts-back-left": wide } });
+    const [, , , w, h] = calls(ctx.drawImage)[0];
+    expect(w).toBeCloseTo(105, 5);
+    expect(h).toBeCloseTo(26.25, 5);
   });
 
   it("scales a sponsor with its scale, up to one and a half times", () => {

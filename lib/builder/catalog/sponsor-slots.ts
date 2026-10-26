@@ -46,9 +46,9 @@ export type SponsorSlot = {
 // How far up the leg the shorts' placements are, within the hem (0) and the waist (1). GEPE draws
 // them on the upper thigh, but here the shirt's hem covers the top of the shorts (the waist is
 // inside the shirt): only below about 0.6 shows. The front one is in the middle of the thigh that
-// does; the two on the back go lower, under where the front one is.
+// does; the two on the back are wide rectangles close to the hem.
 const SHORTS_FRONT_V_FRAC = 0.4;
-const SHORTS_BACK_V_FRAC = 0.27;
+const SHORTS_BACK_V_FRAC = 0.14;
 
 export const SPONSOR_MIN_SCALE = 0.5;
 export const SPONSOR_MAX_SCALE = 1.5;
@@ -139,7 +139,8 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     uFrac: 0.5,
     vFrac: SHORTS_BACK_V_FRAC,
     rotation: 0,
-    baseBox: 0.06,
+    baseBox: 0.105,
+    baseHeight: 0.04,
   },
   {
     id: "shorts-back-right",
@@ -148,7 +149,8 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     uFrac: 0.5,
     vFrac: SHORTS_BACK_V_FRAC,
     rotation: 0,
-    baseBox: 0.06,
+    baseBox: 0.105,
+    baseHeight: 0.04,
   },
   {
     id: "shorts-front-right",
