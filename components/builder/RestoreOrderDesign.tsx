@@ -11,7 +11,14 @@ export function RestoreOrderDesign() {
   const { dispatch } = useDesign();
   useEffect(() => {
     const order = loadOrder();
-    if (order) dispatch({ type: "LOAD_DESIGN", design: { ...initialDesignState, ...order.design } });
+    if (order) {
+      const { design } = order;
+      dispatch({
+        type: "LOAD_DESIGN",
+        // The text style is filled in field by field too: an older order lacks the border's color.
+        design: { ...initialDesignState, ...design, nameNumberStyle: { ...initialDesignState.nameNumberStyle, ...design.nameNumberStyle } },
+      });
+    }
   }, [dispatch]);
   return null;
 }

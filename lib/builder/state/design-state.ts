@@ -5,7 +5,7 @@ import type { CrestConfig } from "../crest/crest-config";
 import { crestDataUrl } from "../crest/crest-svg";
 import { findPattern, visibleColors } from "../catalog/patterns";
 import { clampSponsorScale, isSponsorSlotId, type SponsorMap, type SponsorSlotId } from "../catalog/sponsor-slots";
-import { findNameNumberPreset, initialNameNumberStyle, type NameNumberStyle } from "../catalog/name-number-presets";
+import { initialNameNumberStyle, type NameNumberStyle } from "../catalog/name-number-presets";
 
 export type ShortsColorSource = "primary" | "secondary";
 export type ShortsConfig = { included: boolean; colorSource: ShortsColorSource };
@@ -85,9 +85,9 @@ export type DesignAction =
   | { type: "SET_PLAYER_NAME"; value: string }
   | { type: "SET_PLAYER_NUMBER"; value: string }
   | { type: "SET_CHEST_NUMBER"; value: boolean }
-  | { type: "SET_NN_PRESET"; id: string }
   | { type: "SET_NN_FILL"; value: string; target?: LookTarget }
   | { type: "SET_NN_OUTLINE"; value: boolean }
+  | { type: "SET_NN_OUTLINE_COLOR"; value: string }
   | { type: "SET_PROJECT_NAME"; value: string }
   | { type: "SET_SHORTS_INCLUDED"; value: boolean }
   | { type: "SET_SHORTS_COLOR_SOURCE"; value: ShortsColorSource }
@@ -215,15 +215,14 @@ export function designReducer(state: DesignState, action: DesignAction): DesignS
       return { ...state, playerNumber: action.value };
     case "SET_CHEST_NUMBER":
       return state.chestNumber === action.value ? state : { ...state, chestNumber: action.value };
-    case "SET_NN_PRESET":
-      // Only the typeface changes; the user's color and border stay.
-      return findNameNumberPreset(action.id)
-        ? { ...state, nameNumberStyle: { ...state.nameNumberStyle, presetId: action.id } }
-        : state;
     case "SET_NN_FILL":
       return { ...state, nameNumberStyle: { ...state.nameNumberStyle, fill: action.value } };
     case "SET_NN_OUTLINE":
       return { ...state, nameNumberStyle: { ...state.nameNumberStyle, outline: action.value } };
+    case "SET_NN_OUTLINE_COLOR":
+      return state.nameNumberStyle.outlineColor === action.value
+        ? state
+        : { ...state, nameNumberStyle: { ...state.nameNumberStyle, outlineColor: action.value } };
     case "SET_PROJECT_NAME":
       return { ...state, projectName: action.value };
     case "RESET_DESIGN":

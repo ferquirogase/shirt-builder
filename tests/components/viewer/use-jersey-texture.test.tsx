@@ -189,13 +189,6 @@ describe("useJerseyTexture", () => {
     await waitFor(() => expect(draw.mock.calls.length).toBeGreaterThan(paintsBefore));
   });
 
-  it("loads the other font when the typeface changes", async () => {
-    const { result } = mount();
-    await waitFor(() => expect(fontsLoad).toHaveBeenCalled());
-    act(() => result.current.design.dispatch({ type: "SET_NN_PRESET", id: "modern" }));
-    await waitFor(() => expect(fontsLoad).toHaveBeenCalledWith(expect.stringMatching(/^800 48px /), expect.any(String)));
-  });
-
   it("keeps painting when the font cannot be loaded", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     fontsLoad.mockRejectedValue(new Error("no font"));

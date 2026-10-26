@@ -156,21 +156,35 @@ describe("colorsAfterPatternChange", () => {
 
 describe("name/number style", () => {
   it("starts classic, white and without a border", () => {
-    expect(initialDesignState.nameNumberStyle).toEqual({ presetId: "classic", fill: "#ffffff", outline: false });
+    expect(initialDesignState.nameNumberStyle).toEqual({ presetId: "classic", fill: "#ffffff", outline: false, outlineColor: "#000000" });
   });
 
-  it("changing the typeface keeps the chosen color and border", () => {
+  it("changing the border color keeps the text color and whether there is a border", () => {
     const tweaked = designReducer(
       designReducer(initialDesignState, { type: "SET_NN_FILL", value: "#ff0000" }),
       { type: "SET_NN_OUTLINE", value: true }
     );
-    const next = designReducer(tweaked, { type: "SET_NN_PRESET", id: "modern" });
-    expect(next.nameNumberStyle).toEqual({ presetId: "modern", fill: "#ff0000", outline: true });
+    const next = designReducer(tweaked, { type: "SET_NN_OUTLINE_COLOR", value: "#00ff00" });
+    expect(next.nameNumberStyle).toEqual({ presetId: "classic", fill: "#ff0000", outline: true, outlineColor: "#00ff00" });
   });
 
-  it("ignores an unknown or removed preset id", () => {
-    expect(designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "nope" })).toBe(initialDesignState);
-    expect(designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "retro" })).toBe(initialDesignState);
+  it("keeps the same state when the border color is already that one", () => {
+    expect(designReducer(initialDesignState, { type: "SET_NN_OUTLINE_COLOR", value: "#000000" })).toBe(initialDesignState);
+  });
+
+  it("no longer has a typeface to change", () => {
+    expect(designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "classic" } as never)).toBe(initialDesignState);
+  });
+
+  it("the keeper's shirt wears the same border as the team's, with its own text color", () => {
+    const withBorder = designReducer(
+      designReducer(initialDesignState, { type: "SET_NN_OUTLINE", value: true }),
+      { type: "SET_NN_OUTLINE_COLOR", value: "#123456" }
+    );
+    const withKeeper = designReducer(withBorder, { type: "SET_KEEPER_INCLUDED", value: true });
+    const view = lookFor(withKeeper, "keeper").nameNumberStyle;
+    expect(view.outline).toBe(true);
+    expect(view.outlineColor).toBe("#123456");
   });
 
   it("changes only the targeted field", () => {
@@ -178,6 +192,8 @@ describe("name/number style", () => {
     expect(fill.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, fill: "#123456" });
     const outline = designReducer(initialDesignState, { type: "SET_NN_OUTLINE", value: true });
     expect(outline.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, outline: true });
+    const color = designReducer(initialDesignState, { type: "SET_NN_OUTLINE_COLOR", value: "#abcdef" });
+    expect(color.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, outlineColor: "#abcdef" });
   });
 });
 
