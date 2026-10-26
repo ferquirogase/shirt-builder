@@ -16,7 +16,7 @@ export function TextPanel() {
   const selectedId = getNameNumberPreset(style.presetId).id;
 
   return (
-    <PanelShell title="Nombre y número" hint="Se muestran en la espalda.">
+    <PanelShell title="Nombre y número" hint="El nombre y el número van en la espalda. El número también va en el short.">
       <div className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm font-medium">
           Nombre
@@ -38,6 +38,34 @@ export function TextPanel() {
             className={INPUT}
           />
         </label>
+
+        {/* The title and the switch share the first row; the hint takes the full width below. */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={state.chestNumber}
+          aria-labelledby="chest-number-label"
+          aria-describedby="chest-number-hint"
+          onClick={() => dispatch({ type: "SET_CHEST_NUMBER", value: !state.chestNumber })}
+          className={`grid w-full grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 rounded-2xl border-2 bg-white/70 p-3 text-left text-sm font-medium ${
+            state.chestNumber ? "border-foreground" : "border-transparent hover:border-line"
+          }`}
+        >
+          <span id="chest-number-label" className="text-base font-semibold leading-tight">
+            Número en el pecho
+          </span>
+          <span
+            aria-hidden="true"
+            className={`flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-colors ${
+              state.chestNumber ? "bg-foreground" : "bg-black/20"
+            }`}
+          >
+            <span className={`h-5 w-5 rounded-full bg-white shadow transition-transform ${state.chestNumber ? "translate-x-5" : ""}`} />
+          </span>
+          <span id="chest-number-hint" className="col-span-2 font-normal text-muted">
+            Se imprime en lugar del sponsor 1.
+          </span>
+        </button>
 
         <div role="radiogroup" aria-label="Estilo" className="grid grid-cols-2 gap-2 md:gap-3">
           {NAME_NUMBER_PRESETS.map((preset) => {

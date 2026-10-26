@@ -65,6 +65,8 @@ export type DesignState = {
   sponsors: SponsorMap;
   playerName: string;
   playerNumber: string;
+  /** The number is also printed on the chest, where sponsor 1 would go (the same for the keeper's shirt). */
+  chestNumber: boolean;
   nameNumberStyle: NameNumberStyle;
   projectName: string;
   shorts: ShortsConfig;
@@ -82,6 +84,7 @@ export type DesignAction =
   | { type: "REMOVE_SPONSOR"; slot: SponsorSlotId }
   | { type: "SET_PLAYER_NAME"; value: string }
   | { type: "SET_PLAYER_NUMBER"; value: string }
+  | { type: "SET_CHEST_NUMBER"; value: boolean }
   | { type: "SET_NN_PRESET"; id: string }
   | { type: "SET_NN_FILL"; value: string; target?: LookTarget }
   | { type: "SET_NN_OUTLINE"; value: boolean }
@@ -105,6 +108,7 @@ export const initialDesignState: DesignState = {
   sponsors: {},
   playerName: "",
   playerNumber: "",
+  chestNumber: false,
   nameNumberStyle: initialNameNumberStyle(),
   projectName: "Mi diseño",
   shorts: { included: false, colorSource: "primary" },
@@ -209,6 +213,8 @@ export function designReducer(state: DesignState, action: DesignAction): DesignS
       return { ...state, playerName: action.value };
     case "SET_PLAYER_NUMBER":
       return { ...state, playerNumber: action.value };
+    case "SET_CHEST_NUMBER":
+      return state.chestNumber === action.value ? state : { ...state, chestNumber: action.value };
     case "SET_NN_PRESET":
       // Only the typeface changes; the user's color and border stay.
       return findNameNumberPreset(action.id)

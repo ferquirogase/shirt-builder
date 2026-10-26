@@ -18,7 +18,7 @@ export type SponsorEntry = { dataUrl: string; scale: number };
 export type SponsorMap = Partial<Record<SponsorSlotId, SponsorEntry>>;
 
 /** What can take a placement away from the sponsors: something else is printed there. */
-export type SponsorBlocker = "playerName";
+export type SponsorBlocker = "playerName" | "chestNumber";
 
 export type SponsorSlot = {
   id: SponsorSlotId;
@@ -66,7 +66,18 @@ export const SPONSOR_MAX_SCALE = 1.5;
 // player's: the sleeve seen on the left of the front view is the player's right one (GEPE's 4).
 // The nape is not a placement: that spot is reserved for the maker's logo (see the compositor).
 export const SPONSOR_SLOTS: SponsorSlot[] = [
-  { id: "abdomen", label: "Pecho", region: "bodyFront", uFrac: 0.5, vFrac: 0.58, rotation: 0, baseBox: 0.12, baseHeight: 0.05 },
+  {
+    id: "abdomen",
+    label: "Pecho",
+    region: "bodyFront",
+    uFrac: 0.5,
+    vFrac: 0.58,
+    rotation: 0,
+    baseBox: 0.12,
+    baseHeight: 0.05,
+    // The number goes here when it is also printed on the chest.
+    blockedBy: "chestNumber",
+  },
   { id: "belly", label: "Abdomen", region: "bodyFront", uFrac: 0.5, vFrac: 0.41, rotation: 0, baseBox: 0.12, baseHeight: 0.05 },
   { id: "waist", label: "Cintura", region: "bodyFront", uFrac: 0.5, vFrac: 0.24, rotation: 0, baseBox: 0.12, baseHeight: 0.05 },
   {
@@ -175,11 +186,15 @@ export function isShortsSlot(slot: Pick<SponsorSlot, "region">): boolean {
 // The placements a design can use right now: the shirt's, plus the shorts' when the kit has them,
 // except those where something else is printed. A sponsor already uploaded on one that is not
 // offered is kept, only not shown.
-export function availableSponsorSlots(design: { playerName: string; shorts?: { included: boolean } }): SponsorSlot[] {
+export function availableSponsorSlots(design: {
+  playerName: string;
+  shorts?: { included: boolean };
+  chestNumber?: boolean;
+}): SponsorSlot[] {
   const shortsIn = design.shorts?.included === true;
-  return SPONSOR_SLOTS.filter(
-    (slot) => (shortsIn || !isShortsSlot(slot)) && (slot.blockedBy !== "playerName" || design.playerName.trim() === "")
-  );
+  const taken = (blocker: SponsorBlocker | undefined) =>
+    (blocker === "playerName" && design.playerName.trim() !== "") || (blocker === "chestNumber" && design.chestNumber === true);
+  return SPONSOR_SLOTS.filter((slot) => (shortsIn || !isShortsSlot(slot)) && !taken(slot.blockedBy));
 }
 
 // The number a placement is shown with, on its marker and on its card: its place among the
