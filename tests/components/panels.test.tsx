@@ -227,19 +227,18 @@ describe("TextPanel", () => {
     expect(screen.queryByText("Clásico")).toBeNull();
   });
 
-  it("toggles the border and sets the text color", () => {
+  it("starts with the border on, in black, and lets it be switched off, and the text color be set", () => {
     const { api } = renderWithDesign(<TextPanel />);
-    expect(screen.getByLabelText("Borde")).not.toBeChecked();
+    expect(screen.getByLabelText("Borde")).toBeChecked();
+    expect(screen.getByLabelText("Color del borde")).toHaveValue("#000000");
     fireEvent.click(screen.getByLabelText("Borde"));
-    expect(api.current!.state.nameNumberStyle.outline).toBe(true);
+    expect(api.current!.state.nameNumberStyle.outline).toBe(false);
     fireEvent.change(screen.getByLabelText("Color del texto"), { target: { value: "#00ff00" } });
     expect(api.current!.state.nameNumberStyle.fill).toBe("#00ff00");
   });
 
   it("offers the border's color only while there is a border, and sets it", () => {
     const { api } = renderWithDesign(<TextPanel />);
-    expect(screen.queryByLabelText("Color del borde")).toBeNull();
-    fireEvent.click(screen.getByLabelText("Borde"));
     fireEvent.change(screen.getByLabelText("Color del borde"), { target: { value: "#ff00aa" } });
     expect(api.current!.state.nameNumberStyle.outlineColor).toBe("#ff00aa");
     expect(api.current!.state.nameNumberStyle.outline).toBe(true);
@@ -247,6 +246,8 @@ describe("TextPanel", () => {
     expect(screen.queryByLabelText("Color del borde")).toBeNull();
     // Switching the border off keeps the color for when it is switched on again.
     expect(api.current!.state.nameNumberStyle.outlineColor).toBe("#ff00aa");
+    fireEvent.click(screen.getByLabelText("Borde"));
+    expect(screen.getByLabelText("Color del borde")).toHaveValue("#ff00aa");
   });
 
   it("no longer offers shadow or outline width", () => {

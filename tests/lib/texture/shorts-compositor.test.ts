@@ -221,6 +221,14 @@ describe("the front of the shorts: number, maker's logo and crest", () => {
     expect(ctx.strokeText).toHaveBeenCalledTimes(1);
   });
 
+  it("draws the number with a black border from the start", () => {
+    const ctx = createMockCtx();
+    let stroke: unknown = null;
+    (ctx.strokeText as ReturnType<typeof vi.fn>).mockImplementation(() => (stroke = ctx.strokeStyle));
+    drawShortsToCanvas(ctx, 1000, withNumber("10"), "#000", {});
+    expect(stroke).toBe("#000000");
+  });
+
   it("draws the number's border in the color the style asks for", () => {
     const ctx = createMockCtx();
     let stroke: unknown = null;
