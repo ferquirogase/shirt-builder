@@ -1,9 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
-import { act, fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { renderWithDesign } from "../../helpers/render-with-design";
 import { StageToolbar } from "@/components/builder/viewer/StageToolbar";
-import { GarmentsPanel } from "@/components/builder/panels/GarmentsPanel";
 
 describe("StageToolbar", () => {
   it("replaces undo/redo with a reset button", () => {
@@ -54,46 +53,13 @@ describe("StageToolbar", () => {
 });
 
 describe("shirt selector", () => {
-  it("only shows when the keeper is in the order", () => {
-    const { api } = renderWithDesign(<StageToolbar />);
-    expect(screen.queryByRole("radiogroup", { name: "Camiseta" })).toBeNull();
-    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
-    expect(screen.getByRole("radio", { name: "Jugador" })).toHaveAttribute("aria-checked", "true");
-  });
-
-  it("shows the shirt icon of Prendas, not an older one: the same picture for the same shirt", () => {
-    const panel = renderWithDesign(<GarmentsPanel />);
-    const solo = within(screen.getByRole("radio", { name: /Solo camiseta/ })).getByRole("presentation", { hidden: true }) as HTMLImageElement;
-    const soloIcon = solo.getAttribute("src");
-    panel.unmount();
-
+  it("no longer floats over the shirt: it lives in the panels, next to what it changes", () => {
     const { api } = renderWithDesign(<StageToolbar />);
     act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
-    const player = within(screen.getByRole("radio", { name: "Jugador" })).getByRole("presentation", { hidden: true }) as HTMLImageElement;
-    expect(player.getAttribute("src")).toBe(soloIcon);
-    expect(soloIcon).toBe("/icons/sections/kit-shirt-v2.webp");
+    expect(screen.queryByRole("radiogroup")).toBeNull();
   });
 
   it("leaves no icon file that nothing uses any more", () => {
     expect(existsSync("public/icons/sections/kit-shirt.webp")).toBe(false);
-  });
-
-  it("switches what is shown", () => {
-    const { api } = renderWithDesign(<StageToolbar />);
-    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
-    fireEvent.click(screen.getByRole("radio", { name: "Arquero" }));
-    expect(api.current!.editing).toBe("keeper");
-    expect(screen.getByRole("radio", { name: "Arquero" })).toHaveAttribute("aria-checked", "true");
-    fireEvent.click(screen.getByRole("radio", { name: "Jugador" }));
-    expect(api.current!.editing).toBe("player");
-  });
-
-  it("goes back to the player when the keeper is taken out", () => {
-    const { api } = renderWithDesign(<StageToolbar />);
-    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
-    fireEvent.click(screen.getByRole("radio", { name: "Arquero" }));
-    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: false }));
-    expect(api.current!.editing).toBe("player");
-    expect(screen.queryByRole("radiogroup", { name: "Camiseta" })).toBeNull();
   });
 });

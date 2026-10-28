@@ -584,7 +584,7 @@ describe("keeper in the panels", () => {
     );
     act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
     act(() => api.current!.setEditing("keeper"));
-    expect(screen.getAllByText("Editando la camiseta del arquero").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("radio", { name: "Arquero", checked: true }).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("radio", { name: "Diagonal" }));
     expect(api.current!.state.keeper.look!.bodyPatternId).toBe("diagonal");

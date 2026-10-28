@@ -188,6 +188,8 @@ describe("BuilderPage", () => {
     captureDesignImages.mockResolvedValueOnce(playerShots).mockResolvedValueOnce(keeperShots);
     render(<BuilderPage />);
     fireEvent.click(screen.getByRole("switch", { name: "Sumar camiseta de arquero" }));
+    // The selector lives in the panels that differ per shirt.
+    fireEvent.click(screen.getByRole("button", { name: "Diseño" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
@@ -209,6 +211,7 @@ describe("BuilderPage", () => {
     });
     render(<BuilderPage />);
     fireEvent.click(screen.getByRole("switch", { name: "Sumar camiseta de arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Diseño" }));
     fireEvent.click(screen.getByRole("radio", { name: "Arquero" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));

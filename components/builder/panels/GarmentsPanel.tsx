@@ -16,7 +16,7 @@ const OPTION = "flex items-center gap-3 rounded-2xl border-2 bg-white/70 p-3 tex
 const border = (checked: boolean) => (checked ? "border-foreground" : "border-transparent hover:border-line");
 
 export function GarmentsPanel() {
-  const { state, dispatch } = useDesign();
+  const { state, dispatch, setEditing } = useDesign();
   const { included } = state.shorts;
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
@@ -75,7 +75,12 @@ export function GarmentsPanel() {
         aria-checked={state.keeper.included}
         aria-labelledby="keeper-label"
         aria-describedby="keeper-hint"
-        onClick={() => dispatch({ type: "SET_KEEPER_INCLUDED", value: !state.keeper.included })}
+        onClick={() => {
+          const value = !state.keeper.included;
+          dispatch({ type: "SET_KEEPER_INCLUDED", value });
+          // Adding the keeper shows its shirt at once, so the effect of the switch is seen.
+          if (value) setEditing("keeper");
+        }}
         className={`${OPTION} ${border(state.keeper.included)} mt-3 grid w-full grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 md:p-4`}
       >
         {/* Smaller than the kit images: this row also holds the text and the switch. */}

@@ -5,7 +5,7 @@ import { formatCmyk } from "@/lib/builder/color/cmyk";
 import { visibleColors } from "@/lib/builder/catalog/patterns";
 import type { ShortsColorSource } from "@/lib/builder/state/design-state";
 import type { ColorSlot } from "@/lib/builder/texture/svg-recolor";
-import { EditingBadge } from "./EditingBadge";
+import { GarmentSwitch } from "./GarmentSwitch";
 import { ColorField } from "./ColorField";
 import { PanelShell } from "./PanelShell";
 
@@ -26,7 +26,7 @@ export function ColorsPanel() {
 
   return (
     <PanelShell title="Colores" hint="Los colores dependen del diseño elegido.">
-      <EditingBadge />
+      <GarmentSwitch />
       <div className="flex flex-col gap-3">
         {rows.map(({ slot, label }) => (
           <ColorField
