@@ -6,7 +6,7 @@ import { useImageUpload } from "@/lib/builder/io/use-image-upload";
 import { UploadIcon } from "../icons";
 import { CrestCreator } from "./CrestCreator";
 import { PanelShell } from "./PanelShell";
-import { SharedByBoth } from "./GarmentSwitch";
+import { SharedByBoth } from "./SharedByBoth";
 
 type Mode = "upload" | "create";
 const MODES: { id: Mode; label: string }[] = [

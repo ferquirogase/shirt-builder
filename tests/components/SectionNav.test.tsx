@@ -1,57 +1,76 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
+import { renderWithDesign } from "../helpers/render-with-design";
 import { SectionNav } from "@/components/builder/SectionNav";
 
+const NAMES = ["Camiseta jugador", "Camiseta arquero", "Short", "Escudo", "Sponsor"];
+
 describe("SectionNav", () => {
-  it("renders the six sections, Prendas first and marks the active one", () => {
-    render(<SectionNav active="colores" onChange={() => {}} />);
-    for (const name of ["Prendas", "Diseño", "Colores", "Escudo", "Sponsor", "Nombre y número"]) {
-      expect(screen.getByRole("button", { name })).toBeInTheDocument();
-    }
-    expect(screen.getByRole("button", { name: "Colores" })).toHaveAttribute("aria-current", "true");
-    expect(screen.getByRole("button", { name: "Diseño" })).not.toHaveAttribute("aria-current");
+  it("is by garment first, then what is shared by both shirts", () => {
+    renderWithDesign(<SectionNav active="player" onChange={() => {}} />);
+    const names = screen.getAllByRole("button").map((button) => button.getAttribute("aria-label"));
+    expect(names).toEqual(NAMES);
   });
 
-  it("marks the active section with more than a text color change (also on mobile)", () => {
-    render(<SectionNav active="colores" onChange={() => {}} />);
-    const active = screen.getByRole("button", { name: "Colores" });
-    // A filled background applies at every breakpoint, and the low-contrast
-    // accent color is not used for text.
+  it("marks the active entry with more than a text color change (also on mobile)", () => {
+    renderWithDesign(<SectionNav active="crest" onChange={() => {}} />);
+    const active = screen.getByRole("button", { name: "Escudo" });
+    expect(active).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("button", { name: "Sponsor" })).not.toHaveAttribute("aria-current");
     expect(active.className).toContain("bg-accent-soft");
     expect(active.className).not.toContain("md:bg-accent-soft");
     expect(active.className).not.toContain("text-accent-strong");
   });
 
-  it("puts Prendas first, because what to buy is chosen before the design is built", () => {
-    render(<SectionNav active="prendas" onChange={() => {}} />);
-    const names = screen.getAllByRole("button").map((button) => button.getAttribute("aria-label"));
-    expect(names).toEqual(["Prendas", "Diseño", "Colores", "Escudo", "Sponsor", "Nombre y número"]);
+  it("offers the keeper and the shorts from the start, with a cue to add them until they are in", () => {
+    const { api } = renderWithDesign(<SectionNav active="player" onChange={() => {}} />);
+    expect(screen.getByRole("button", { name: "Camiseta arquero" })).toHaveTextContent("Sumar");
+    expect(screen.getByRole("button", { name: "Short" })).toHaveTextContent("Sumar");
+    expect(screen.getByRole("button", { name: "Camiseta jugador" })).not.toHaveTextContent("Sumar");
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
+    expect(screen.getByRole("button", { name: "Camiseta arquero" })).not.toHaveTextContent("Sumar");
+    expect(screen.getByRole("button", { name: "Short" })).not.toHaveTextContent("Sumar");
   });
 
-  it("reports the Prendas section", () => {
+  it("reports the clicked entry", () => {
     const onChange = vi.fn();
-    render(<SectionNav active="diseno" onChange={onChange} />);
-    fireEvent.click(screen.getByRole("button", { name: "Prendas" }));
-    expect(onChange).toHaveBeenCalledWith("prendas");
+    renderWithDesign(<SectionNav active="player" onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Sponsor" }));
+    expect(onChange).toHaveBeenCalledWith("sponsor");
+    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    expect(onChange).toHaveBeenCalledWith("keeper");
   });
 
-  it("reports the clicked section", () => {
-    const onChange = vi.fn();
-    render(<SectionNav active="diseno" onChange={onChange} />);
-    fireEvent.click(screen.getByRole("button", { name: "Nombre y número" }));
-    expect(onChange).toHaveBeenCalledWith("texto");
+  it("makes the viewer show the shirt that was picked", () => {
+    const { api } = renderWithDesign(<SectionNav active="player" onChange={() => {}} />);
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    expect(api.current!.editing).toBe("keeper");
+    fireEvent.click(screen.getByRole("button", { name: "Short" }));
+    expect(api.current!.editing).toBe("player"); // the shorts follow the team
+    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Camiseta jugador" }));
+    expect(api.current!.editing).toBe("player");
+  });
+
+  it("leaves the shirt shown as it was when Escudo or Sponsor is picked", () => {
+    const { api } = renderWithDesign(<SectionNav active="player" onChange={() => {}} />);
+    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Escudo" }));
+    expect(api.current!.editing).toBe("keeper");
   });
 
   it("draws every icon inside a box of the same size, whatever the image's proportions", () => {
-    render(<SectionNav active="prendas" onChange={() => {}} />);
-    const boxes = screen.getAllByRole("button").map((button) => button.querySelector("img")!.parentElement!);
-    expect(boxes).toHaveLength(6);
-    for (const box of boxes) {
-      expect(box.className).toContain("h-8");
-      expect(box.className).toContain("w-8");
-    }
-    for (const button of screen.getAllByRole("button")) {
-      expect(button.querySelector("img")!.className).toContain("object-contain");
+    renderWithDesign(<SectionNav active="player" onChange={() => {}} />);
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(5);
+    for (const button of buttons) {
+      const img = button.querySelector("img")!;
+      expect(img.className).toContain("object-contain");
+      expect(img.parentElement!.className).toContain("h-8");
+      expect(img.parentElement!.className).toContain("w-8");
     }
   });
 });

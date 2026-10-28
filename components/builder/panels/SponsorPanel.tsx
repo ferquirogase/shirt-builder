@@ -11,7 +11,7 @@ import {
 import { useImageUpload } from "@/lib/builder/io/use-image-upload";
 import { UploadIcon } from "../icons";
 import { PanelShell } from "./PanelShell";
-import { SharedByBoth } from "./GarmentSwitch";
+import { SharedByBoth } from "./SharedByBoth";
 
 function SponsorCard({ slot, number }: { slot: SponsorSlot; number: number }) {
   const { state, dispatch, selectedSponsor, registerSponsorUploader } = useDesign();

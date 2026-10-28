@@ -4,7 +4,6 @@ import { useEditedLook } from "@/lib/builder/state/design-context";
 import { BODY_PATTERNS, SLEEVE_PATTERNS } from "@/lib/builder/catalog/patterns";
 import { colorsAfterPatternChange } from "@/lib/builder/state/design-state";
 import { PatternGrid } from "../PatternGrid";
-import { GarmentSwitch } from "./GarmentSwitch";
 import { PanelShell } from "./PanelShell";
 
 type Tab = "torso" | "mangas";
@@ -23,7 +22,6 @@ export function DesignPanel() {
       title="Diseño"
       hint={isTorso ? "Elegí un patrón para el torso." : "Elegí un patrón para las mangas."}
     >
-      <GarmentSwitch />
       <div role="tablist" aria-label="Zona de la camiseta" className="mb-4 grid grid-cols-2 rounded-2xl bg-black/5 p-1">
         {TABS.map(({ id, label }) => (
           <button

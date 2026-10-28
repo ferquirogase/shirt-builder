@@ -4,7 +4,6 @@ import { useDesign, useEditedLook } from "@/lib/builder/state/design-context";
 import { NAME_PLACEHOLDER, NUMBER_PLACEHOLDER } from "@/lib/builder/texture/number-text";
 import { ColorField } from "./ColorField";
 import { PanelShell } from "./PanelShell";
-import { GarmentSwitch } from "./GarmentSwitch";
 
 const INPUT =
   "rounded-xl border border-line bg-white/80 px-3 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-foreground/60";
@@ -18,7 +17,6 @@ export function TextPanel() {
 
   return (
     <PanelShell title="Nombre y número" hint="El nombre y el número van en la espalda. El número también va en el short.">
-      <GarmentSwitch />
       <div className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm font-medium">
           Nombre
