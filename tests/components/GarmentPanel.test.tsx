@@ -10,17 +10,20 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="prim
 vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => SVG })));
 
 describe("GarmentPanel for the player", () => {
-  it("has the same three tabs for any shirt, on Diseño to begin with", () => {
+  it("has the same four tabs for any shirt, on the torso to begin with", () => {
     renderWithDesign(<GarmentPanel garment="player" />);
     const bar = screen.getByRole("tablist", { name: "Qué cambiar" });
-    expect(within(bar).getAllByRole("tab").map((t) => t.textContent)).toEqual(["Diseño", "Colores", "Nombre"]);
-    expect(within(bar).getByRole("tab", { name: "Diseño" })).toHaveAttribute("aria-selected", "true");
+    expect(within(bar).getAllByRole("tab").map((t) => t.textContent)).toEqual(["Torso", "Mangas", "Colores", "Nombre"]);
+    expect(within(bar).getByRole("tab", { name: "Torso" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("radio", { name: "Diagonal" })).toBeInTheDocument();
   });
 
-  it("switches between design, colors and name and number", () => {
+  it("switches between torso, sleeves, colors and name and number, with a single row of tabs", () => {
     renderWithDesign(<GarmentPanel garment="player" />);
+    expect(screen.getAllByRole("tablist")).toHaveLength(1);
     const bar = screen.getByRole("tablist", { name: "Qué cambiar" });
+    fireEvent.click(within(bar).getByRole("tab", { name: "Mangas" }));
+    expect(screen.getByText("Elegí un patrón para las mangas.")).toBeInTheDocument();
     fireEvent.click(within(bar).getByRole("tab", { name: "Colores" }));
     expect(screen.getByRole("button", { name: /^Color primario:/ })).toBeInTheDocument();
     fireEvent.click(within(bar).getByRole("tab", { name: "Nombre" }));

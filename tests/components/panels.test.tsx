@@ -37,25 +37,30 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("DesignPanel", () => {
-  it("picks a torso pattern, then switches to the sleeves tab", async () => {
-    const { api } = renderWithDesign(<DesignPanel />);
+  it("picks a torso pattern", () => {
+    const { api } = renderWithDesign(<DesignPanel zone="torso" />);
     expect(screen.getByText("Elegí un patrón para el torso.")).toBeInTheDocument();
-
     fireEvent.click(screen.getByRole("radio", { name: "Diagonal" }));
     expect(api.current!.state.bodyPatternId).toBe("diagonal");
+  });
 
-    fireEvent.click(screen.getByRole("tab", { name: "Mangas" }));
+  it("picks a sleeve pattern", async () => {
+    const { api } = renderWithDesign(<DesignPanel zone="mangas" />);
     expect(screen.getByText("Elegí un patrón para las mangas.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: "Con puño" }));
     expect(api.current!.state.sleevePatternId).toBe("sleeve-cuff");
     await waitFor(() => expect(document.querySelector('[data-thumb="loaded"]')).not.toBeNull());
   });
 
+  it("has no tabs of its own: the garment panel's row already has torso and sleeves", () => {
+    renderWithDesign(<DesignPanel zone="torso" />);
+    expect(screen.queryByRole("tablist")).toBeNull();
+  });
+
   it("draws an accent design's thumbnail with the design's own accent, not the stale one (Fix 1)", async () => {
     const accentSvg = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="accent" fill="#000"/></svg>`;
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => accentSvg })));
-    renderWithDesign(<DesignPanel />);
-    fireEvent.click(screen.getByRole("tab", { name: "Mangas" }));
+    renderWithDesign(<DesignPanel zone="mangas" />);
     const radio = screen.getByRole("radio", { name: "Mangas de otro color" });
     await waitFor(() => expect(radio.querySelector('[data-thumb="loaded"]')).not.toBeNull());
     const style = (radio.querySelector('[data-thumb="loaded"]') as HTMLElement).style.backgroundImage;
@@ -65,8 +70,7 @@ describe("DesignPanel", () => {
   });
 
   it("offers the sleeve designs that use the accent color", async () => {
-    const { api } = renderWithDesign(<DesignPanel />);
-    fireEvent.click(screen.getByRole("tab", { name: "Mangas" }));
+    const { api } = renderWithDesign(<DesignPanel zone="mangas" />);
     fireEvent.click(screen.getByRole("radio", { name: "Mangas de otro color" }));
     expect(api.current!.state.sleevePatternId).toBe("sleeve-accent");
     await waitFor(() => expect(document.querySelector('[data-thumb="loaded"]')).not.toBeNull());
@@ -450,7 +454,7 @@ describe("keeper in the panels", () => {
   it("Diseño and Colores edit the keeper's shirt while it is shown", () => {
     const { api } = renderWithDesign(
       <>
-        <DesignPanel />
+        <DesignPanel zone="torso" />
         <ColorsPanel />
       </>
     );
