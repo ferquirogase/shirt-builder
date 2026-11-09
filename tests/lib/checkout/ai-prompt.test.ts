@@ -29,8 +29,13 @@ describe("buildAiPrompt", () => {
 
   it("mentions the accent color only when the design uses it", () => {
     expect(promptFor()).not.toContain("dorado");
-    const withAccent = promptFor({ sleevePatternId: "sleeve-accent" });
+    const withAccent = promptFor({ bodyPatternId: "stripes-three" });
     expect(withAccent).toContain("detalles");
+  });
+
+  it("says what color the sleeves are and the stripe at their edge", () => {
+    const prompt = promptFor({ colors: { ...initialDesignState.colors, sleeve: "#000000", sleeveTrim: "#ff0000" } });
+    expect(prompt).toMatch(/mangas negro con una franja rojo en el borde/);
   });
 
   it("mentions the name and number on the back when there are some", () => {

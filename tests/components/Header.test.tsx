@@ -4,9 +4,10 @@ import { renderWithDesign } from "../helpers/render-with-design";
 import { Header } from "@/components/builder/Header";
 
 describe("Header", () => {
-  it("shows the project name and enables both Compartir and Hacer pedido", () => {
+  it("has no project name field, and enables both Compartir and Hacer pedido", () => {
     renderWithDesign(<Header onReview={() => {}} onShare={() => {}} />);
-    expect(screen.getByRole("textbox", { name: "Nombre del diseño" })).toHaveValue("Mi diseño");
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByText("Mi diseño")).toBeNull();
     expect(screen.getByRole("button", { name: "Compartir" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Hacer pedido" })).toBeEnabled();
     expect(screen.queryByText("Guardado")).toBeNull();
@@ -77,24 +78,5 @@ describe("Header", () => {
     const button = screen.getByRole("button", { name: "Hacer pedido" });
     // Not hidden below md (it used to be `hidden md:inline-flex`).
     expect(button.className).not.toMatch(/(^|s)hidden(s|$)/);
-  });
-
-  it("renames the project on blur", () => {
-    const { api } = renderWithDesign(<Header onReview={() => {}} onShare={() => {}} />);
-    const input = screen.getByRole("textbox", { name: "Nombre del diseño" });
-    fireEvent.change(input, { target: { value: "  Los del viernes " } });
-    fireEvent.blur(input);
-    expect(api.current!.state.projectName).toBe("Los del viernes");
-    expect(input).toHaveValue("Los del viernes");
-  });
-
-  it("restores the previous name when cleared to blank", () => {
-    const { api } = renderWithDesign(<Header onReview={() => {}} onShare={() => {}} />);
-    const input = screen.getByRole("textbox", { name: "Nombre del diseño" });
-    fireEvent.change(input, { target: { value: "   " } });
-    fireEvent.blur(input);
-    expect(input).toHaveValue("Mi diseño");
-    expect(api.current!.state.projectName).toBe("Mi diseño");
-    expect(api.current!.canUndo).toBe(false);
   });
 });

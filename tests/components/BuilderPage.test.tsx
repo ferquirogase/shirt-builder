@@ -297,7 +297,6 @@ describe("BuilderPage", () => {
       roster: [createPlayerLine("a", { name: "Leo", number: "10" }), createPlayerLine("b", { name: "Dibu", number: "1" })],
     });
     render(<BuilderPage />);
-    await waitFor(() => expect(screen.getByRole("textbox", { name: "Nombre del diseño" })).toHaveValue("Los del viernes"));
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 

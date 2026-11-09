@@ -38,42 +38,28 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("DesignPanel", () => {
   it("picks a torso pattern", () => {
-    const { api } = renderWithDesign(<DesignPanel zone="torso" />);
+    const { api } = renderWithDesign(<DesignPanel />);
     expect(screen.getByText("Elegí un patrón para el torso.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: "Diagonal" }));
     expect(api.current!.state.bodyPatternId).toBe("diagonal");
   });
 
-  it("picks a sleeve pattern", async () => {
-    const { api } = renderWithDesign(<DesignPanel zone="mangas" />);
-    expect(screen.getByText("Elegí un patrón para las mangas.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("radio", { name: "Con puño" }));
-    expect(api.current!.state.sleevePatternId).toBe("sleeve-cuff");
-    await waitFor(() => expect(document.querySelector('[data-thumb="loaded"]')).not.toBeNull());
-  });
-
-  it("has no tabs of its own: the garment panel's row already has torso and sleeves", () => {
-    renderWithDesign(<DesignPanel zone="torso" />);
+  it("has no tabs of its own, and nothing to choose for the sleeves: they are set in Colores", () => {
+    renderWithDesign(<DesignPanel />);
     expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.queryByRole("radio", { name: /manga|puño/i })).toBeNull();
   });
 
   it("draws an accent design's thumbnail with the design's own accent, not the stale one (Fix 1)", async () => {
     const accentSvg = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="accent" fill="#000"/></svg>`;
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => accentSvg })));
-    renderWithDesign(<DesignPanel zone="mangas" />);
-    const radio = screen.getByRole("radio", { name: "Mangas de otro color" });
+    renderWithDesign(<DesignPanel />);
+    const radio = screen.getByRole("radio", { name: "Franjas en tres colores" });
     await waitFor(() => expect(radio.querySelector('[data-thumb="loaded"]')).not.toBeNull());
     const style = (radio.querySelector('[data-thumb="loaded"]') as HTMLElement).style.backgroundImage;
     const decoded = decodeURIComponent(style);
-    expect(decoded).toContain("#1a2a55");
+    expect(decoded).toContain("#0b1d4a");
     expect(decoded).not.toContain("#f5b700");
-  });
-
-  it("offers the sleeve designs that use the accent color", async () => {
-    const { api } = renderWithDesign(<DesignPanel zone="mangas" />);
-    fireEvent.click(screen.getByRole("radio", { name: "Mangas de otro color" }));
-    expect(api.current!.state.sleevePatternId).toBe("sleeve-accent");
-    await waitFor(() => expect(document.querySelector('[data-thumb="loaded"]')).not.toBeNull());
   });
 });
 
@@ -107,7 +93,8 @@ describe("ColorsPanel", () => {
     renderWithDesign(<ColorsPanel />);
     pickColor("Color primario", "Rojo");
     pickColor("Color del cuello", "Azul marino");
-    expect(screen.getByText(formatCmyk(hexOf("Rojo")))).toBeInTheDocument();
+    // the sleeves follow the primary, so they show the red too
+    expect(screen.getAllByText(formatCmyk(hexOf("Rojo"))).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(formatCmyk(hexOf("Azul marino")))).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Color primario: Rojo" })).toBeInTheDocument();
     expect(screen.queryByText(/#[0-9a-f]{6}/i)).toBeNull();
@@ -118,27 +105,35 @@ describe("ColorsPanel", () => {
     pickColor("Color del cuello", "Azul");
     expect(api.current!.state.colors).toEqual({ ...before, collar: hexOf("Azul") });
   });
-  it("shows only the colors the chosen patterns use, plus the collar", () => {
+  it("shows the torso's colors, the collar and the sleeves, each under its own heading", () => {
+    renderWithDesign(<ColorsPanel />);
+    const group = (name: string) => screen.getByRole("region", { name });
+    expect(within(group("Torso")).getAllByRole("button").map((b) => b.getAttribute("aria-label") ?? b.textContent)).toEqual([
+      expect.stringMatching(/^Color primario:/),
+      expect.stringMatching(/^Color secundario:/),
+    ]);
+    expect(within(group("Cuello")).getByRole("button", { name: /^Color del cuello:/ })).toBeInTheDocument();
+    expect(within(group("Mangas")).getByRole("button", { name: /^Color de las mangas:/ })).toBeInTheDocument();
+    expect(within(group("Mangas")).getByRole("button", { name: /^Color de la franja:/ })).toBeInTheDocument();
+  });
+
+  it("shows only the torso colors the chosen pattern uses, but always the collar and the sleeves", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
     const field = (label: string) => screen.queryByRole("button", { name: new RegExp(`^${label}:`) });
-    // initial: stripes-v1 + sleeve-plain -> primary, secondary
-    expect(field("Color primario")).not.toBeNull();
-    expect(field("Color secundario")).not.toBeNull();
-    expect(field("Color del cuello")).not.toBeNull();
-
     act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "plain-body" }));
-    act(() => api.current!.dispatch({ type: "SET_SLEEVE_PATTERN", id: "sleeve-primary" }));
-    // plain-body + sleeve-primary -> primary only
     expect(field("Color primario")).not.toBeNull();
     expect(field("Color secundario")).toBeNull();
     expect(field("Color del cuello")).not.toBeNull();
+    expect(field("Color de las mangas")).not.toBeNull();
+    expect(field("Color de la franja")).not.toBeNull();
   });
-  it("does not duplicate a role used by both the torso and the sleeves (Review Focus 2)", () => {
+
+  it("changes the sleeve and its stripe on their own", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
-    act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "stripes-three" }));
-    act(() => api.current!.dispatch({ type: "SET_SLEEVE_PATTERN", id: "sleeve-accent" }));
-    // stripes-three and sleeve-accent both use accent, with different labels: the torso's wins
-    expect(screen.getAllByRole("button", { name: /^Línea fina:/ })).toHaveLength(1);
+    const before = { ...api.current!.state.colors };
+    pickColor("Color de las mangas", "Azul");
+    pickColor("Color de la franja", "Rojo");
+    expect(api.current!.state.colors).toEqual({ ...before, sleeve: hexOf("Azul"), sleeveTrim: hexOf("Rojo") });
   });
 });
 
@@ -454,7 +449,7 @@ describe("keeper in the panels", () => {
   it("Diseño and Colores edit the keeper's shirt while it is shown", () => {
     const { api } = renderWithDesign(
       <>
-        <DesignPanel zone="torso" />
+        <DesignPanel />
         <ColorsPanel />
       </>
     );

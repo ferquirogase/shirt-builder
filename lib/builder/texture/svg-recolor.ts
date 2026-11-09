@@ -1,7 +1,7 @@
 export type PatternRole = "primary" | "secondary" | "accent";
-// "collar" is chosen independently of the patterns, which only reference the
-// three pattern roles in their `data-color-slot` attributes.
-export type ColorSlot = PatternRole | "collar";
+// The collar and the sleeves are chosen independently of the torso's patterns, which only reference
+// the three pattern roles in their `data-color-slot` attributes.
+export type ColorSlot = PatternRole | "collar" | "sleeve" | "sleeveTrim";
 export type ColorMap = Partial<Record<ColorSlot, string>>;
 
 export function recolorSvg(svgMarkup: string, colors: ColorMap): string {

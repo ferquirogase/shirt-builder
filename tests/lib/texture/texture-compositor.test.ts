@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { NAPE_BRAND_SQUEEZE_Y, drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
+import { PATTERN_BLEED, NAPE_BRAND_SQUEEZE_Y, backVisibleWidth, drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
 import { NAME_PLACEHOLDER, NUMBER_PLACEHOLDER, displayName, displayNumber, showsNamePlaceholder } from "@/lib/builder/texture/number-text";
 import { CHEST_NUMBER_FONT_FRACTION } from "@/lib/builder/texture/front-layout";
 import { initialDesignState } from "@/lib/builder/state/design-state";
@@ -1042,6 +1042,60 @@ describe("drawDesignToCanvas", () => {
     );
     const used = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0]);
     expect(used).toEqual([front, back]);
+  });
+
+  // The back panel is narrower than the front but the cloth has the same density on both: the pattern is
+  // one strip, so the back's image is drawn at the front's scale, from the panel's left edge seen from behind.
+  describe("the pattern over the panels the cloth shows", () => {
+    const panels: UVRegions = {
+      ...regions,
+      bodyFrontPanel: { u0: 0.3, v0: 0.5, u1: 0.7, v1: 0.9 },
+      bodyBackPanel: { u0: 0.35, v0: 0.1, u1: 0.65, v1: 0.5 },
+    };
+    const images = (front: HTMLImageElement, back: HTMLImageElement) => ({
+      bodyPatternImage: front,
+      sleevePatternImage: null,
+      logoImage: null,
+      bodyBackPatternImage: back,
+    });
+
+    it("draws the front's pattern over the front panel, a little over it", () => {
+      const ctx = createMockCtx();
+      const front = { id: "front" } as unknown as HTMLImageElement;
+      drawDesignToCanvas(ctx, 1000, initialDesignState, images(front, {} as HTMLImageElement), panels);
+      const call = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === front)!;
+      expect(call[1]).toBeCloseTo((0.3 - PATTERN_BLEED) * 1000, 5);
+      expect(call[3]).toBeCloseTo((0.4 + 2 * PATTERN_BLEED) * 1000, 5);
+    });
+
+    it("draws the back's image as wide as the front's, ending at the back panel's seam edge", () => {
+      const ctx = createMockCtx();
+      const back = { id: "back" } as unknown as HTMLImageElement;
+      drawDesignToCanvas(ctx, 1000, initialDesignState, images({} as HTMLImageElement, back), panels);
+      const call = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === back)!;
+      const width = (0.4 + 2 * PATTERN_BLEED) * 1000; // the front's, not the back panel's 0.3
+      expect(call[3]).toBeCloseTo(width, 5);
+      // rotated 180deg about its centre: the centre is the right edge (0.65 + bleed) minus half of it
+      const centre = (0.65 + PATTERN_BLEED) * 1000 - width / 2;
+      const translate = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls.find((c) => Math.abs(c[0] - centre) < 1e-6);
+      expect(translate).toBeDefined();
+    });
+
+    it("tells how much of the back image is on the shirt", () => {
+      expect(backVisibleWidth(panels, 512)).toBeCloseTo((512 * 0.3) / 0.4, 5);
+      expect(backVisibleWidth(regions, 512)).toBe(512);
+    });
+  });
+
+  it("knows the measured panels of the GEPE shirt: the back is narrower than the front, and as tall", () => {
+    const { bodyFrontPanel: f, bodyBackPanel: b } = GEPE_UV_REGIONS;
+    expect(f).toBeDefined();
+    expect(b).toBeDefined();
+    expect(b!.u1 - b!.u0).toBeLessThan(f!.u1 - f!.u0);
+    expect(b!.v1 - b!.v0).toBeCloseTo(f!.v1 - f!.v0, 2);
+    // both panels are centered on the shirt
+    expect((f!.u0 + f!.u1) / 2).toBeCloseTo(0.5, 3);
+    expect((b!.u0 + b!.u1) / 2).toBeCloseTo(0.5, 3);
   });
 
   it("falls back to the front image for the back when the back image is missing (Review Focus 4)", () => {

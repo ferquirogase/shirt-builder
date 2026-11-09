@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { act, fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { renderWithDesign } from "../helpers/render-with-design";
 import { GarmentPanel } from "@/components/builder/panels/GarmentPanel";
 import { initialDesignState } from "@/lib/builder/state/design-state";
@@ -10,43 +10,26 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="prim
 vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => SVG })));
 
 describe("GarmentPanel for the player", () => {
-  it("has the same four tabs for any shirt, on the torso to begin with", () => {
+  it("has the same three tabs for any shirt, on the design to begin with", () => {
     renderWithDesign(<GarmentPanel garment="player" />);
     const bar = screen.getByRole("tablist", { name: "Qué cambiar" });
-    expect(within(bar).getAllByRole("tab").map((t) => t.textContent)).toEqual(["Torso", "Mangas", "Colores", "Nombre"]);
-    expect(within(bar).getByRole("tab", { name: "Torso" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("radio", { name: "Diagonal" })).toBeInTheDocument();
+    expect(within(bar).getAllByRole("tab").map((t) => t.textContent)).toEqual(["Diseño", "Colores", "Nombre"]);
+    expect(within(bar).getByRole("tab", { name: "Diseño" })).toHaveAttribute("aria-selected", "true");
   });
 
-  it("switches between torso, sleeves, colors and name and number, with a single row of tabs", () => {
+  it("switches between design, colors and name and number, with a single row of tabs", () => {
     renderWithDesign(<GarmentPanel garment="player" />);
     expect(screen.getAllByRole("tablist")).toHaveLength(1);
     const bar = screen.getByRole("tablist", { name: "Qué cambiar" });
-    fireEvent.click(within(bar).getByRole("tab", { name: "Mangas" }));
-    expect(screen.getByText("Elegí un patrón para las mangas.")).toBeInTheDocument();
     fireEvent.click(within(bar).getByRole("tab", { name: "Colores" }));
     expect(screen.getByRole("button", { name: /^Color primario:/ })).toBeInTheDocument();
     fireEvent.click(within(bar).getByRole("tab", { name: "Nombre" }));
     expect(screen.getByLabelText("Nombre")).toBeInTheDocument();
   });
 
-  it("has a Ver talles button in the tab row, which gives the focus back when it closes", () => {
+  it("no longer has the size chart: it is in the side menu", () => {
     renderWithDesign(<GarmentPanel garment="player" />);
-    const button = screen.getByRole("button", { name: "Ver talles" });
-    expect(button.parentElement).toContainElement(screen.getByRole("tablist", { name: "Qué cambiar" }));
-    button.focus();
-    fireEvent.click(button);
-    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
-    expect(within(dialog).queryByRole("tab", { name: "Short" })).toBeNull();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Cerrar" }));
-    expect(document.activeElement).toBe(button);
-  });
-
-  it("adds the shorts' chart once the order has shorts", () => {
-    const { api } = renderWithDesign(<GarmentPanel garment="player" />);
-    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
-    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
-    expect(within(screen.getByRole("dialog")).getByRole("tab", { name: "Short" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ver talles" })).toBeNull();
   });
 
   it("does not offer to remove the player's shirt", () => {

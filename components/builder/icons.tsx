@@ -22,6 +22,9 @@ function Svg({ className, children }: IconProps & { children: ReactNode }) {
 export const ShirtIcon = (p: IconProps) => (
   <Svg {...p}><path d="M8 3 4 5.5l1.5 4L8 8.5V20h8V8.5l2.5 1 1.5-4L16 3a4 4 0 0 1-8 0z" /></Svg>
 );
+export const RulerIcon = (p: IconProps) => (
+  <Svg {...p}><path d="m3.5 15.5 12-12 5 5-12 12z M7 12l2 2 M10 9l2 2 M13 6l2 2" /></Svg>
+);
 export const DropIcon = (p: IconProps) => (
   <Svg {...p}><path d="M12 3s6 6.2 6 10.5A6 6 0 0 1 6 13.5C6 9.2 12 3 12 3z" /></Svg>
 );

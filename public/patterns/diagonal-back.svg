@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect data-color-slot="primary" fill="#0a5c36" x="0" y="0" width="512" height="512" />
+  <polygon data-color-slot="secondary" fill="#ffffff" points="163.31,512 12,512 0,500 0,348.69" />
+  <polygon data-color-slot="secondary" fill="#ffffff" points="465.94,512 314.62,512 0,197.38 0,46.06" />
+  <polygon data-color-slot="secondary" fill="#ffffff" points="105.25,0 256.56,0 512,255.44 512,406.75" />
+  <polygon data-color-slot="secondary" fill="#ffffff" points="407.87,0 512,0 512,104.13" />
+</svg>

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { act, fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { renderWithDesign } from "../helpers/render-with-design";
 import { SectionNav } from "@/components/builder/SectionNav";
 
-const NAMES = ["Camiseta jugador", "Camiseta arquero", "Short", "Escudo", "Sponsor"];
+const NAMES = ["Camiseta jugador", "Camiseta arquero", "Short", "Escudo", "Sponsor", "Ver talles"];
 
 describe("SectionNav", () => {
   it("is by garment first, then what is shared by both shirts", () => {
@@ -65,12 +65,29 @@ describe("SectionNav", () => {
   it("draws every icon inside a box of the same size, whatever the image's proportions", () => {
     renderWithDesign(<SectionNav active="player" onChange={() => {}} />);
     const buttons = screen.getAllByRole("button");
-    expect(buttons).toHaveLength(5);
-    for (const button of buttons) {
+    expect(buttons).toHaveLength(6);
+    for (const button of buttons.slice(0, 5)) {
       const img = button.querySelector("img")!;
       expect(img.className).toContain("object-contain");
       expect(img.parentElement!.className).toContain("h-8");
       expect(img.parentElement!.className).toContain("w-8");
     }
+  });
+
+  it("has Talles last, under Sponsor, and it opens the size chart without changing the section", () => {
+    const onChange = vi.fn();
+    const { api } = renderWithDesign(<SectionNav active="player" onChange={onChange} />);
+    const button = screen.getByRole("button", { name: "Ver talles" });
+    expect(screen.getAllByRole("button").at(-1)).toBe(button);
+    button.focus();
+    fireEvent.click(button);
+    expect(onChange).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
+    expect(within(dialog).queryByRole("tab", { name: "Short" })).toBeNull();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cerrar" }));
+    expect(document.activeElement).toBe(button);
+    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
+    fireEvent.click(button);
+    expect(within(screen.getByRole("dialog")).getByRole("tab", { name: "Short" })).toBeInTheDocument();
   });
 });

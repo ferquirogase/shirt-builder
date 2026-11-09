@@ -14,7 +14,11 @@ export type PatternDef = {
   label: string;
   /** Front panel (and back panel unless `svgPathBack` is set). */
   svgPath: string;
-  /** Optional back panel, drawn as seen by someone looking at the back. */
+  /**
+   * Optional back panel, drawn as seen by someone looking at the back. Without one the front's drawing
+   * is used, which is right when it reads the same going round the shirt (horizontal bands, stripes
+   * whose period divides the panel). A design too busy to continue gives a plain back (`PLAIN_BACK`).
+   */
   svgPathBack?: string;
   /** Roles the SVG uses, in the order they appear in the Colors panel. */
   colors: PatternColor[];
@@ -26,54 +30,43 @@ const accent = (label: string, def: string): PatternColor => ({ role: "accent", 
 const primary = (label: string, def: string): PatternColor => ({ role: "primary", label, default: def });
 const secondary = (label: string, def: string): PatternColor => ({ role: "secondary", label, default: def });
 
+/** A back with only the primary color, for a front too busy to continue round the shirt. */
+export const PLAIN_BACK = "/patterns/plain-body.svg";
+
 export const BODY_PATTERNS: PatternDef[] = [
   { id: "plain-body", label: "Liso", svgPath: "/patterns/plain-body.svg", colors: [PRIMARY] },
-  { id: "stripes-v1", label: "Franjas", svgPath: "/patterns/stripes-v1-body.svg", colors: [PRIMARY, SECONDARY] },
-  { id: "diagonal", label: "Diagonal", svgPath: "/patterns/diagonal-body.svg", colors: [PRIMARY, SECONDARY] },
+  { id: "stripes-v1", label: "Franjas", svgPath: "/patterns/stripes-v1-body.svg", svgPathBack: "/patterns/stripes-v1-back.svg", colors: [PRIMARY, SECONDARY] },
+  { id: "diagonal", label: "Diagonal", svgPath: "/patterns/diagonal-body.svg", svgPathBack: "/patterns/diagonal-back.svg", colors: [PRIMARY, SECONDARY] },
   { id: "gradient", label: "Degradado", svgPath: "/patterns/gradient-body.svg", colors: [PRIMARY, SECONDARY] },
-  { id: "geometric", label: "Geométrico", svgPath: "/patterns/geometric-body.svg", colors: [PRIMARY, SECONDARY] },
+  { id: "geometric", label: "Geométrico", svgPath: "/patterns/geometric-body.svg", svgPathBack: PLAIN_BACK, colors: [PRIMARY, SECONDARY] },
   { id: "hoops", label: "Rayas", svgPath: "/patterns/hoops-body.svg", colors: [PRIMARY, SECONDARY] },
   {
     id: "stripes-wide",
     label: "Franjas anchas",
     svgPath: "/patterns/stripes-wide-body.svg",
+    svgPathBack: "/patterns/stripes-wide-back.svg",
     colors: [primary("Fondo", "#d71920"), secondary("Franjas", "#111111")],
-  },
-  {
-    id: "stripes-fine",
-    label: "Franjas finas",
-    svgPath: "/patterns/stripes-fine-body.svg",
-    colors: [primary("Franjas principales", "#e2231a"), secondary("Franjas claras", "#ffffff")],
-  },
-  {
-    id: "pinstripes",
-    label: "Rayas finas",
-    svgPath: "/patterns/pinstripes-body.svg",
-    colors: [primary("Fondo", "#d22a1f"), secondary("Rayas", "#f2b705")],
   },
   {
     id: "five-bands",
     label: "Cinco bandas",
     svgPath: "/patterns/five-bands-body.svg",
+    svgPathBack: "/patterns/five-bands-back.svg",
     colors: [primary("Bandas exteriores y central", "#e8202a"), secondary("Bandas intermedias", "#1d3fa8")],
   },
   {
     id: "stripes-irregular",
     label: "Franjas irregulares",
     svgPath: "/patterns/stripes-irregular-body.svg",
+    svgPathBack: "/patterns/stripes-irregular-back.svg",
     colors: [primary("Fondo", "#ffffff"), secondary("Franjas", "#111111")],
   },
   {
     id: "stripes-three",
     label: "Franjas en tres colores",
     svgPath: "/patterns/stripes-three-body.svg",
+    svgPathBack: "/patterns/stripes-three-back.svg",
     colors: [primary("Franja principal", "#1b4f9c"), secondary("Franja alterna", "#a50044"), accent("Línea fina", "#0b1d4a")],
-  },
-  {
-    id: "stripes-three-wide",
-    label: "Tres franjas anchas",
-    svgPath: "/patterns/stripes-three-wide-body.svg",
-    colors: [primary("Fondo", "#ffffff"), secondary("Franjas", "#75aadb")],
   },
   {
     id: "band-horizontal",
@@ -92,6 +85,7 @@ export const BODY_PATTERNS: PatternDef[] = [
     id: "stripes-crossbar",
     label: "Franjas con barra",
     svgPath: "/patterns/stripes-crossbar-body.svg",
+    svgPathBack: "/patterns/stripes-crossbar-back.svg",
     colors: [primary("Fondo", "#1a2a55"), secondary("Franjas y barra", "#f2c200")],
   },
   {
@@ -105,64 +99,86 @@ export const BODY_PATTERNS: PatternDef[] = [
     id: "yoke",
     label: "Hombros de color",
     svgPath: "/patterns/yoke-body.svg",
+    svgPathBack: "/patterns/yoke-back.svg",
     colors: [primary("Cuerpo", "#e8590c"), secondary("Hombros", "#1a3a8f")],
   },
   {
     id: "chevron",
     label: "Chevrón",
     svgPath: "/patterns/chevron-body.svg",
+    svgPathBack: "/patterns/chevron-back.svg",
     colors: [primary("Cuerpo", "#c8102e"), secondary("Hombros y líneas", "#1b2a6b"), accent("Chevrón principal", "#ffffff")],
   },
   {
     id: "waves",
     label: "Líneas onduladas",
     svgPath: "/patterns/waves-body.svg",
+    svgPathBack: PLAIN_BACK,
     colors: [primary("Fondo", "#1b2a8f"), secondary("Líneas", "#9fb4ff")],
   },
+  // Busy designs, from artwork: the back is plain.
+  {
+    id: "tangle",
+    label: "Trazos entrelazados",
+    svgPath: "/patterns/tangle-body.svg",
+    svgPathBack: PLAIN_BACK,
+    colors: [primary("Fondo", "#313131"), secondary("Trazos", "#ba0d26"), accent("Trama de fondo", "#424242")],
+  },
+  {
+    id: "swirl",
+    label: "Remolinos",
+    svgPath: "/patterns/swirl-body.svg",
+    svgPathBack: PLAIN_BACK,
+    colors: [primary("Fondo", "#293e69"), secondary("Remolinos", "#3f5fa1")],
+  },
+  {
+    id: "pixel",
+    label: "Pixelado",
+    svgPath: "/patterns/pixel-body.svg",
+    svgPathBack: PLAIN_BACK,
+    colors: [primary("Fondo", "#343434"), secondary("Pixelado", "#d11d3a")],
+  },
+  {
+    id: "brush",
+    label: "Pinceladas",
+    svgPath: "/patterns/brush-body.svg",
+    svgPathBack: PLAIN_BACK,
+    colors: [primary("Fondo", "#f1127b"), secondary("Pincelada clara", "#1072d2"), accent("Pincelada oscura", "#13418e")],
+  },
+  {
+    id: "marble",
+    label: "Mármol",
+    svgPath: "/patterns/marble-body.svg",
+    svgPathBack: PLAIN_BACK,
+    colors: [primary("Fondo", "#09663c"), secondary("Vetas", "#3bb875"), accent("Salpicado", "#ffffff")],
+  },
+  {
+    id: "blocks",
+    label: "Bloques de rayas",
+    svgPath: "/patterns/blocks-body.svg",
+    svgPathBack: PLAIN_BACK,
+    colors: [primary("Fondo", "#074875"), secondary("Rayas", "#fcb547")],
+  },
+  {
+    id: "camo",
+    label: "Camuflaje",
+    svgPath: "/patterns/camo-body.svg",
+    svgPathBack: PLAIN_BACK,
+    colors: [primary("Fondo", "#c0d848"), secondary("Camuflaje", "#25563b"), accent("Trama clara", "#9cbe3f")],
+  },
 ];
-
-export const SLEEVE_PATTERNS: PatternDef[] = [
-  { id: "sleeve-plain", label: "Color secundario", svgPath: "/patterns/sleeve-plain.svg", colors: [SECONDARY] },
-  { id: "sleeve-primary", label: "Color primario", svgPath: "/patterns/sleeve-primary.svg", colors: [PRIMARY] },
-  { id: "sleeve-cuff", label: "Con puño", svgPath: "/patterns/sleeve-cuff.svg", colors: [PRIMARY, SECONDARY] },
-  {
-    id: "sleeve-accent",
-    label: "Mangas de otro color",
-    svgPath: "/patterns/sleeve-accent.svg",
-    colors: [accent("Color de las mangas", "#1a2a55")],
-  },
-  {
-    id: "sleeve-cuff-accent",
-    label: "Puño de otro color",
-    svgPath: "/patterns/sleeve-cuff-accent.svg",
-    colors: [primary("Color primario", "#0a5c36"), accent("Color del puño", "#1a2a55")],
-  },
-  {
-    id: "sleeve-cuff-stripes",
-    label: "Puño a rayas",
-    svgPath: "/patterns/sleeve-cuff-stripes.svg",
-    colors: [primary("Color de las mangas", "#ffffff"), accent("Rayas del puño", "#d0161f")],
-  },
-];
-
-export function findPattern(id: string): PatternDef | undefined {
-  return BODY_PATTERNS.find((p) => p.id === id) ?? SLEEVE_PATTERNS.find((p) => p.id === id);
-}
 
 /**
- * The colors the user can currently edit: those of the chosen torso pattern,
- * then any role only the chosen sleeve pattern uses. One entry per role; when
- * both patterns use a role, the torso's label wins.
+ * The sleeve texture: one design for every shirt, a sleeve color and a stripe at the edge. Its colors are
+ * chosen apart from the torso's (`sleeve` and `sleeveTrim`), so no pattern declares them.
  */
-export function visibleColors(bodyId: string, sleeveId: string): PatternColor[] {
-  const seen = new Set<PatternRole>();
-  const result: PatternColor[] = [];
-  for (const pattern of [findPattern(bodyId), findPattern(sleeveId)]) {
-    for (const color of pattern?.colors ?? []) {
-      if (seen.has(color.role)) continue;
-      seen.add(color.role);
-      result.push(color);
-    }
-  }
-  return result;
+export const SLEEVE_SVG_PATH = "/patterns/sleeve.svg";
+
+export function findPattern(id: string): PatternDef | undefined {
+  return BODY_PATTERNS.find((p) => p.id === id);
+}
+
+/** The colors the user can edit for the torso: those of the chosen pattern, in the order it declares them. */
+export function visibleColors(bodyId: string): PatternColor[] {
+  return findPattern(bodyId)?.colors ?? [];
 }

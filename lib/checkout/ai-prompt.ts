@@ -1,6 +1,7 @@
 import { findPattern, visibleColors } from "@/lib/builder/catalog/patterns";
 import { lookFor, shortsColor, type LookTarget } from "@/lib/builder/state/design-state";
 import type { Order } from "./order";
+import type { ColorSlot } from "@/lib/builder/texture/svg-recolor";
 import { colorName } from "./color-name";
 
 // An example prompt for any image AI: the user attaches the two shirt images and a
@@ -9,14 +10,15 @@ import { colorName } from "./color-name";
 export function buildAiPrompt({ design: team, roster }: Pick<Order, "design" | "roster">, target: LookTarget = "player"): string {
   // The shirt the prompt describes: the team's, or the keeper's own look.
   const design = lookFor(team, target);
-  const roles = new Set(visibleColors(design.bodyPatternId, design.sleevePatternId).map((c) => c.role));
-  const color = (role: "primary" | "secondary" | "accent" | "collar") => colorName(design.colors[role]);
+  const roles = new Set(visibleColors(design.bodyPatternId).map((c) => c.role));
+  const color = (role: ColorSlot) => colorName(design.colors[role]);
 
   const pattern = findPattern(design.bodyPatternId)?.label.toLowerCase() ?? "liso";
   const shirt = [`diseño ${pattern}`, `color principal ${color("primary")}`];
   if (roles.has("secondary")) shirt.push(`segundo color ${color("secondary")}`);
   if (roles.has("accent")) shirt.push(`detalles en ${color("accent")}`);
   shirt.push(`cuello ${color("collar")}`);
+  shirt.push(`mangas ${color("sleeve")} con una franja ${color("sleeveTrim")} en el borde`);
 
   const extras: string[] = [];
   if (design.logoDataUrl) extras.push("Lleva un escudo en el pecho.");

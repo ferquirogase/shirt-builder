@@ -268,11 +268,11 @@ export function drawDesignToCanvas(
   ctx.fillRect(0, 0, canvasSize, canvasSize);
 
   if (images.bodyPatternImage) {
-    drawImageInRegion(ctx, images.bodyPatternImage, regions.bodyFront, canvasSize);
+    drawImageInRegion(ctx, images.bodyPatternImage, frontPatternRegion(regions), canvasSize);
     drawImageInRegion(
       ctx,
       images.bodyBackPatternImage ?? images.bodyPatternImage,
-      regions.bodyBack,
+      backPatternRegion(regions),
       canvasSize,
       "rotate180"
     );
@@ -365,6 +365,35 @@ export function drawDesignToCanvas(
 const DIGIT_HALF_HEIGHT = 0.36;
 // Default share of bodyBack's width the back text may take (see UVRegions.backTextWidthFraction).
 const MAX_BACK_TEXT_WIDTH_FRACTION = 0.8;
+
+// The torso pattern is drawn this much (UV) past the panel's edges, so the seams show no gap.
+export const PATTERN_BLEED = 0.001;
+
+function grow(rect: UVRect): UVRect {
+  return { u0: rect.u0 - PATTERN_BLEED, v0: rect.v0 - PATTERN_BLEED, u1: rect.u1 + PATTERN_BLEED, v1: rect.v1 + PATTERN_BLEED };
+}
+
+// Where the front's pattern goes: over the front panel the cloth shows.
+function frontPatternRegion({ bodyFront, bodyFrontPanel }: UVRegions): UVRect {
+  return bodyFrontPanel ? grow(bodyFrontPanel) : bodyFront;
+}
+
+// Where the back's pattern goes. The back panel is narrower than the front, but the cloth has the same
+// density on both: the back's image is drawn at the front's scale, from the back panel's left edge as seen
+// from behind (its right in the texture), and what falls past the panel's other edge is not on the shirt.
+// So front and back are one strip, and a pattern can go on from one to the other.
+function backPatternRegion({ bodyBack, bodyFrontPanel, bodyBackPanel }: UVRegions): UVRect {
+  if (!bodyBackPanel || !bodyFrontPanel) return bodyBack;
+  const panel = grow(bodyBackPanel);
+  return { ...panel, u0: panel.u1 - (bodyFrontPanel.u1 - bodyFrontPanel.u0) - 2 * PATTERN_BLEED };
+}
+
+/** How much of the back image (of `size`) is on the shirt: the rest falls past the back panel. */
+export function backVisibleWidth(regions: UVRegions, size: number): number {
+  const { bodyFrontPanel, bodyBackPanel } = regions;
+  if (!bodyFrontPanel || !bodyBackPanel) return size;
+  return (size * (bodyBackPanel.u1 - bodyBackPanel.u0)) / (bodyFrontPanel.u1 - bodyFrontPanel.u0);
+}
 
 type RegionOrientation = "plain" | "rotate180" | "mirrorX";
 
