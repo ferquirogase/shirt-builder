@@ -1,4 +1,5 @@
-import { initialDesignState } from "@/lib/builder/state/design-state";
+import { findPattern } from "@/lib/builder/catalog/patterns";
+import { initialDesignState, type DesignState } from "@/lib/builder/state/design-state";
 import { SIZES, type Confirmation, type Order, type Thumbnails } from "./order";
 
 export const ORDER_KEY = "gepe:order";
@@ -55,13 +56,26 @@ function isImagePair(value: unknown): value is Thumbnails {
   return isRecord(value) && typeof value.front === "string" && typeof value.back === "string";
 }
 
+// A design saved before the sleeves had colors of their own: they wore the shirt's.
+export function withSleeveColors(colors: DesignState["colors"]): DesignState["colors"] {
+  return { ...colors, sleeve: colors.sleeve ?? colors.primary, sleeveTrim: colors.sleeveTrim ?? colors.secondary };
+}
+
 // Orders saved before the shorts existed lack their fields: fill in the defaults.
 function withShortsDefaults(order: Order): Order {
+  const keeper = order.design.keeper;
+  // A torso pattern that has since been taken out of the catalog would draw nothing: use the default one.
+  const pattern = (id: string) => (findPattern(id) ? id : initialDesignState.bodyPatternId);
   return {
     ...order,
     design: {
       ...initialDesignState,
       ...order.design,
+      bodyPatternId: pattern(order.design.bodyPatternId),
+      colors: withSleeveColors(order.design.colors),
+      keeper: keeper?.look
+        ? { ...keeper, look: { ...keeper.look, bodyPatternId: pattern(keeper.look.bodyPatternId), colors: withSleeveColors(keeper.look.colors) } }
+        : keeper,
       shorts: { ...initialDesignState.shorts, ...order.design.shorts },
     },
     roster: order.roster.map((line) => ({ ...line, shortsSize: line.shortsSize ?? "M", keeper: line.keeper ?? false })),

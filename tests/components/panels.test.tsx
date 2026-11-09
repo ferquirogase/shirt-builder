@@ -6,7 +6,6 @@ import { ColorsPanel } from "@/components/builder/panels/ColorsPanel";
 import { CrestPanel } from "@/components/builder/panels/CrestPanel";
 import { SponsorPanel } from "@/components/builder/panels/SponsorPanel";
 import { TextPanel } from "@/components/builder/panels/TextPanel";
-import { GarmentsPanel } from "@/components/builder/panels/GarmentsPanel";
 import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
 import { loadImage } from "@/lib/builder/texture/image-loader";
 import { initialDesignState } from "@/lib/builder/state/design-state";
@@ -38,39 +37,29 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("DesignPanel", () => {
-  it("picks a torso pattern, then switches to the sleeves tab", async () => {
+  it("picks a torso pattern", () => {
     const { api } = renderWithDesign(<DesignPanel />);
     expect(screen.getByText("Elegí un patrón para el torso.")).toBeInTheDocument();
-
     fireEvent.click(screen.getByRole("radio", { name: "Diagonal" }));
     expect(api.current!.state.bodyPatternId).toBe("diagonal");
+  });
 
-    fireEvent.click(screen.getByRole("tab", { name: "Mangas" }));
-    expect(screen.getByText("Elegí un patrón para las mangas.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("radio", { name: "Con puño" }));
-    expect(api.current!.state.sleevePatternId).toBe("sleeve-cuff");
-    await waitFor(() => expect(document.querySelector('[data-thumb="loaded"]')).not.toBeNull());
+  it("has no tabs of its own, and nothing to choose for the sleeves: they are set in Colores", () => {
+    renderWithDesign(<DesignPanel />);
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.queryByRole("radio", { name: /manga|puño/i })).toBeNull();
   });
 
   it("draws an accent design's thumbnail with the design's own accent, not the stale one (Fix 1)", async () => {
     const accentSvg = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="accent" fill="#000"/></svg>`;
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => accentSvg })));
     renderWithDesign(<DesignPanel />);
-    fireEvent.click(screen.getByRole("tab", { name: "Mangas" }));
-    const radio = screen.getByRole("radio", { name: "Mangas de otro color" });
+    const radio = screen.getByRole("radio", { name: "Franjas en tres colores" });
     await waitFor(() => expect(radio.querySelector('[data-thumb="loaded"]')).not.toBeNull());
     const style = (radio.querySelector('[data-thumb="loaded"]') as HTMLElement).style.backgroundImage;
     const decoded = decodeURIComponent(style);
-    expect(decoded).toContain("#1a2a55");
+    expect(decoded).toContain("#0b1d4a");
     expect(decoded).not.toContain("#f5b700");
-  });
-
-  it("offers the sleeve designs that use the accent color", async () => {
-    const { api } = renderWithDesign(<DesignPanel />);
-    fireEvent.click(screen.getByRole("tab", { name: "Mangas" }));
-    fireEvent.click(screen.getByRole("radio", { name: "Mangas de otro color" }));
-    expect(api.current!.state.sleevePatternId).toBe("sleeve-accent");
-    await waitFor(() => expect(document.querySelector('[data-thumb="loaded"]')).not.toBeNull());
   });
 });
 
@@ -104,7 +93,8 @@ describe("ColorsPanel", () => {
     renderWithDesign(<ColorsPanel />);
     pickColor("Color primario", "Rojo");
     pickColor("Color del cuello", "Azul marino");
-    expect(screen.getByText(formatCmyk(hexOf("Rojo")))).toBeInTheDocument();
+    // the sleeves follow the primary, so they show the red too
+    expect(screen.getAllByText(formatCmyk(hexOf("Rojo"))).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(formatCmyk(hexOf("Azul marino")))).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Color primario: Rojo" })).toBeInTheDocument();
     expect(screen.queryByText(/#[0-9a-f]{6}/i)).toBeNull();
@@ -115,27 +105,35 @@ describe("ColorsPanel", () => {
     pickColor("Color del cuello", "Azul");
     expect(api.current!.state.colors).toEqual({ ...before, collar: hexOf("Azul") });
   });
-  it("shows only the colors the chosen patterns use, plus the collar", () => {
+  it("shows the torso's colors, the collar and the sleeves, each under its own heading", () => {
+    renderWithDesign(<ColorsPanel />);
+    const group = (name: string) => screen.getByRole("region", { name });
+    expect(within(group("Torso")).getAllByRole("button").map((b) => b.getAttribute("aria-label") ?? b.textContent)).toEqual([
+      expect.stringMatching(/^Color primario:/),
+      expect.stringMatching(/^Color secundario:/),
+    ]);
+    expect(within(group("Cuello")).getByRole("button", { name: /^Color del cuello:/ })).toBeInTheDocument();
+    expect(within(group("Mangas")).getByRole("button", { name: /^Color de las mangas:/ })).toBeInTheDocument();
+    expect(within(group("Mangas")).getByRole("button", { name: /^Color de la franja:/ })).toBeInTheDocument();
+  });
+
+  it("shows only the torso colors the chosen pattern uses, but always the collar and the sleeves", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
     const field = (label: string) => screen.queryByRole("button", { name: new RegExp(`^${label}:`) });
-    // initial: stripes-v1 + sleeve-plain -> primary, secondary
-    expect(field("Color primario")).not.toBeNull();
-    expect(field("Color secundario")).not.toBeNull();
-    expect(field("Color del cuello")).not.toBeNull();
-
     act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "plain-body" }));
-    act(() => api.current!.dispatch({ type: "SET_SLEEVE_PATTERN", id: "sleeve-primary" }));
-    // plain-body + sleeve-primary -> primary only
     expect(field("Color primario")).not.toBeNull();
     expect(field("Color secundario")).toBeNull();
     expect(field("Color del cuello")).not.toBeNull();
+    expect(field("Color de las mangas")).not.toBeNull();
+    expect(field("Color de la franja")).not.toBeNull();
   });
-  it("does not duplicate a role used by both the torso and the sleeves (Review Focus 2)", () => {
+
+  it("changes the sleeve and its stripe on their own", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
-    act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "stripes-three" }));
-    act(() => api.current!.dispatch({ type: "SET_SLEEVE_PATTERN", id: "sleeve-accent" }));
-    // stripes-three and sleeve-accent both use accent, with different labels: the torso's wins
-    expect(screen.getAllByRole("button", { name: /^Línea fina:/ })).toHaveLength(1);
+    const before = { ...api.current!.state.colors };
+    pickColor("Color de las mangas", "Azul");
+    pickColor("Color de la franja", "Rojo");
+    expect(api.current!.state.colors).toEqual({ ...before, sleeve: hexOf("Azul"), sleeveTrim: hexOf("Rojo") });
   });
 });
 
@@ -447,134 +445,7 @@ describe("SponsorPanel", () => {
   });
 });
 
-describe("GarmentsPanel, the size guide", () => {
-  it("has a Ver talles button on the same row as the question of what to buy, in view without scrolling", () => {
-    renderWithDesign(<GarmentsPanel />);
-    const button = screen.getByRole("button", { name: "Ver talles" });
-    const row = button.parentElement as HTMLElement;
-    expect(within(row).getByText("¿Qué querés comprar?")).toBeInTheDocument();
-    expect(button.className).toMatch(/h-11/);
-  });
-
-  it("opens GEPE's chart of the shirt, and gives the focus back to the button when it closes", () => {
-    renderWithDesign(<GarmentsPanel />);
-    const button = screen.getByRole("button", { name: "Ver talles" });
-    button.focus();
-    fireEvent.click(button);
-    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
-    expect(within(dialog).getByRole("img", { name: /camiseta/i })).toBeInTheDocument();
-    expect(within(dialog).queryByRole("tab", { name: "Short" })).toBeNull();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Cerrar" }));
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(document.activeElement).toBe(button);
-  });
-
-  it("adds the shorts' chart once the kit has shorts", () => {
-    const { api } = renderWithDesign(<GarmentsPanel />);
-    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
-    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
-    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
-    fireEvent.click(within(dialog).getByRole("tab", { name: "Short" }));
-    expect((within(dialog).getByRole("img", { name: /corto|short/i }) as HTMLImageElement).getAttribute("src")).toBe("/talles/short.webp");
-  });
-
-  it("is drawn over the whole page, not inside the panel: the panel's blur would cut it to the panel's size", () => {
-    const { container } = renderWithDesign(<GarmentsPanel />);
-    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
-    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
-    expect(container.contains(dialog)).toBe(false);
-    expect(document.body.contains(dialog)).toBe(true);
-  });
-
-  it("changes nothing of what is bought by being opened and closed", () => {
-    const { api } = renderWithDesign(<GarmentsPanel />);
-    const before = api.current!.state;
-    fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
-    fireEvent.click(screen.getByRole("button", { name: "Cerrar" }));
-    expect(api.current!.state).toBe(before);
-    expect(screen.getByRole("radio", { name: "Solo camiseta" })).toBeChecked();
-  });
-});
-
-describe("GarmentsPanel", () => {
-  it("asks what to buy, with the price per player on each option", () => {
-    renderWithDesign(<GarmentsPanel />);
-    expect(screen.getByText("¿Qué querés comprar?")).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "Solo camiseta" })).toHaveAccessibleDescription(/35/);
-    expect(screen.getByRole("radio", { name: "Camiseta + short" })).toHaveAccessibleDescription(/55/);
-    expect(screen.getByRole("radio", { name: "Camiseta + short" })).toHaveAccessibleDescription(/por jugador/);
-  });
-
-  it("starts as shirt only", () => {
-    renderWithDesign(<GarmentsPanel />);
-    expect(screen.getByRole("radio", { name: "Solo camiseta" })).toBeChecked();
-    expect(screen.getByRole("radio", { name: "Camiseta + short" })).not.toBeChecked();
-  });
-
-  it("switches to shirt and shorts and back", () => {
-    const { api } = renderWithDesign(<GarmentsPanel />);
-    fireEvent.click(screen.getByRole("radio", { name: "Camiseta + short" }));
-    expect(api.current!.state.shorts.included).toBe(true);
-    fireEvent.click(screen.getByRole("radio", { name: "Solo camiseta" }));
-    expect(api.current!.state.shorts.included).toBe(false);
-  });
-
-  it("no longer asks for the shorts' color: that lives in Colores", () => {
-    renderWithDesign(<GarmentsPanel />);
-    fireEvent.click(screen.getByRole("radio", { name: "Camiseta + short" }));
-    expect(screen.queryByText("Color del short")).toBeNull();
-    expect(screen.queryByRole("radio", { name: /Color primario/ })).toBeNull();
-  });
-});
-
-describe("ColorsPanel shorts color", () => {
-  const withShorts = () => {
-    const utils = renderWithDesign(<ColorsPanel />);
-    act(() => utils.api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
-    return utils;
-  };
-
-  it("is not offered when only the shirt is bought", () => {
-    renderWithDesign(<ColorsPanel />);
-    expect(screen.queryByText("Color del short")).toBeNull();
-    expect(screen.queryByRole("radio", { name: /Color primario/ })).toBeNull();
-  });
-
-  it("asks which shirt color the shorts wear, primary by default", () => {
-    withShorts();
-    expect(screen.getByText("Color del short")).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /Color primario/ })).toBeChecked();
-    expect(screen.getByRole("radio", { name: /Color secundario/ })).not.toBeChecked();
-  });
-
-  it("picks the secondary color for the shorts", () => {
-    const { api } = withShorts();
-    fireEvent.click(screen.getByRole("radio", { name: /Color secundario/ }));
-    expect(api.current!.state.shorts.colorSource).toBe("secondary");
-    expect(screen.getByRole("radio", { name: /Color secundario/ })).toBeChecked();
-  });
-
-  it("shows each option with the shirt's current color, in CMYK, without the hexadecimal", () => {
-    const { api } = withShorts();
-    act(() => api.current!.dispatch({ type: "SET_COLOR", slot: "secondary", value: "#123456" }));
-    const radio = screen.getByRole("radio", { name: /Color secundario/ });
-    expect(radio).toHaveTextContent("C 79 M 40 Y 0 K 66");
-    expect(radio).not.toHaveTextContent("#");
-    const swatch = screen.getByRole("radio", { name: /Color secundario/ }).querySelector("[data-swatch]") as HTMLElement;
-    expect(swatch.style.backgroundColor).toBe("rgb(18, 52, 86)");
-  });
-});
-
 describe("keeper in the panels", () => {
-  it("adds the keeper from Prendas", () => {
-    const { api } = renderWithDesign(<GarmentsPanel />);
-    const toggle = screen.getByRole("switch", { name: "Sumar camiseta de arquero" });
-    expect(toggle).toHaveAttribute("aria-checked", "false");
-    fireEvent.click(toggle);
-    expect(api.current!.state.keeper.included).toBe(true);
-    expect(toggle).toHaveAttribute("aria-checked", "true");
-  });
-
   it("Diseño and Colores edit the keeper's shirt while it is shown", () => {
     const { api } = renderWithDesign(
       <>
@@ -584,7 +455,6 @@ describe("keeper in the panels", () => {
     );
     act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
     act(() => api.current!.setEditing("keeper"));
-    expect(screen.getAllByText("Editando la camiseta del arquero").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("radio", { name: "Diagonal" }));
     expect(api.current!.state.keeper.look!.bodyPatternId).toBe("diagonal");
@@ -594,15 +464,6 @@ describe("keeper in the panels", () => {
     expect(api.current!.state.keeper.look!.colors.primary).toBe(hexOf("Marrón"));
     expect(api.current!.state.colors.primary).toBe(initialDesignState.colors.primary);
   });
-  it("hides the shorts color while the keeper is shown, since the shorts follow the team", () => {
-    const { api } = renderWithDesign(<ColorsPanel />);
-    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
-    act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
-    expect(screen.getByText("Color del short")).toBeInTheDocument();
-    act(() => api.current!.setEditing("keeper"));
-    expect(screen.queryByText("Color del short")).toBeNull();
-  });
-
   it("gives the keeper its own text color in Texto", () => {
     const { api } = renderWithDesign(<TextPanel />);
     act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useDesign } from "@/lib/builder/state/design-context";
-import { BODY_PATTERNS, SLEEVE_PATTERNS } from "@/lib/builder/catalog/patterns";
+import { BODY_PATTERNS, SLEEVE_SVG_PATH } from "@/lib/builder/catalog/patterns";
 import { loadPatternImage, loadTintedMask } from "@/lib/builder/texture/image-loader";
 import { drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
 import { UV_FLIP_Y } from "@/lib/builder/geometry/uv-regions";
@@ -73,7 +73,6 @@ export function useJerseyTexture(): THREE.CanvasTexture {
     const timeoutId = setTimeout(() => {
       async function loadPatterns() {
         const bodyPattern = BODY_PATTERNS.find((p) => p.id === state.bodyPatternId);
-        const sleevePattern = SLEEVE_PATTERNS.find((p) => p.id === state.sleevePatternId);
 
         const [bodyPatternImage, bodyBackPatternImage, sleevePatternImage, collarMaskImage] = await Promise.all([
           bodyPattern ? loadPatternImage(bodyPattern.svgPath, state.colors) : Promise.resolve(null),
@@ -84,7 +83,7 @@ export function useJerseyTexture(): THREE.CanvasTexture {
                 return null;
               })
             : Promise.resolve(null),
-          sleevePattern ? loadPatternImage(sleevePattern.svgPath, state.colors) : Promise.resolve(null),
+          loadPatternImage(SLEEVE_SVG_PATH, state.colors),
           JERSEY_MODEL.collarMaskUrl
             ? loadTintedMask(JERSEY_MODEL.collarMaskUrl, state.colors.collar)
             : Promise.resolve(null),
@@ -103,7 +102,7 @@ export function useJerseyTexture(): THREE.CanvasTexture {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [state.bodyPatternId, state.sleevePatternId, state.colors]);
+  }, [state.bodyPatternId, state.colors]);
 
   // Decodes the sponsor images. Cached by data URL, so moving a scale slider
   // (which changes `state.sponsors` but not the images) decodes nothing; a result

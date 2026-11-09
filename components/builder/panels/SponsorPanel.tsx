@@ -11,6 +11,7 @@ import {
 import { useImageUpload } from "@/lib/builder/io/use-image-upload";
 import { UploadIcon } from "../icons";
 import { PanelShell } from "./PanelShell";
+import { SharedByBoth } from "./SharedByBoth";
 
 function SponsorCard({ slot, number }: { slot: SponsorSlot; number: number }) {
   const { state, dispatch, selectedSponsor, registerSponsorUploader } = useDesign();
@@ -128,6 +129,7 @@ export function SponsorPanel() {
 
   return (
     <PanelShell title="Sponsor" hint="Una imagen por ubicación. PNG, JPG o SVG, máximo 2 MB.">
+      <SharedByBoth />
       <div className="flex flex-col gap-3">
         {slots.map((slot) => (
           <SponsorCard key={slot.id} slot={slot} number={sponsorNumber(slot.id, slots)} />

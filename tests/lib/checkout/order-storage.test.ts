@@ -55,6 +55,16 @@ describe("order storage", () => {
     expect(loaded.roster[0]).toEqual({ ...oldLine, shortsSize: "M", keeper: false });
   });
 
+  it("gives the default torso pattern to an order saved with one that no longer exists", () => {
+    const order = makeOrder();
+    const keeper = { included: true, nameNumberFill: null, look: { bodyPatternId: "pinstripes", colors: initialDesignState.colors } };
+    const design = { ...order.design, bodyPatternId: "stripes-fine", keeper };
+    sessionStorage.setItem(ORDER_KEY, JSON.stringify({ ...order, design }));
+    const loaded = loadOrder()!;
+    expect(loaded.design.bodyPatternId).toBe(initialDesignState.bodyPatternId);
+    expect(loaded.design.keeper.look!.bodyPatternId).toBe(initialDesignState.bodyPatternId);
+  });
+
   it("rejects an order whose shorts size is not a real size", () => {
     const order = makeOrder();
     sessionStorage.setItem(

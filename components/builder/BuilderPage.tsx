@@ -26,38 +26,33 @@ import { useSplash } from "@/lib/builder/use-splash";
 import { Header } from "./Header";
 import { RestoreOrderDesign } from "./RestoreOrderDesign";
 import { SplashScreen } from "./SplashScreen";
-import { SectionNav, type SectionId } from "./SectionNav";
+import { SectionNav, type NavId } from "./SectionNav";
 import { StageToolbar } from "./viewer/StageToolbar";
 import { Viewer3D } from "./viewer/Viewer3D";
 import { ViewerControls } from "./viewer/ViewerControls";
-import { ColorsPanel } from "./panels/ColorsPanel";
 import { CrestPanel } from "./panels/CrestPanel";
-import { DesignPanel } from "./panels/DesignPanel";
-import { GarmentsPanel } from "./panels/GarmentsPanel";
+import { GarmentPanel } from "./panels/GarmentPanel";
+import { ShortsPanel } from "./panels/ShortsPanel";
 import { SponsorPanel } from "./panels/SponsorPanel";
-import { TextPanel } from "./panels/TextPanel";
 
-function SectionPanel({ section }: { section: SectionId }) {
+function SectionPanel({ section }: { section: NavId }) {
   switch (section) {
-    case "prendas":
-      return <GarmentsPanel />;
-    case "diseno":
-      return <DesignPanel />;
-    case "colores":
-      return <ColorsPanel />;
-    case "escudo":
+    case "player":
+    case "keeper":
+      return <GarmentPanel garment={section} />;
+    case "shorts":
+      return <ShortsPanel />;
+    case "crest":
       return <CrestPanel />;
     case "sponsor":
       return <SponsorPanel />;
-    case "texto":
-      return <TextPanel />;
   }
 }
 
 export function BuilderPage() {
   const splash = useSplash(useModelReady());
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [section, setSection] = useState<SectionId>("prendas");
+  const [section, setSection] = useState<NavId>("player");
   const [view, setView] = useState<ViewSide>("front");
   const [viewToken, setViewToken] = useState(0);
   const [resetPose, setResetPose] = useState(false);
@@ -75,7 +70,7 @@ export function BuilderPage() {
   }
 
   // Tapping the active tab folds or unfolds the panel; another tab opens it on that section.
-  function handleSectionChange(id: SectionId) {
+  function handleSectionChange(id: NavId) {
     if (id === section) {
       setPanelOpen((open) => !open);
       return;

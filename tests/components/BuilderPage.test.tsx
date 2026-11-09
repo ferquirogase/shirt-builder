@@ -37,12 +37,14 @@ vi.mock("@/lib/share/compose-story", () => ({
 // jsdom has no WebGL: replace the 3D stage with a stub that exposes its props.
 vi.mock("@/components/builder/viewer/Viewer3D", async () => {
   const React = await import("react");
+  const { useDesign } = await import("@/lib/builder/state/design-context");
   return {
     Viewer3D: React.forwardRef<HTMLCanvasElement, { view: string; resetPose: boolean }>(function Viewer3DStub(
       { view, resetPose },
       ref
     ) {
-      return <canvas ref={ref} data-testid="viewer" data-view={view} data-reset={String(resetPose)} />;
+      const { editing } = useDesign();
+      return <canvas ref={ref} data-testid="viewer" data-view={view} data-reset={String(resetPose)} data-editing={editing} />;
     }),
   };
 });
@@ -69,16 +71,28 @@ describe("BuilderPage", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("opens on Prendas, where what to buy is chosen, and switches sections", () => {
+  it("opens on the player's shirt, with the keeper and the shorts to add, and switches entries", () => {
     render(<BuilderPage />);
-    expect(screen.getByRole("heading", { name: "Prendas" })).toBeInTheDocument();
-    expect(screen.getByText("¿Qué querés comprar?")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Diseño" }));
     expect(screen.getByRole("heading", { name: "Diseño" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Colores" }));
+    expect(screen.getByRole("button", { name: "Camiseta jugador" })).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("button", { name: "Camiseta arquero" })).toHaveTextContent("Sumar");
+    expect(screen.getByRole("button", { name: "Short" })).toHaveTextContent("Sumar");
+
+    fireEvent.click(screen.getByRole("tab", { name: "Colores" }));
     expect(screen.getByRole("heading", { name: "Colores" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Nombre y número" }));
-    expect(screen.getByRole("heading", { name: "Nombre y número" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Escudo" }));
+    expect(screen.getByRole("heading", { name: "Escudo" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Short" }));
+    expect(screen.getByRole("button", { name: "Sumar short" })).toBeInTheDocument();
+  });
+
+  it("shows the keeper's shirt in the viewer once it is added from its own entry", () => {
+    render(<BuilderPage />);
+    expect(screen.getByTestId("viewer")).toHaveAttribute("data-editing", "player");
+    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sumar camiseta de arquero" }));
+    expect(screen.getByTestId("viewer")).toHaveAttribute("data-editing", "keeper");
+    expect(screen.getByRole("button", { name: "Camiseta arquero" })).not.toHaveTextContent("Sumar");
   });
 
   it("switches the viewer between Frente and Espalda and back with the reset button", () => {
@@ -141,7 +155,7 @@ describe("BuilderPage", () => {
       expect(panel.className).toContain("max-md:invisible");
       expect(panel.className).toContain("max-md:max-h-0");
       // Still mounted, so what the user typed is not lost.
-      expect(screen.getByRole("heading", { name: "Prendas" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Diseño" })).toBeInTheDocument();
 
       fireEvent.click(handle);
       expect(screen.getByRole("button", { name: "Plegar panel" })).toHaveAttribute("aria-expanded", "true");
@@ -152,16 +166,16 @@ describe("BuilderPage", () => {
       render(<BuilderPage />);
       const panelOpen = () => screen.getByRole("button", { name: /(Plegar|Desplegar) panel/ }).getAttribute("aria-expanded");
 
-      fireEvent.click(screen.getByRole("button", { name: "Prendas" })); // the active one
+      fireEvent.click(screen.getByRole("button", { name: "Camiseta jugador" })); // the active one
       expect(panelOpen()).toBe("false");
 
-      fireEvent.click(screen.getByRole("button", { name: "Colores" })); // another one
+      fireEvent.click(screen.getByRole("button", { name: "Escudo" })); // another one
       expect(panelOpen()).toBe("true");
-      expect(screen.getByRole("heading", { name: "Colores" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Escudo" })).toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole("button", { name: "Colores" })); // now the active one
+      fireEvent.click(screen.getByRole("button", { name: "Escudo" })); // now the active one
       expect(panelOpen()).toBe("false");
-      expect(screen.getByRole("heading", { name: "Colores" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Escudo" })).toBeInTheDocument();
     });
   });
 
@@ -187,7 +201,8 @@ describe("BuilderPage", () => {
   it("also photographs the keeper's shirt when the keeper is in the design, then goes back to the player", async () => {
     captureDesignImages.mockResolvedValueOnce(playerShots).mockResolvedValueOnce(keeperShots);
     render(<BuilderPage />);
-    fireEvent.click(screen.getByRole("switch", { name: "Sumar camiseta de arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sumar camiseta de arquero" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
@@ -196,7 +211,7 @@ describe("BuilderPage", () => {
     expect(loadOrder()?.keeperThumbnails).toEqual({ front: "KF", back: "KB" });
     expect(loadDesignImages()).toEqual({ front: "FF", back: "BB" });
     expect(loadKeeperDesignImages()).toEqual({ front: "KFF", back: "KBB" });
-    expect(screen.getByRole("radio", { name: "Jugador" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByTestId("viewer")).toHaveAttribute("data-editing", "player");
   });
 
   it("photographs the player's shirt as the player's even when the viewer was showing the keeper", async () => {
@@ -204,18 +219,18 @@ describe("BuilderPage", () => {
     captureDesignImages.mockImplementation(async () => {
       // The real capture waits for the camera before it reads the canvas: let the viewer repaint.
       await new Promise((resolve) => setTimeout(resolve, 0));
-      playerShownWhenPhotographed.push(screen.getByRole("radio", { name: "Jugador" }).getAttribute("aria-checked") ?? "");
+      playerShownWhenPhotographed.push(screen.getByTestId("viewer").getAttribute("data-editing") ?? "");
       return playerShots;
     });
     render(<BuilderPage />);
-    fireEvent.click(screen.getByRole("switch", { name: "Sumar camiseta de arquero" }));
-    fireEvent.click(screen.getByRole("radio", { name: "Arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sumar camiseta de arquero" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
     // First the player's shirt, then the keeper's.
-    expect(playerShownWhenPhotographed).toEqual(["true", "false"]);
+    expect(playerShownWhenPhotographed).toEqual(["player", "keeper"]);
   });
 
   it("does not photograph a keeper when there is none, and drops the old keeper images", async () => {
@@ -234,7 +249,8 @@ describe("BuilderPage", () => {
   it("goes to the checkout without the keeper's photos when taking them fails", async () => {
     captureDesignImages.mockResolvedValueOnce(playerShots).mockRejectedValueOnce(new Error("tainted canvas"));
     render(<BuilderPage />);
-    fireEvent.click(screen.getByRole("switch", { name: "Sumar camiseta de arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sumar camiseta de arquero" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 
@@ -281,7 +297,6 @@ describe("BuilderPage", () => {
       roster: [createPlayerLine("a", { name: "Leo", number: "10" }), createPlayerLine("b", { name: "Dibu", number: "1" })],
     });
     render(<BuilderPage />);
-    await waitFor(() => expect(screen.getByRole("textbox", { name: "Nombre del diseño" })).toHaveValue("Los del viernes"));
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
 

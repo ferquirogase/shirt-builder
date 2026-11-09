@@ -6,6 +6,7 @@ import { useImageUpload } from "@/lib/builder/io/use-image-upload";
 import { UploadIcon } from "../icons";
 import { CrestCreator } from "./CrestCreator";
 import { PanelShell } from "./PanelShell";
+import { SharedByBoth } from "./SharedByBoth";
 
 type Mode = "upload" | "create";
 const MODES: { id: Mode; label: string }[] = [
@@ -37,6 +38,7 @@ export function CrestPanel() {
       title="Escudo"
       hint={mode === "upload" ? "PNG, JPG o SVG. Máximo 2 MB." : "Armá un escudo si todavía no tenés uno."}
     >
+      <SharedByBoth />
       <div role="tablist" aria-label="Origen del escudo" className="mb-4 grid grid-cols-2 rounded-2xl bg-black/5 p-1">
         {MODES.map(({ id, label }) => (
           <button

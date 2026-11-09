@@ -16,7 +16,6 @@ export type LookTarget = "player" | "keeper";
 /** What differs between the player shirt and the keeper's: patterns and colors. */
 export type GarmentLook = {
   bodyPatternId: string;
-  sleevePatternId: string;
   colors: Record<ColorSlot, string>;
 };
 
@@ -51,14 +50,12 @@ export function defaultKeeperLook(team: { primary: string; secondary: string }):
   const trim = contrastColor(primary);
   return {
     bodyPatternId: "plain-body",
-    sleevePatternId: "sleeve-primary",
-    colors: { primary, secondary: trim, accent: trim, collar: trim },
+    colors: { primary, secondary: trim, accent: trim, collar: trim, sleeve: primary, sleeveTrim: trim },
   };
 }
 
 export type DesignState = {
   bodyPatternId: string;
-  sleevePatternId: string;
   colors: Record<ColorSlot, string>;
   logoDataUrl: string | null;
   /** The crest made in the creator; `logoDataUrl` holds it drawn. Null when there is none or it was uploaded. */
@@ -76,7 +73,6 @@ export type DesignState = {
 
 export type DesignAction =
   | { type: "SET_BODY_PATTERN"; id: string; target?: LookTarget }
-  | { type: "SET_SLEEVE_PATTERN"; id: string; target?: LookTarget }
   | { type: "SET_COLOR"; slot: ColorSlot; value: string; target?: LookTarget }
   | { type: "SET_LOGO"; dataUrl: string | null }
   | { type: "SET_CREST_CONFIG"; config: CrestConfig }
@@ -97,13 +93,12 @@ export type DesignAction =
 
 export type LookAction = Extract<
   DesignAction,
-  { type: "SET_BODY_PATTERN" | "SET_SLEEVE_PATTERN" | "SET_COLOR" | "SET_NN_FILL" }
+  { type: "SET_BODY_PATTERN" | "SET_COLOR" | "SET_NN_FILL" }
 >;
 
 export const initialDesignState: DesignState = {
   bodyPatternId: "stripes-v1",
-  sleevePatternId: "sleeve-plain",
-  colors: { primary: "#0a5c36", secondary: "#ffffff", accent: "#f5b700", collar: "#ffffff" },
+  colors: { primary: "#0a5c36", secondary: "#ffffff", accent: "#f5b700", collar: "#ffffff", sleeve: "#0a5c36", sleeveTrim: "#ffffff" },
   logoDataUrl: null,
   crestConfig: null,
   sponsors: {},
@@ -121,28 +116,32 @@ export function shortsColor(state: Pick<DesignState, "colors" | "shorts">): stri
   return state.colors[state.shorts.colorSource];
 }
 
+// The sleeves start as the shirt's primary and its secondary, and follow them until the user chooses
+// their own: a sleeve still the color the primary was moves with it.
+function followTeamColors(before: DesignState["colors"], after: DesignState["colors"]): DesignState["colors"] {
+  const colors = { ...after };
+  if (after.sleeve === before.sleeve && before.sleeve === before.primary) colors.sleeve = after.primary;
+  if (after.sleeveTrim === before.sleeveTrim && before.sleeveTrim === before.secondary) colors.sleeveTrim = after.secondary;
+  return colors;
+}
+
 // Switching pattern: roles the new pattern uses that were not already visible
 // take the pattern's defaults; roles already visible keep the user's choice.
 // Pure, so the UI can preview exactly what a click would produce.
-export function colorsAfterPatternChange(
-  state: DesignState,
-  kind: "body" | "sleeve",
-  id: string
-): DesignState["colors"] {
+export function colorsAfterPatternChange(state: DesignState, id: string): DesignState["colors"] {
   const pattern = findPattern(id);
   if (!pattern) return state.colors;
 
-  const inUse = new Set(visibleColors(state.bodyPatternId, state.sleevePatternId).map((c) => c.role));
+  const inUse = new Set(visibleColors(state.bodyPatternId).map((c) => c.role));
   const colors = { ...state.colors };
   for (const color of pattern.colors) {
     if (!inUse.has(color.role)) colors[color.role] = color.default;
   }
-  return colors;
+  return followTeamColors(state.colors, colors);
 }
 
-function withPatternChange(state: DesignState, kind: "body" | "sleeve", id: string): DesignState {
-  const next = kind === "body" ? { ...state, bodyPatternId: id } : { ...state, sleevePatternId: id };
-  return { ...next, colors: colorsAfterPatternChange(state, kind, id) };
+function withPatternChange(state: DesignState, id: string): DesignState {
+  return { ...state, bodyPatternId: id, colors: colorsAfterPatternChange(state, id) };
 }
 
 // The design as one of the two shirts wears it. Everything the keeper shares with the team
@@ -172,7 +171,7 @@ function reduceKeeper(state: DesignState, action: LookAction): DesignState {
     ...state,
     keeper: {
       ...state.keeper,
-      look: { bodyPatternId: next.bodyPatternId, sleevePatternId: next.sleevePatternId, colors: next.colors },
+      look: { bodyPatternId: next.bodyPatternId, colors: next.colors },
       nameNumberFill: action.type === "SET_NN_FILL" ? next.nameNumberStyle.fill : state.keeper.nameNumberFill,
     },
   };
@@ -182,11 +181,9 @@ export function designReducer(state: DesignState, action: DesignAction): DesignS
   if ("target" in action && action.target === "keeper") return reduceKeeper(state, action);
   switch (action.type) {
     case "SET_BODY_PATTERN":
-      return withPatternChange(state, "body", action.id);
-    case "SET_SLEEVE_PATTERN":
-      return withPatternChange(state, "sleeve", action.id);
+      return withPatternChange(state, action.id);
     case "SET_COLOR":
-      return { ...state, colors: { ...state.colors, [action.slot]: action.value } };
+      return { ...state, colors: followTeamColors(state.colors, { ...state.colors, [action.slot]: action.value }) };
     case "SET_LOGO":
       return { ...state, logoDataUrl: action.dataUrl, crestConfig: null };
     case "SET_CREST_CONFIG":
