@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { drawShortsToCanvas } from "@/lib/builder/texture/shorts-compositor";
 import { initialDesignState } from "@/lib/builder/state/design-state";
+import { DEFAULT_PRESET_ID, getNameNumberPreset } from "@/lib/builder/catalog/name-number-presets";
 import {
   SHORTS_CREST_BOX_FRACTION,
   SHORTS_CREST_STRETCH,
@@ -206,8 +207,10 @@ describe("the front of the shorts: number, maker's logo and crest", () => {
     const fonts: string[] = [];
     (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
     drawShortsToCanvas(ctx, 1000, withNumber("10"), "#000", {}, "'Oswald', sans-serif");
-    // classic: weight 700, scale 1.
-    expect(fonts).toEqual([`700 ${1000 * SHORTS_NUMBER_FONT_FRACTION}px 'Oswald', sans-serif`]);
+    const preset = getNameNumberPreset(DEFAULT_PRESET_ID);
+    expect(fonts).toHaveLength(1);
+    expect(fonts[0]).toMatch(new RegExp(`^${preset.weight} [\\d.]+px 'Oswald', sans-serif$`));
+    expect(parseFloat(/([\d.]+)px/.exec(fonts[0])![1])).toBeCloseTo(1000 * SHORTS_NUMBER_FONT_FRACTION * preset.numberScale, 5);
     expect(SHORTS_NUMBER_FONT_FRACTION).toBeLessThan(0.12);
   });
 

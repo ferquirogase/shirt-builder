@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Oswald } from "next/font/google";
+import { nameNumberFontVariables } from "./fonts/name-number/fonts";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,8 +13,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Name/number fonts for the jersey canvas. preload: false so they download only
-// when a style that uses them is shown, not on every visit.
+// The display font of the share story's titles. preload: false so it downloads only when used.
+// The shirt's name and number typefaces are in ./fonts/name-number.
 const nnOswald = Oswald({ variable: "--font-nn-oswald", subsets: ["latin"], preload: false });
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} ${nnOswald.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${nnOswald.variable} ${nameNumberFontVariables} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

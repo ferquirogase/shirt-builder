@@ -182,7 +182,7 @@ describe("useJerseyTexture", () => {
     mount();
     await waitFor(() => expect(lastImages().bodyPatternImage).not.toBeNull());
     await waitFor(() => expect(lastImages().brandLogoForDark).not.toBeNull());
-    expect(fontsLoad).toHaveBeenCalledWith(expect.stringMatching(/^700 48px /), expect.any(String));
+    expect(fontsLoad).toHaveBeenCalledWith(expect.stringMatching(/^400 48px /), expect.any(String));
 
     const paintsBefore = draw.mock.calls.length;
     await act(async () => release([]));

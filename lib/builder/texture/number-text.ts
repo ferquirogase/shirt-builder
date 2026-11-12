@@ -37,6 +37,22 @@ export type StyledTextOptions = {
   squeeze?: number;
 };
 
+// Shirts are printed without accents. The Ñ stays, unless the typeface has none (it prints an N, not a
+// letter from another font), and a sign the typeface lacks is left out (a hyphen leaves a space).
+export function printableText(text: string, preset: Pick<NameNumberPreset, "hasEnye" | "missingSigns">): string {
+  let out = "";
+  for (const char of text) {
+    if (char === "Ñ" || char === "ñ") {
+      out += preset.hasEnye ? char : char === "Ñ" ? "N" : "n";
+    } else if (preset.missingSigns.includes(char)) {
+      out += char === "-" ? " " : "";
+    } else {
+      out += char.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+  }
+  return out;
+}
+
 // Draws outline -> fill, centered on (x, y), in the name and number style.
 export function drawStyledText(
   ctx: CanvasRenderingContext2D,
@@ -45,6 +61,7 @@ export function drawStyledText(
   y: number,
   { basePx, maxWidth, style, preset, fontFamily, rotation = 0, squeeze = 1 }: StyledTextOptions
 ): void {
+  text = printableText(text, preset);
   ctx.save();
   const fontFor = (px: number) => `${preset.weight} ${px}px ${fontFamily}`;
   ctx.font = fontFor(basePx);
