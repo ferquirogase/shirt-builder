@@ -8,13 +8,13 @@ const parse = (svg: string) => new DOMParser().parseFromString(svg, "image/svg+x
 const withConfig = (patch: Partial<CrestConfig>): CrestConfig => ({ ...INITIAL_CREST, ...patch });
 
 describe("cleanInitials", () => {
-  it("keeps up to three uppercase letters or digits and drops the rest", () => {
-    expect(cleanInitials("abcd")).toBe("ABC");
+  it("keeps up to four uppercase letters or digits and drops the rest", () => {
+    expect(cleanInitials("abcde")).toBe("ABCD");
     expect(cleanInitials(" a b ")).toBe("AB");
     expect(cleanInitials("<b>a&c")).toBe("BAC");
     expect(cleanInitials("ñu7")).toBe("ÑU7");
-    expect(cleanInitials("Álvaro")).toBe("ALV");
-    expect(cleanInitials("Éric")).toBe("ERI");
+    expect(cleanInitials("Álvaro")).toBe("ALVA");
+    expect(cleanInitials("Éric")).toBe("ERIC");
   });
 });
 
@@ -62,6 +62,31 @@ describe("crestToSvg", () => {
 
     const doc = parse(crestToSvg(withConfig({ symbol: { kind: "initials", text: "ABC" } })));
     expect(doc.querySelector("text")?.textContent).toBe("ABC");
+  });
+
+  it("draws four initials smaller than three, so they still fit inside the shield", () => {
+    const size = (text: string) =>
+      Number(parse(crestToSvg(withConfig({ symbol: { kind: "initials", text } }))).querySelector("text")?.getAttribute("font-size"));
+    expect(size("ABCD")).toBeLessThan(size("ABC"));
+  });
+
+  const borderOf = (svg: string) =>
+    [...parse(svg).querySelectorAll("path")].find((p) => p.getAttribute("fill") === "none")?.getAttribute("stroke");
+
+  it("draws the border in the outline color", () => {
+    const svg = crestToSvg(withConfig({ colors: { primary: "#000000", secondary: "#ffffff", outline: "#ff0000" } }));
+    expect(borderOf(svg)).toBe("#ff0000");
+  });
+
+  it("draws the border in the secondary color when no outline was chosen, as crests made before did", () => {
+    const svg = crestToSvg(withConfig({ colors: { primary: "#000000", secondary: "#00ff00" } }));
+    expect(borderOf(svg)).toBe("#00ff00");
+  });
+
+  it("replaces a hostile outline color with the secondary", () => {
+    const svg = crestToSvg(withConfig({ colors: { primary: "#000000", secondary: "#00ff00", outline: '"/><x' } }));
+    expect(parse(svg).querySelector("parsererror")).toBeNull();
+    expect(borderOf(svg)).toBe("#00ff00");
   });
 
   it("cannot be broken by hostile colors, such as a tampered saved order", () => {

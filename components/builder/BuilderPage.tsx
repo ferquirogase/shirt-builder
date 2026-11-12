@@ -27,7 +27,6 @@ import { Header } from "./Header";
 import { RestoreOrderDesign } from "./RestoreOrderDesign";
 import { SplashScreen } from "./SplashScreen";
 import { SectionNav, type NavId } from "./SectionNav";
-import { StageToolbar } from "./viewer/StageToolbar";
 import { Viewer3D } from "./viewer/Viewer3D";
 import { ViewerControls } from "./viewer/ViewerControls";
 import { CrestPanel } from "./panels/CrestPanel";
@@ -147,8 +146,8 @@ export function BuilderPage() {
           <div className="flex min-h-0 flex-1 flex-col md:flex-row">
             {/* Stage: first on mobile, last on desktop. */}
             <div className="relative order-1 min-h-[14rem] flex-1 md:order-3" style={{ background: stageGlowCss() }}>
-              {/* The canvas fills the stage; the toolbar and the Frente/Espalda controls float over it,
-                  in the margins the camera leaves above and below the shirt. */}
+              {/* The canvas fills the stage; the Frente/Espalda controls float over it, in the margin the
+                  camera leaves below the shirt. */}
               <div className="absolute inset-0">
                 <Viewer3D
                   ref={canvasRef}
@@ -158,7 +157,6 @@ export function BuilderPage() {
                   onInteract={() => setInteracted(true)}
                 />
               </div>
-              <StageToolbar />
               <ViewerControls
                 view={view}
                 onViewChange={requestView}

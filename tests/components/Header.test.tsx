@@ -32,6 +32,12 @@ describe("Header", () => {
     expect(within(button).getByTestId("order-spinner")).toBeInTheDocument();
   });
 
+  it("holds the reset button, before Compartir and away from the shirt", () => {
+    renderWithDesign(<Header onReview={() => {}} onShare={() => {}} />);
+    const buttons = screen.getAllByRole("button").map((b) => b.getAttribute("aria-label"));
+    expect(buttons).toEqual(["Resetear diseño", "Compartir", "Hacer pedido"]);
+  });
+
   it("calls onShare when Compartir is pressed", () => {
     const onShare = vi.fn();
     renderWithDesign(<Header onReview={() => {}} onShare={onShare} />);

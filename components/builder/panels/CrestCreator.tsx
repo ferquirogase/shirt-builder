@@ -63,7 +63,7 @@ export function CrestCreator() {
 
   return (
     <div>
-      {/* The result and its two colors side by side: the panel scrolls inside a short sheet on a phone. */}
+      {/* The result and its colors side by side: the panel scrolls inside a short sheet on a phone. */}
       <div className="flex items-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element -- a data URL made in the browser, nothing to optimize */}
         <img src={previewUrl} alt="Vista previa del escudo" className="h-24 w-24 shrink-0 rounded-2xl bg-white/70 p-2" />
@@ -79,6 +79,12 @@ export function CrestCreator() {
             short="Secundario"
             value={config.colors.secondary}
             onChange={(secondary) => update({ colors: { ...config.colors, secondary } })}
+          />
+          <ColorRow
+            label="Color del contorno del escudo"
+            short="Contorno"
+            value={config.colors.outline ?? config.colors.secondary}
+            onChange={(outline) => update({ colors: { ...config.colors, outline } })}
           />
         </div>
       </div>
@@ -173,7 +179,7 @@ export function CrestCreator() {
         <input
           type="text"
           aria-label="Iniciales"
-          placeholder="Hasta 3 letras"
+          placeholder={`Hasta ${MAX_INITIALS} letras`}
           maxLength={MAX_INITIALS}
           autoComplete="off"
           value={symbol.text}

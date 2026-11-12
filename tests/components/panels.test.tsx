@@ -512,12 +512,30 @@ describe("crest creator", () => {
     });
   });
 
-  it("takes initials, cleaned and limited to three", () => {
+  it("chooses the border color, which starts as the secondary and follows it until chosen", () => {
+    const { api } = renderWithDesign(<CrestPanel />);
+    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    const outline = screen.getByLabelText("Color del contorno del escudo") as HTMLInputElement;
+    expect(outline.value).toBe(INITIAL_CREST.colors.secondary);
+
+    fireEvent.change(screen.getByLabelText("Color secundario del escudo"), { target: { value: "#ffcc00" } });
+    expect(outline.value).toBe("#ffcc00");
+
+    fireEvent.change(outline, { target: { value: "#ff0000" } });
+    expect(api.current!.state.crestConfig?.colors).toEqual({
+      primary: INITIAL_CREST.colors.primary,
+      secondary: "#ffcc00",
+      outline: "#ff0000",
+    });
+  });
+
+  it("takes initials, cleaned and limited to four", () => {
     const { api } = renderWithDesign(<CrestPanel />);
     fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
     fireEvent.click(screen.getByRole("radio", { name: "Iniciales" }));
-    fireEvent.change(screen.getByLabelText("Iniciales"), { target: { value: "a b<c>d" } });
-    expect(api.current!.state.crestConfig?.symbol).toEqual({ kind: "initials", text: "ABC" });
+    expect(screen.getByLabelText("Iniciales")).toHaveAttribute("placeholder", "Hasta 4 letras");
+    fireEvent.change(screen.getByLabelText("Iniciales"), { target: { value: "a b<c>de" } });
+    expect(api.current!.state.crestConfig?.symbol).toEqual({ kind: "initials", text: "ABCD" });
     fireEvent.click(screen.getByRole("radio", { name: "Sin símbolo" }));
     expect(api.current!.state.crestConfig?.symbol).toBeNull();
   });

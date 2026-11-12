@@ -65,7 +65,7 @@ function symbolMarkup(config: CrestConfig, box: CrestShape["box"], primary: stri
   }
 
   if (symbol.text === "") return "";
-  const fontSize = side * ([0.5, 0.5, 0.38, 0.3][Math.min(symbol.text.length, 3)] ?? 0.3);
+  const fontSize = side * ([0.5, 0.5, 0.38, 0.3, 0.24][Math.min(symbol.text.length, 4)] ?? 0.24);
   return (
     `<text x="${num(cx)}" y="${num(cy)}" text-anchor="middle" dominant-baseline="central" ` +
     `font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="${num(fontSize)}" ` +
@@ -79,6 +79,7 @@ export function crestToSvg(config: CrestConfig): string {
   const { box, d } = shape;
   const primary = safeColor(config.colors.primary, INITIAL_CREST.colors.primary);
   const secondary = safeColor(config.colors.secondary, INITIAL_CREST.colors.secondary);
+  const outline = safeColor(config.colors.outline ?? secondary, secondary);
   const scale = (VIEW - 2 * MARGIN) / Math.max(box.width, box.height);
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
@@ -91,7 +92,7 @@ export function crestToSvg(config: CrestConfig): string {
     `<defs><clipPath id="crest-clip"><path d="${d}"/></clipPath></defs>` +
     `<path d="${d}" fill="${primary}"/>` +
     `<g clip-path="url(#crest-clip)">${divisionMarkup(config.divisionId, box, secondary)}` +
-    `<path d="${d}" fill="none" stroke="${secondary}" stroke-width="${num(border)}"/></g>` +
+    `<path d="${d}" fill="none" stroke="${outline}" stroke-width="${num(border)}"/></g>` +
     symbolMarkup(config, box, primary) +
     `</g></svg>`
   );
