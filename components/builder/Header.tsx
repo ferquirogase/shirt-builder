@@ -2,6 +2,7 @@
 import { useDesign } from "@/lib/builder/state/design-context";
 import type { DesignState, LookTarget } from "@/lib/builder/state/design-state";
 import { ArrowRightIcon, ShareIcon } from "./icons";
+import { ResetButton } from "./ResetButton";
 
 type HeaderProps = {
   onReview: (design: DesignState, showKit: (target: LookTarget) => void) => void;
@@ -18,6 +19,7 @@ export function Header({ onReview, onShare, reviewing = false, sharing = false }
         GEPE<sup className="ml-0.5 align-super text-[0.4em] font-bold">®</sup>
       </span>
       <div className="ml-auto flex items-center gap-2">
+        <ResetButton />
         <button
           type="button"
           disabled={reviewing || sharing}

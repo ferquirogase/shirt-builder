@@ -14,11 +14,12 @@ export type CrestSymbol = { kind: "icon"; id: string } | { kind: "initials"; tex
 export type CrestConfig = {
   shapeId: string;
   divisionId: CrestDivisionId;
-  colors: { primary: string; secondary: string };
+  /** `outline` is the border's color; without one the border wears the secondary, as crests made before it did. */
+  colors: { primary: string; secondary: string; outline?: string };
   symbol: CrestSymbol;
 };
 
-export const MAX_INITIALS = 3;
+export const MAX_INITIALS = 4;
 
 export const INITIAL_CREST: CrestConfig = {
   shapeId: CREST_SHAPES[0].id,
@@ -32,7 +33,7 @@ function baseLetter(char: string): string {
   return char.toUpperCase() === "Ñ" ? "Ñ" : char.normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-// Up to three letters or digits, uppercase: what fits inside a shield.
+// Up to four letters or digits, uppercase: what fits inside a shield.
 export function cleanInitials(text: string): string {
   return [...text].map(baseLetter).join("").toUpperCase().replace(/[^A-ZÑ0-9]/g, "").slice(0, MAX_INITIALS);
 }
