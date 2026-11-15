@@ -17,7 +17,11 @@ import { formatCmyk } from "@/lib/builder/color/cmyk";
 
 // jsdom never decodes images, so the crest's "can this actually be drawn?"
 // check is driven by this mock.
-vi.mock("@/lib/builder/texture/image-loader", () => ({ loadImage: vi.fn() }));
+// Thumbnails of the heavy moldes are color masks, painted on a canvas jsdom does not have.
+vi.mock("@/lib/builder/texture/image-loader", () => ({
+  loadImage: vi.fn(),
+  loadMaskPiece: vi.fn(async () => ({ toDataURL: () => "data:image/png;base64," })),
+}));
 
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="primary" fill="#000"/></svg>`;
 
@@ -39,9 +43,9 @@ afterEach(() => vi.unstubAllGlobals());
 describe("DesignPanel", () => {
   it("picks a torso pattern", () => {
     const { api } = renderWithDesign(<DesignPanel />);
-    expect(screen.getByText("Elegí un patrón para el torso.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("radio", { name: "Diagonal" }));
-    expect(api.current!.state.bodyPatternId).toBe("diagonal");
+    expect(screen.getByText("Elegí un diseño: cada uno trae sus mangas.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: "Banda diagonal" }));
+    expect(api.current!.state.bodyPatternId).toBe("molde-05");
   });
 
   it("has no tabs of its own, and nothing to choose for the sleeves: they are set in Colores", () => {
@@ -53,50 +57,52 @@ describe("DesignPanel", () => {
   it("draws an accent design's thumbnail with the design's own accent, not the stale one (Fix 1)", async () => {
     const accentSvg = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="accent" fill="#000"/></svg>`;
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => accentSvg })));
-    renderWithDesign(<DesignPanel />);
-    const radio = screen.getByRole("radio", { name: "Franjas en tres colores" });
+    const { api } = renderWithDesign(<DesignPanel />);
+    // The current design does not show the accent, so the one in the state is stale.
+    act(() => api.current!.dispatch({ type: "SET_COLOR", slot: "accent", value: "#123456" }));
+    const radio = screen.getByRole("radio", { name: "Espigas" });
     await waitFor(() => expect(radio.querySelector('[data-thumb="loaded"]')).not.toBeNull());
     const style = (radio.querySelector('[data-thumb="loaded"]') as HTMLElement).style.backgroundImage;
     const decoded = decodeURIComponent(style);
-    expect(decoded).toContain("#0b1d4a");
-    expect(decoded).not.toContain("#f5b700");
+    expect(decoded).toContain("#f5b700");
+    expect(decoded).not.toContain("#123456");
   });
 });
 
 describe("ColorsPanel", () => {
   it("updates primary and secondary colors", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
-    pickColor("Color primario", "Rojo");
-    pickColor("Color secundario", "Verde claro");
+    pickColor("Color principal", "Rojo");
+    pickColor("Color 2", "Verde claro");
     expect(api.current!.state.colors.primary).toBe(hexOf("Rojo"));
     expect(api.current!.state.colors.secondary).toBe(hexOf("Verde claro"));
   });
 
   it("opens one color's palette at a time, and closes it once a color is picked", () => {
     renderWithDesign(<ColorsPanel />);
-    expect(screen.queryByRole("radiogroup", { name: "Color primario" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /^Color primario:/ }));
-    expect(screen.getByRole("radiogroup", { name: "Color primario" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /^Color secundario:/ }));
-    expect(screen.queryByRole("radiogroup", { name: "Color primario" })).toBeNull();
-    expect(screen.getByRole("radiogroup", { name: "Color secundario" })).toBeInTheDocument();
+    expect(screen.queryByRole("radiogroup", { name: "Color principal" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^Color principal:/ }));
+    expect(screen.getByRole("radiogroup", { name: "Color principal" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Color 2:/ }));
+    expect(screen.queryByRole("radiogroup", { name: "Color principal" })).toBeNull();
+    expect(screen.getByRole("radiogroup", { name: "Color 2" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: "Rojo" }));
     expect(screen.queryByRole("radiogroup")).toBeNull();
   });
 
   it("offers no free color picker: only the palette", () => {
     const { container } = renderWithDesign(<ColorsPanel />);
-    fireEvent.click(screen.getByRole("button", { name: /^Color primario:/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Color principal:/ }));
     expect(container.querySelector('input[type="color"]')).toBeNull();
   });
   it("shows each color in CMYK and by name, and no longer in hexadecimal", () => {
     renderWithDesign(<ColorsPanel />);
-    pickColor("Color primario", "Rojo");
+    pickColor("Color principal", "Rojo");
     pickColor("Color del cuello", "Azul marino");
-    // the sleeves follow the primary, so they show the red too
+    // the primary shows in its own swatch
     expect(screen.getAllByText(formatCmyk(hexOf("Rojo"))).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(formatCmyk(hexOf("Azul marino")))).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Color primario: Rojo" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Color principal: Rojo" })).toBeInTheDocument();
     expect(screen.queryByText(/#[0-9a-f]{6}/i)).toBeNull();
   });
   it("updates the collar color on its own, leaving the pattern colors alone", () => {
@@ -105,35 +111,41 @@ describe("ColorsPanel", () => {
     pickColor("Color del cuello", "Azul");
     expect(api.current!.state.colors).toEqual({ ...before, collar: hexOf("Azul") });
   });
-  it("shows the torso's colors, the collar and the sleeves, each under its own heading", () => {
+  it("shows the torso's colors, the collar and the cuff, each under its own heading", () => {
     renderWithDesign(<ColorsPanel />);
     const group = (name: string) => screen.getByRole("region", { name });
     expect(within(group("Torso")).getAllByRole("button").map((b) => b.getAttribute("aria-label") ?? b.textContent)).toEqual([
-      expect.stringMatching(/^Color primario:/),
-      expect.stringMatching(/^Color secundario:/),
+      expect.stringMatching(/^Color principal:/),
+      expect.stringMatching(/^Color 2:/),
     ]);
     expect(within(group("Cuello")).getByRole("button", { name: /^Color del cuello:/ })).toBeInTheDocument();
-    expect(within(group("Mangas")).getByRole("button", { name: /^Color de las mangas:/ })).toBeInTheDocument();
-    expect(within(group("Mangas")).getByRole("button", { name: /^Color de la franja:/ })).toBeInTheDocument();
+    expect(within(group("Mangas")).getAllByRole("button").map((b) => b.getAttribute("aria-label") ?? b.textContent)).toEqual([
+      expect.stringMatching(/^Color del puño:/),
+    ]);
   });
 
-  it("shows only the torso colors the chosen pattern uses, but always the collar and the sleeves", () => {
+  it("shows only the colors the chosen design uses: up to four for the torso, and the cuff only if its sleeve has one", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
     const field = (label: string) => screen.queryByRole("button", { name: new RegExp(`^${label}:`) });
     act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "plain-body" }));
-    expect(field("Color primario")).not.toBeNull();
-    expect(field("Color secundario")).toBeNull();
+    expect(field("Color principal")).not.toBeNull();
+    expect(field("Color 2")).toBeNull();
     expect(field("Color del cuello")).not.toBeNull();
-    expect(field("Color de las mangas")).not.toBeNull();
-    expect(field("Color de la franja")).not.toBeNull();
+    expect(field("Color del puño")).not.toBeNull();
+
+    act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "molde-19" }));
+    for (const label of ["Color principal", "Color 2", "Color 3", "Color 4"]) expect(field(label)).not.toBeNull();
+
+    act(() => api.current!.dispatch({ type: "SET_BODY_PATTERN", id: "molde-03" }));
+    expect(screen.queryByRole("region", { name: "Mangas" })).toBeNull();
+    expect(field("Color del cuello")).not.toBeNull();
   });
 
-  it("changes the sleeve and its stripe on their own", () => {
+  it("changes the cuff on its own", () => {
     const { api } = renderWithDesign(<ColorsPanel />);
     const before = { ...api.current!.state.colors };
-    pickColor("Color de las mangas", "Azul");
-    pickColor("Color de la franja", "Rojo");
-    expect(api.current!.state.colors).toEqual({ ...before, sleeve: hexOf("Azul"), sleeveTrim: hexOf("Rojo") });
+    pickColor("Color del puño", "Rojo");
+    expect(api.current!.state.colors).toEqual({ ...before, sleeveTrim: hexOf("Rojo") });
   });
 });
 
@@ -456,11 +468,11 @@ describe("keeper in the panels", () => {
     act(() => api.current!.dispatch({ type: "SET_KEEPER_INCLUDED", value: true }));
     act(() => api.current!.setEditing("keeper"));
 
-    fireEvent.click(screen.getByRole("radio", { name: "Diagonal" }));
-    expect(api.current!.state.keeper.look!.bodyPatternId).toBe("diagonal");
+    fireEvent.click(screen.getByRole("radio", { name: "Banda diagonal" }));
+    expect(api.current!.state.keeper.look!.bodyPatternId).toBe("molde-05");
     expect(api.current!.state.bodyPatternId).toBe(initialDesignState.bodyPatternId);
 
-    pickColor("Color primario", "Marrón");
+    pickColor("Color principal", "Marrón");
     expect(api.current!.state.keeper.look!.colors.primary).toBe(hexOf("Marrón"));
     expect(api.current!.state.colors.primary).toBe(initialDesignState.colors.primary);
   });

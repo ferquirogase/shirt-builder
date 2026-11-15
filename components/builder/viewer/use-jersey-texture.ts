@@ -2,8 +2,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useDesign } from "@/lib/builder/state/design-context";
-import { BODY_PATTERNS, SLEEVE_SVG_PATH } from "@/lib/builder/catalog/patterns";
-import { loadPatternImage, loadTintedMask } from "@/lib/builder/texture/image-loader";
+import { BODY_PATTERNS } from "@/lib/builder/catalog/patterns";
+import { loadPatternImage, loadSleeveImage, loadTintedMask } from "@/lib/builder/texture/image-loader";
 import { drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
 import { UV_FLIP_Y } from "@/lib/builder/geometry/uv-regions";
 import { JERSEY_MODEL } from "@/lib/builder/geometry/jersey-model";
@@ -18,9 +18,9 @@ const CANVAS_SIZE = 2048;
 const PATTERN_REDRAW_DEBOUNCE_MS = 80;
 
 type PatternImages = {
-  bodyPatternImage: HTMLImageElement | null;
-  bodyBackPatternImage: HTMLImageElement | null;
-  sleevePatternImage: HTMLImageElement | null;
+  bodyPatternImage: CanvasImageSource | null;
+  bodyBackPatternImage: CanvasImageSource | null;
+  sleevePatternImage: CanvasImageSource | null;
   collarMaskImage: HTMLCanvasElement | null;
 };
 
@@ -75,15 +75,15 @@ export function useJerseyTexture(): THREE.CanvasTexture {
         const bodyPattern = BODY_PATTERNS.find((p) => p.id === state.bodyPatternId);
 
         const [bodyPatternImage, bodyBackPatternImage, sleevePatternImage, collarMaskImage] = await Promise.all([
-          bodyPattern ? loadPatternImage(bodyPattern.svgPath, state.colors) : Promise.resolve(null),
-          // A broken back SVG must not break the shirt: fall back to the front image.
-          bodyPattern?.svgPathBack
-            ? loadPatternImage(bodyPattern.svgPathBack, state.colors).catch((err) => {
+          bodyPattern ? loadPatternImage(bodyPattern.frontPath, state.colors) : Promise.resolve(null),
+          // A broken back must not break the shirt: fall back to the front image.
+          bodyPattern?.backPath
+            ? loadPatternImage(bodyPattern.backPath, state.colors).catch((err) => {
                 console.error("Failed to load back pattern image", err);
                 return null;
               })
             : Promise.resolve(null),
-          loadPatternImage(SLEEVE_SVG_PATH, state.colors),
+          bodyPattern ? loadSleeveImage(bodyPattern.sleevePath, bodyPattern.cuffFrom, state.colors) : Promise.resolve(null),
           JERSEY_MODEL.collarMaskUrl
             ? loadTintedMask(JERSEY_MODEL.collarMaskUrl, state.colors.collar)
             : Promise.resolve(null),

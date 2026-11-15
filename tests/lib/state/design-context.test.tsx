@@ -28,11 +28,11 @@ describe("DesignProvider", () => {
     act(() =>
       api.current!.dispatch({
         type: "LOAD_DESIGN",
-        design: { ...api.current!.state, projectName: "Cargado", bodyPatternId: "stripes-v1" },
+        design: { ...api.current!.state, projectName: "Cargado", bodyPatternId: "molde-07" },
       })
     );
     expect(api.current!.state.projectName).toBe("Cargado");
-    expect(api.current!.state.bodyPatternId).toBe("stripes-v1");
+    expect(api.current!.state.bodyPatternId).toBe("molde-07");
     expect(api.current!.canUndo).toBe(false);
   });
 

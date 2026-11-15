@@ -64,7 +64,7 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
     a.colors.secondary === b.colors.secondary &&
     a.colors.accent === b.colors.accent &&
     a.colors.collar === b.colors.collar &&
-    a.colors.sleeve === b.colors.sleeve &&
+    a.colors.quaternary === b.colors.quaternary &&
     a.colors.sleeveTrim === b.colors.sleeveTrim &&
     a.logoDataUrl === b.logoDataUrl &&
     JSON.stringify(a.crestConfig) === JSON.stringify(b.crestConfig) &&

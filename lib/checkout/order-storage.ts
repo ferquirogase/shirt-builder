@@ -56,9 +56,18 @@ function isImagePair(value: unknown): value is Thumbnails {
   return isRecord(value) && typeof value.front === "string" && typeof value.back === "string";
 }
 
-// A design saved before the sleeves had colors of their own: they wore the shirt's.
-export function withSleeveColors(colors: DesignState["colors"]): DesignState["colors"] {
-  return { ...colors, sleeve: colors.sleeve ?? colors.primary, sleeveTrim: colors.sleeveTrim ?? colors.secondary };
+// A design saved before the moldes: it may lack the cuff and the fourth color, and may carry the
+// separate sleeve color that the sleeves no longer have.
+export function withColorDefaults(colors: DesignState["colors"]): DesignState["colors"] {
+  const { primary, secondary, accent, quaternary, collar, sleeveTrim } = colors;
+  return {
+    primary,
+    secondary,
+    accent,
+    quaternary: quaternary ?? initialDesignState.colors.quaternary,
+    collar,
+    sleeveTrim: sleeveTrim ?? secondary,
+  };
 }
 
 // Orders saved before the shorts existed lack their fields: fill in the defaults.
@@ -72,9 +81,9 @@ function withShortsDefaults(order: Order): Order {
       ...initialDesignState,
       ...order.design,
       bodyPatternId: pattern(order.design.bodyPatternId),
-      colors: withSleeveColors(order.design.colors),
+      colors: withColorDefaults(order.design.colors),
       keeper: keeper?.look
-        ? { ...keeper, look: { ...keeper.look, bodyPatternId: pattern(keeper.look.bodyPatternId), colors: withSleeveColors(keeper.look.colors) } }
+        ? { ...keeper, look: { ...keeper.look, bodyPatternId: pattern(keeper.look.bodyPatternId), colors: withColorDefaults(keeper.look.colors) } }
         : keeper,
       shorts: { ...initialDesignState.shorts, ...order.design.shorts },
     },

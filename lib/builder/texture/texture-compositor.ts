@@ -13,10 +13,10 @@ import { CHEST_NUMBER_FONT_FRACTION, CHEST_NUMBER_MAX_WIDTH_FRACTION } from "./f
 import { getNameNumberPreset } from "../catalog/name-number-presets";
 
 export type CompositorImages = {
-  bodyPatternImage: HTMLImageElement | null;
+  bodyPatternImage: CanvasImageSource | null;
   /** Optional dedicated back panel; the front image is used when this is null/absent. */
-  bodyBackPatternImage?: HTMLImageElement | null;
-  sleevePatternImage: HTMLImageElement | null;
+  bodyBackPatternImage?: CanvasImageSource | null;
+  sleevePatternImage: CanvasImageSource | null;
   logoImage: HTMLImageElement | null;
   /**
    * Full-atlas image, already tinted, painted over the patterns. Marks the
@@ -399,7 +399,7 @@ type RegionOrientation = "plain" | "rotate180" | "mirrorX";
 
 function drawImageInRegion(
   ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
+  image: CanvasImageSource,
   region: UVRect,
   canvasSize: number,
   orientation: RegionOrientation = "plain"

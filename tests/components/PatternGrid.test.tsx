@@ -4,10 +4,11 @@ import { PatternGrid } from "@/components/builder/PatternGrid";
 import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
 
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="primary" fill="#000"/></svg>`;
-const COLORS = [{ role: "primary" as const, label: "Color primario", default: "#000000" }];
+const COLORS = [{ role: "primary" as const, label: "Color principal", default: "#000000" }];
+const piece = (id: string) => ({ frontPath: `/patterns/${id}.svg`, sleevePath: `/patterns/${id}.svg`, thumbPath: `/patterns/${id}.svg`, cuffFrom: null });
 const patterns = [
-  { id: "a", label: "Liso", svgPath: "/patterns/a.svg", colors: COLORS },
-  { id: "b", label: "Franjas", svgPath: "/patterns/b.svg", colors: COLORS },
+  { id: "a", label: "Liso", ...piece("a"), colors: COLORS },
+  { id: "b", label: "Franjas", ...piece("b"), colors: COLORS },
 ];
 
 describe("PatternGrid", () => {

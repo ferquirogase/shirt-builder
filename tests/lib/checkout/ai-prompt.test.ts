@@ -29,13 +29,14 @@ describe("buildAiPrompt", () => {
 
   it("mentions the accent color only when the design uses it", () => {
     expect(promptFor()).not.toContain("dorado");
-    const withAccent = promptFor({ bodyPatternId: "stripes-three" });
+    const withAccent = promptFor({ bodyPatternId: "molde-12" });
     expect(withAccent).toContain("detalles");
   });
 
-  it("says what color the sleeves are and the stripe at their edge", () => {
-    const prompt = promptFor({ colors: { ...initialDesignState.colors, sleeve: "#000000", sleeveTrim: "#ff0000" } });
-    expect(prompt).toMatch(/mangas negro con una franja rojo en el borde/);
+  it("says what color the cuffs are, when the design's sleeves have a cuff band", () => {
+    const colors = { ...initialDesignState.colors, sleeveTrim: "#ff0000" };
+    expect(promptFor({ bodyPatternId: "molde-05", colors })).toMatch(/puños rojo/);
+    expect(promptFor({ bodyPatternId: "molde-03", colors })).not.toMatch(/puños/);
   });
 
   it("mentions the name and number on the back when there are some", () => {

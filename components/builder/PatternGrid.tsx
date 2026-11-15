@@ -5,16 +5,16 @@ import type { ColorMap } from "@/lib/builder/texture/svg-recolor";
 import { patternThumbnailUrl } from "@/lib/builder/texture/pattern-thumbnail";
 import { CheckIcon } from "./icons";
 
-type ThumbProps = { svgPath: string; colors: ColorMap };
+type ThumbProps = { path: string; colors: ColorMap };
 
-function PatternThumb({ svgPath, colors }: ThumbProps) {
-  const { primary, secondary, accent } = colors;
-  const key = `${svgPath}|${primary}|${secondary}|${accent}`;
+function PatternThumb({ path, colors }: ThumbProps) {
+  const { primary, secondary, accent, quaternary } = colors;
+  const key = `${path}|${primary}|${secondary}|${accent}|${quaternary}`;
   const [result, setResult] = useState<{ key: string; url: string | null } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    patternThumbnailUrl(svgPath, { primary, secondary, accent })
+    patternThumbnailUrl(path, { primary, secondary, accent, quaternary })
       .then((url) => {
         if (!cancelled) setResult({ key, url });
       })
@@ -25,7 +25,7 @@ function PatternThumb({ svgPath, colors }: ThumbProps) {
     return () => {
       cancelled = true;
     };
-  }, [key, svgPath, primary, secondary, accent]);
+  }, [key, path, primary, secondary, accent, quaternary]);
 
   const current = result && result.key === key ? result : null;
   const status = !current ? "loading" : current.url ? "loaded" : "error";
@@ -64,7 +64,7 @@ export function PatternGrid({ patterns, selectedId, colorsFor, onSelect }: Props
               selected ? "border-accent shadow-sm" : "border-transparent hover:border-line",
             ].join(" ")}
           >
-            <PatternThumb svgPath={pattern.svgPath} colors={colorsFor(pattern)} />
+            <PatternThumb path={pattern.thumbPath} colors={colorsFor(pattern)} />
             <span>{pattern.label}</span>
             {selected && (
               <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-foreground">

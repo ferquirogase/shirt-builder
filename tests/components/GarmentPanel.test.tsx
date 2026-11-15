@@ -4,7 +4,11 @@ import { renderWithDesign } from "../helpers/render-with-design";
 import { GarmentPanel } from "@/components/builder/panels/GarmentPanel";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 
-vi.mock("@/lib/builder/texture/image-loader", () => ({ loadImage: vi.fn() }));
+// Thumbnails of the heavy moldes are color masks, painted on a canvas jsdom does not have.
+vi.mock("@/lib/builder/texture/image-loader", () => ({
+  loadImage: vi.fn(),
+  loadMaskPiece: vi.fn(async () => ({ toDataURL: () => "data:image/png;base64," })),
+}));
 
 const SVG = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="primary" fill="#000"/></svg>`;
 vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => SVG })));
@@ -22,7 +26,7 @@ describe("GarmentPanel for the player", () => {
     expect(screen.getAllByRole("tablist")).toHaveLength(1);
     const bar = screen.getByRole("tablist", { name: "Qué cambiar" });
     fireEvent.click(within(bar).getByRole("tab", { name: "Colores" }));
-    expect(screen.getByRole("button", { name: /^Color primario:/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Color principal:/ })).toBeInTheDocument();
     fireEvent.click(within(bar).getByRole("tab", { name: "Nombre" }));
     expect(screen.getByLabelText("Nombre")).toBeInTheDocument();
   });
@@ -57,8 +61,8 @@ describe("GarmentPanel for the keeper", () => {
   it("edits the keeper's shirt and leaves the player's alone", () => {
     const { api } = renderWithDesign(<GarmentPanel garment="keeper" />);
     fireEvent.click(screen.getByRole("button", { name: "Sumar camiseta de arquero" }));
-    fireEvent.click(screen.getByRole("radio", { name: "Diagonal" }));
-    expect(api.current!.state.keeper.look!.bodyPatternId).toBe("diagonal");
+    fireEvent.click(screen.getByRole("radio", { name: "Banda diagonal" }));
+    expect(api.current!.state.keeper.look!.bodyPatternId).toBe("molde-05");
     expect(api.current!.state.bodyPatternId).toBe(initialDesignState.bodyPatternId);
   });
 
