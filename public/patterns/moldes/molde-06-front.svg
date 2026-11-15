@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-<rect data-color-slot="primary" x="0" y="0" width="512" height="512"/>
-<g transform="matrix(1.261923 0.000000 0.000000 0.931904 -15.944521 -872.408086)">
+<g transform="matrix(1.261923 0.000000 0.000000 0.977685 -15.944521 -940.419251)">
 
+<rect data-color-slot="primary" x="-1987.4" y="-1063.8" width="4405.7" height="4549.4"/>
 <path data-color-slot="secondary" d="M4.2 1512.6L100.3 1558.5L394.1 943.3L298 897.5L4.2 1512.6"/>
 </g>
 </svg>

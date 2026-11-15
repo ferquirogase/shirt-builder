@@ -268,13 +268,16 @@ export function drawDesignToCanvas(
   ctx.fillRect(0, 0, canvasSize, canvasSize);
 
   if (images.bodyPatternImage) {
-    drawImageInRegion(ctx, images.bodyPatternImage, frontPatternRegion(regions), canvasSize);
+    // On a model whose panels are measured, the pattern's edges are stretched out past them (see PATTERN_EDGE_PAD).
+    const pad = regions.bodyFrontPanel ? PATTERN_EDGE_PAD * canvasSize : 0;
+    drawImageInRegion(ctx, images.bodyPatternImage, frontPatternRegion(regions), canvasSize, "plain", pad);
     drawImageInRegion(
       ctx,
       images.bodyBackPatternImage ?? images.bodyPatternImage,
       backPatternRegion(regions),
       canvasSize,
-      "rotate180"
+      "rotate180",
+      pad
     );
   }
 
@@ -368,6 +371,12 @@ const MAX_BACK_TEXT_WIDTH_FRACTION = 0.8;
 
 // The torso pattern is drawn this much (UV) past the panel's edges, so the seams show no gap.
 export const PATTERN_BLEED = 0.001;
+// The texture is filtered (and mipmapped): a texel at a panel's edge is mixed with those beside it, so what is
+// painted past the edge shows as a line along the side seam, the color of the canvas' base. The pattern's
+// own edge columns, and its bottom row at the hem, are stretched this much (UV) further out. Not its top
+// row: at the shoulder the front and the back panels touch. What lies past the sides on the atlas (the
+// sleeves, the collar) is painted afterwards, over it.
+export const PATTERN_EDGE_PAD = 0.006;
 
 function grow(rect: UVRect): UVRect {
   return { u0: rect.u0 - PATTERN_BLEED, v0: rect.v0 - PATTERN_BLEED, u1: rect.u1 + PATTERN_BLEED, v1: rect.v1 + PATTERN_BLEED };
@@ -397,15 +406,26 @@ export function backVisibleWidth(regions: UVRegions, size: number): number {
 
 type RegionOrientation = "plain" | "rotate180" | "mirrorX";
 
+// The image's own size in pixels (0 when it cannot be told), for slicing its edges.
+function imageSize(image: CanvasImageSource): { w: number; h: number } {
+  const { naturalWidth, naturalHeight, width, height } = image as Partial<Record<"naturalWidth" | "naturalHeight" | "width" | "height", unknown>>;
+  const w = typeof naturalWidth === "number" ? naturalWidth : typeof width === "number" ? width : 0;
+  const h = typeof naturalHeight === "number" ? naturalHeight : typeof height === "number" ? height : 0;
+  return { w, h };
+}
+
+// `pad` (canvas px) stretches the image's left and right edge columns and its bottom row that far out,
+// under the image itself (see PATTERN_EDGE_PAD).
 function drawImageInRegion(
   ctx: CanvasRenderingContext2D,
   image: CanvasImageSource,
   region: UVRect,
   canvasSize: number,
-  orientation: RegionOrientation = "plain"
+  orientation: RegionOrientation = "plain",
+  pad = 0
 ): void {
   const { x, y, width, height } = rectToCanvas(region, canvasSize);
-  if (orientation === "plain") {
+  if (orientation === "plain" && pad === 0) {
     ctx.drawImage(image, x, y, width, height);
     return;
   }
@@ -413,7 +433,17 @@ function drawImageInRegion(
   ctx.save();
   ctx.translate(x + width / 2, y + height / 2);
   if (orientation === "rotate180") ctx.rotate(Math.PI);
-  else ctx.scale(-1, 1);
-  ctx.drawImage(image, -width / 2, -height / 2, width, height);
+  else if (orientation === "mirrorX") ctx.scale(-1, 1);
+  const left = -width / 2;
+  const top = -height / 2;
+  if (pad > 0) {
+    const { w, h } = imageSize(image);
+    if (w > 0 && h > 0) {
+      ctx.drawImage(image, 0, 0, 1, h, left - pad, top, pad, height);
+      ctx.drawImage(image, w - 1, 0, 1, h, left + width, top, pad, height);
+      ctx.drawImage(image, 0, h - 1, w, 1, left - pad, top + height, width + 2 * pad, pad);
+    }
+  }
+  ctx.drawImage(image, left, top, width, height);
   ctx.restore();
 }

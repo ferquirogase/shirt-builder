@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { PATTERN_BLEED, NAPE_BRAND_SQUEEZE_Y, backVisibleWidth, drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
+import { PATTERN_BLEED, PATTERN_EDGE_PAD, NAPE_BRAND_SQUEEZE_Y, backVisibleWidth, drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
 import { NAME_PLACEHOLDER, NUMBER_PLACEHOLDER, displayName, displayNumber, showsNamePlaceholder } from "@/lib/builder/texture/number-text";
 import { CHEST_NUMBER_FONT_FRACTION } from "@/lib/builder/texture/front-layout";
 import { initialDesignState } from "@/lib/builder/state/design-state";
@@ -480,6 +480,44 @@ describe("drawDesignToCanvas", () => {
   // in the opposite u direction from sleeveLeft, so a directional sleeve
   // pattern (e.g. a cuff band) must be drawn mirrored there or it lands at
   // the shoulder instead of the cuff.
+  describe("the torso pattern's edges", () => {
+    // The texture is filtered: a texel at a panel's edge is mixed with the ones beside it, so whatever is
+    // painted past the edge shows as a line along the side seams. The pattern's own edge is stretched out
+    // there, except at the shoulder, where the front and the back panels touch.
+    const image = { naturalWidth: 512, naturalHeight: 512 } as HTMLImageElement;
+    const draws = () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 2048, initialDesignState, { bodyPatternImage: image, sleevePatternImage: null, logoImage: null }, GEPE_UV_REGIONS);
+      return (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.filter((c) => c[0] === image);
+    };
+
+    it("stretches the left and right edge columns and the bottom row of front and back outwards", () => {
+      const strips = draws().filter((c) => c.length === 9);
+      const pad = PATTERN_EDGE_PAD * 2048;
+      // Per panel: the first column, the last column and the last row of the image.
+      const sources = strips.map((c) => c.slice(1, 5));
+      expect(sources).toEqual([
+        [0, 0, 1, 512],
+        [511, 0, 1, 512],
+        [0, 511, 512, 1],
+        [0, 0, 1, 512],
+        [511, 0, 1, 512],
+        [0, 511, 512, 1],
+      ]);
+      for (const c of strips.slice(0, 2)) expect(c[7]).toBeCloseTo(pad);
+      expect(strips[2][8]).toBeCloseTo(pad);
+    });
+
+    it("never stretches the top row, at the shoulder seam", () => {
+      expect(draws().some((c) => c.length === 9 && c[2] === 0 && c[4] === 1)).toBe(false);
+    });
+
+    it("draws the strips under the panel's image", () => {
+      const calls = draws();
+      expect(calls.slice(0, 4).map((c) => c.length)).toEqual([9, 9, 9, 5]);
+    });
+  });
+
   describe("sleeve orientation", () => {
     it("draws the left sleeve plainly and mirrors the right sleeve horizontally", () => {
       const ctx = createMockCtx();
@@ -1063,16 +1101,20 @@ describe("drawDesignToCanvas", () => {
       const ctx = createMockCtx();
       const front = { id: "front" } as unknown as HTMLImageElement;
       drawDesignToCanvas(ctx, 1000, initialDesignState, images(front, {} as HTMLImageElement), panels);
-      const call = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === front)!;
-      expect(call[1]).toBeCloseTo((0.3 - PATTERN_BLEED) * 1000, 5);
-      expect(call[3]).toBeCloseTo((0.4 + 2 * PATTERN_BLEED) * 1000, 5);
+      // Drawn about its centre (its edges are stretched out first, see PATTERN_EDGE_PAD).
+      const call = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === front && c.length === 5)!;
+      const width = (0.4 + 2 * PATTERN_BLEED) * 1000;
+      expect(call[3]).toBeCloseTo(width, 5);
+      expect(call[1]).toBeCloseTo(-width / 2, 5);
+      const centre = (0.3 - PATTERN_BLEED) * 1000 + width / 2;
+      expect((ctx.translate as ReturnType<typeof vi.fn>).mock.calls.some((c) => Math.abs(c[0] - centre) < 1e-6)).toBe(true);
     });
 
     it("draws the back's image as wide as the front's, ending at the back panel's seam edge", () => {
       const ctx = createMockCtx();
       const back = { id: "back" } as unknown as HTMLImageElement;
       drawDesignToCanvas(ctx, 1000, initialDesignState, images({} as HTMLImageElement, back), panels);
-      const call = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === back)!;
+      const call = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === back && c.length === 5)!;
       const width = (0.4 + 2 * PATTERN_BLEED) * 1000; // the front's, not the back panel's 0.3
       expect(call[3]).toBeCloseTo(width, 5);
       // rotated 180deg about its centre: the centre is the right edge (0.65 + bleed) minus half of it
