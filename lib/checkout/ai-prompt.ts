@@ -1,4 +1,4 @@
-import { findPattern, visibleColors } from "@/lib/builder/catalog/patterns";
+import { findPattern, hasCuff, visibleColors } from "@/lib/builder/catalog/patterns";
 import { lookFor, shortsColor, type LookTarget } from "@/lib/builder/state/design-state";
 import type { Order } from "./order";
 import type { ColorSlot } from "@/lib/builder/texture/svg-recolor";
@@ -17,8 +17,9 @@ export function buildAiPrompt({ design: team, roster }: Pick<Order, "design" | "
   const shirt = [`diseño ${pattern}`, `color principal ${color("primary")}`];
   if (roles.has("secondary")) shirt.push(`segundo color ${color("secondary")}`);
   if (roles.has("accent")) shirt.push(`detalles en ${color("accent")}`);
+  if (roles.has("quaternary")) shirt.push(`también ${color("quaternary")}`);
   shirt.push(`cuello ${color("collar")}`);
-  shirt.push(`mangas ${color("sleeve")} con una franja ${color("sleeveTrim")} en el borde`);
+  if (hasCuff(design.bodyPatternId)) shirt.push(`puños ${color("sleeveTrim")}`);
 
   const extras: string[] = [];
   if (design.logoDataUrl) extras.push("Lleva un escudo en el pecho.");

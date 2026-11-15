@@ -49,7 +49,10 @@ describe("designReducer", () => {
       patterns.BODY_PATTERNS.push({
         id: "test-accent-body",
         label: "Test accent",
-        svgPath: "/patterns/plain-body.svg",
+        frontPath: "/patterns/plain-body.svg",
+        sleevePath: "/patterns/plain-body.svg",
+        thumbPath: "/patterns/plain-body.svg",
+        cuffFrom: null,
         colors: [
           { role: "primary", label: "Fondo", default: "#000001" },
           { role: "accent", label: "Detalle", default: "#000002" },
@@ -64,7 +67,7 @@ describe("designReducer", () => {
 
     it("keeps the colors of roles that are already in use", () => {
       const start = withColors({ primary: "#111111", secondary: "#222222" });
-      const next = designReducer(start, { type: "SET_BODY_PATTERN", id: "diagonal" });
+      const next = designReducer(start, { type: "SET_BODY_PATTERN", id: "molde-05" });
       expect(next.colors.primary).toBe("#111111");
       expect(next.colors.secondary).toBe("#222222");
     });
@@ -77,7 +80,7 @@ describe("designReducer", () => {
 
     it("never touches the collar color", () => {
       const start = withColors({ collar: "#123456" });
-      const next = designReducer(start, { type: "SET_BODY_PATTERN", id: "diagonal" });
+      const next = designReducer(start, { type: "SET_BODY_PATTERN", id: "molde-05" });
       expect(next.colors.collar).toBe("#123456");
     });
 
@@ -116,22 +119,22 @@ describe("designReducer", () => {
 describe("colorsAfterPatternChange", () => {
   const state = {
     ...initialDesignState,
-    colors: { primary: "#111111", secondary: "#222222", accent: "#abcdef", collar: "#123456", sleeve: "#111111", sleeveTrim: "#222222" },
+    colors: { primary: "#111111", secondary: "#222222", accent: "#abcdef", collar: "#123456", quaternary: "#333333", sleeveTrim: "#222222" },
   };
 
   it("keeps roles in use and gives a role not in use the pattern default", () => {
-    const colors = colorsAfterPatternChange(state, "stripes-three");
-    expect(colors.accent).toBe("#0b1d4a");
+    const colors = colorsAfterPatternChange(state, "molde-12");
+    expect(colors.accent).toBe("#f5b700");
     expect(colors.primary).toBe("#111111");
     expect(colors.secondary).toBe("#222222");
   });
 
   it("keeps an in-use role's color", () => {
-    expect(colorsAfterPatternChange(state, "diagonal").primary).toBe("#111111");
+    expect(colorsAfterPatternChange(state, "molde-05").primary).toBe("#111111");
   });
 
   it("never touches the collar", () => {
-    expect(colorsAfterPatternChange(state, "stripes-three").collar).toBe("#123456");
+    expect(colorsAfterPatternChange(state, "molde-12").collar).toBe("#123456");
   });
 
   it("returns the current colors for an unknown id", () => {
@@ -139,8 +142,8 @@ describe("colorsAfterPatternChange", () => {
   });
 
   it("matches what the reducer produces", () => {
-    const next = designReducer(state, { type: "SET_BODY_PATTERN", id: "stripes-three" });
-    expect(next.colors).toEqual(colorsAfterPatternChange(state, "stripes-three"));
+    const next = designReducer(state, { type: "SET_BODY_PATTERN", id: "molde-12" });
+    expect(next.colors).toEqual(colorsAfterPatternChange(state, "molde-12"));
   });
 });
 
@@ -408,17 +411,17 @@ describe("keeper", () => {
     let state = withKeeper();
     const before = state.colors;
     state = designReducer(state, { type: "SET_COLOR", slot: "primary", value: "#abcdef", target: "keeper" });
-    state = designReducer(state, { type: "SET_BODY_PATTERN", id: "hoops", target: "keeper" });
+    state = designReducer(state, { type: "SET_BODY_PATTERN", id: "molde-03", target: "keeper" });
     expect(state.colors).toEqual(before);
     expect(state.bodyPatternId).toBe(initialDesignState.bodyPatternId);
     expect(state.keeper.look!.colors.primary).toBe("#abcdef");
-    expect(state.keeper.look!.bodyPatternId).toBe("hoops");
+    expect(state.keeper.look!.bodyPatternId).toBe("molde-03");
   });
 
   it("takes the pattern's default colors for new roles, like the team does", () => {
     let state = withKeeper();
-    state = designReducer(state, { type: "SET_BODY_PATTERN", id: "stripes-wide", target: "keeper" });
-    expect(state.keeper.look!.colors.secondary).toBe("#111111");
+    state = designReducer(state, { type: "SET_BODY_PATTERN", id: "molde-19", target: "keeper" });
+    expect(state.keeper.look!.colors.quaternary).toBe("#d0161f");
   });
 
   it("ignores keeper edits while the keeper is not in the order", () => {

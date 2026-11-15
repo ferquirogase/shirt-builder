@@ -5,12 +5,12 @@ import { colorsAfterPatternChange } from "@/lib/builder/state/design-state";
 import { PatternGrid } from "../PatternGrid";
 import { PanelShell } from "./PanelShell";
 
-// The sleeves have no design to choose: they wear their own color and a stripe at the edge, set in Colores.
+// Each design comes with its own sleeve; the cuff's color is set in Colores.
 export function DesignPanel() {
   const { view, dispatchLook } = useEditedLook();
 
   return (
-    <PanelShell title="Diseño" hint="Elegí un patrón para el torso.">
+    <PanelShell title="Diseño" hint="Elegí un diseño: cada uno trae sus mangas.">
       <PatternGrid
         patterns={BODY_PATTERNS}
         selectedId={view.bodyPatternId}

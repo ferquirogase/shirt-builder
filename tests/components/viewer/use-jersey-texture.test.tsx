@@ -9,13 +9,14 @@ vi.mock("@/lib/builder/texture/texture-compositor", () => ({ drawDesignToCanvas:
 vi.mock("@/lib/builder/texture/image-loader", () => ({
   loadImage: vi.fn(),
   loadPatternImage: vi.fn(),
+  loadSleeveImage: vi.fn(),
   loadTintedMask: vi.fn(),
 }));
 
 import { useJerseyTexture } from "@/components/builder/viewer/use-jersey-texture";
 import { DesignProvider, useDesign } from "@/lib/builder/state/design-context";
 import { drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
-import { loadImage, loadPatternImage, loadTintedMask } from "@/lib/builder/texture/image-loader";
+import { loadImage, loadPatternImage, loadSleeveImage, loadTintedMask } from "@/lib/builder/texture/image-loader";
 import { BRAND_LOGO_URLS } from "@/lib/builder/catalog/brand-logo";
 import { BODY_PATTERNS } from "@/lib/builder/catalog/patterns";
 import { JERSEY_MODEL } from "@/lib/builder/geometry/jersey-model";
@@ -41,6 +42,9 @@ beforeEach(() => {
   vi.mocked(loadPatternImage)
     .mockReset()
     .mockImplementation(async (path: string) => ({ pattern: path }) as unknown as HTMLImageElement);
+  vi.mocked(loadSleeveImage)
+    .mockReset()
+    .mockImplementation(async (path: string, cuffFrom: number | null) => ({ sleeve: path, cuffFrom }) as unknown as HTMLCanvasElement);
   vi.mocked(loadTintedMask)
     .mockReset()
     .mockImplementation(async (url: string, color: string) => ({ mask: url, color }) as unknown as HTMLCanvasElement);
@@ -101,14 +105,17 @@ describe("useJerseyTexture", () => {
     expect(result.current.texture.version).toBeGreaterThan(before);
   });
 
-  it("loads the body, sleeve and collar-mask images for the chosen design and colors", async () => {
+  it("loads the front, back, sleeve and collar-mask images for the chosen design and colors", async () => {
     const { result } = mount();
     const state = result.current.design.state;
-    const bodySvg = BODY_PATTERNS.find((p) => p.id === state.bodyPatternId)!.svgPath;
-    await waitFor(() => expect(lastImages().bodyPatternImage).toEqual({ pattern: bodySvg }));
-    expect(vi.mocked(loadPatternImage)).toHaveBeenCalledWith(bodySvg, state.colors);
+    const pattern = BODY_PATTERNS.find((p) => p.id === state.bodyPatternId)!;
+    await waitFor(() => expect(lastImages().bodyPatternImage).toEqual({ pattern: pattern.frontPath }));
+    expect(vi.mocked(loadPatternImage)).toHaveBeenCalledWith(pattern.frontPath, state.colors);
+    expect(lastImages().bodyBackPatternImage).toEqual({ pattern: pattern.backPath });
     expect(vi.mocked(loadTintedMask)).toHaveBeenCalledWith(JERSEY_MODEL.collarMaskUrl, state.colors.collar);
-    expect(lastImages().sleevePatternImage).not.toBeNull();
+    // The design's own sleeve, with its cuff band painted in the cuff color.
+    expect(lastImages().sleevePatternImage).toEqual({ sleeve: pattern.sleevePath, cuffFrom: pattern.cuffFrom });
+    expect(vi.mocked(loadSleeveImage)).toHaveBeenCalledWith(pattern.sleevePath, pattern.cuffFrom, state.colors);
     expect(lastImages().collarMaskImage).toEqual({ mask: JERSEY_MODEL.collarMaskUrl, color: state.colors.collar });
   });
 

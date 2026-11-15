@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useEditedLook } from "@/lib/builder/state/design-context";
-import { visibleColors } from "@/lib/builder/catalog/patterns";
+import { hasCuff, visibleColors } from "@/lib/builder/catalog/patterns";
 import type { ColorSlot } from "@/lib/builder/texture/svg-recolor";
 import { ColorField } from "./ColorField";
 import { PanelShell } from "./PanelShell";
@@ -15,17 +15,12 @@ export function ColorsPanel() {
   const groups: { title: string; rows: Row[] }[] = [
     { title: "Torso", rows: visibleColors(view.bodyPatternId).map((c) => ({ slot: c.role, label: c.label })) },
     { title: "Cuello", rows: [{ slot: "collar", label: "Color del cuello" }] },
-    {
-      title: "Mangas",
-      rows: [
-        { slot: "sleeve", label: "Color de las mangas" },
-        { slot: "sleeveTrim", label: "Color de la franja" },
-      ],
-    },
+    // The sleeves wear the design's own sleeve in the torso's colors; only its cuff band has a color apart.
+    ...(hasCuff(view.bodyPatternId) ? [{ title: "Mangas", rows: [{ slot: "sleeveTrim" as const, label: "Color del puño" }] }] : []),
   ];
 
   return (
-    <PanelShell title="Colores" hint="Los colores del torso dependen del diseño elegido.">
+    <PanelShell title="Colores" hint="Los colores dependen del diseño elegido.">
       <div className="flex flex-col gap-5">
         {groups.map(({ title, rows }) => (
           <section key={title} aria-label={title} className="flex flex-col gap-3">

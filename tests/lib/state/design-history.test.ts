@@ -124,7 +124,10 @@ describe("historyReducer", () => {
     patterns.BODY_PATTERNS.push({
       id: "test-accent-body",
       label: "Test accent",
-      svgPath: "/patterns/plain-body.svg",
+      frontPath: "/patterns/plain-body.svg",
+      sleevePath: "/patterns/plain-body.svg",
+      thumbPath: "/patterns/plain-body.svg",
+      cuffFrom: null,
       colors: [
         { role: "primary", label: "Fondo", default: "#000001" },
         { role: "accent", label: "Detalle", default: "#000002" },
@@ -282,11 +285,11 @@ describe("keeper history", () => {
   it("records the keeper's edits and undoes them", () => {
     const edited = run([
       { type: "SET_KEEPER_INCLUDED", value: true },
-      { type: "SET_BODY_PATTERN", id: "hoops", target: "keeper" },
+      { type: "SET_BODY_PATTERN", id: "molde-03", target: "keeper" },
     ]);
-    expect(edited.present.keeper.look!.bodyPatternId).toBe("hoops");
+    expect(edited.present.keeper.look!.bodyPatternId).toBe("molde-03");
     const undone = historyReducer(edited, { type: "UNDO" });
-    expect(undone.present.keeper.look!.bodyPatternId).not.toBe("hoops");
+    expect(undone.present.keeper.look!.bodyPatternId).not.toBe("molde-03");
   });
 
   it("groups the keeper's color bursts apart from the team's", () => {

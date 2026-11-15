@@ -20,4 +20,11 @@ describe("recolorSvg", () => {
     expect(output).toContain('fill="#111111"');
     expect(output).toContain('fill="#222222"');
   });
+
+  it("recolors the stroke of lines tagged with data-stroke-slot", () => {
+    const input = `<svg xmlns="http://www.w3.org/2000/svg"><path data-stroke-slot="accent" fill="none" d="M0 0L9 9" /></svg>`;
+    const output = recolorSvg(input, { accent: "#123456" });
+    expect(output).toContain('stroke="#123456"');
+    expect(output).toContain('fill="none"');
+  });
 });

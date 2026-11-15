@@ -50,7 +50,7 @@ export function defaultKeeperLook(team: { primary: string; secondary: string }):
   const trim = contrastColor(primary);
   return {
     bodyPatternId: "plain-body",
-    colors: { primary, secondary: trim, accent: trim, collar: trim, sleeve: primary, sleeveTrim: trim },
+    colors: { primary, secondary: trim, accent: trim, quaternary: trim, collar: trim, sleeveTrim: trim },
   };
 }
 
@@ -98,8 +98,8 @@ export type LookAction = Extract<
 >;
 
 export const initialDesignState: DesignState = {
-  bodyPatternId: "stripes-v1",
-  colors: { primary: "#0a5c36", secondary: "#ffffff", accent: "#f5b700", collar: "#ffffff", sleeve: "#0a5c36", sleeveTrim: "#ffffff" },
+  bodyPatternId: "molde-01",
+  colors: { primary: "#0a5c36", secondary: "#ffffff", accent: "#f5b700", quaternary: "#d0161f", collar: "#ffffff", sleeveTrim: "#ffffff" },
   logoDataUrl: null,
   crestConfig: null,
   sponsors: {},
@@ -117,11 +117,10 @@ export function shortsColor(state: Pick<DesignState, "colors" | "shorts">): stri
   return state.colors[state.shorts.colorSource];
 }
 
-// The sleeves start as the shirt's primary and its secondary, and follow them until the user chooses
-// their own: a sleeve still the color the primary was moves with it.
+// The cuff starts as the shirt's secondary and follows it until the user chooses its own: a cuff still
+// the color the secondary was moves with it.
 function followTeamColors(before: DesignState["colors"], after: DesignState["colors"]): DesignState["colors"] {
   const colors = { ...after };
-  if (after.sleeve === before.sleeve && before.sleeve === before.primary) colors.sleeve = after.primary;
   if (after.sleeveTrim === before.sleeveTrim && before.sleeveTrim === before.secondary) colors.sleeveTrim = after.secondary;
   return colors;
 }
