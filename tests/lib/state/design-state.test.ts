@@ -145,8 +145,8 @@ describe("colorsAfterPatternChange", () => {
 });
 
 describe("name/number style", () => {
-  it("starts classic, white and with a black border", () => {
-    expect(initialDesignState.nameNumberStyle).toEqual({ presetId: "classic", fill: "#ffffff", outline: true, outlineColor: "#000000" });
+  it("starts in Bloque, white and with a black border", () => {
+    expect(initialDesignState.nameNumberStyle).toEqual({ presetId: "bloque", fill: "#ffffff", outline: true, outlineColor: "#000000" });
   });
 
   it("goes back to the border on and black when the design is reset", () => {
@@ -164,15 +164,32 @@ describe("name/number style", () => {
       { type: "SET_NN_OUTLINE", value: true }
     );
     const next = designReducer(tweaked, { type: "SET_NN_OUTLINE_COLOR", value: "#00ff00" });
-    expect(next.nameNumberStyle).toEqual({ presetId: "classic", fill: "#ff0000", outline: true, outlineColor: "#00ff00" });
+    expect(next.nameNumberStyle).toEqual({ presetId: "bloque", fill: "#ff0000", outline: true, outlineColor: "#00ff00" });
   });
 
   it("keeps the same state when the border color is already that one", () => {
     expect(designReducer(initialDesignState, { type: "SET_NN_OUTLINE_COLOR", value: "#000000" })).toBe(initialDesignState);
   });
 
-  it("no longer has a typeface to change", () => {
-    expect(designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "classic" } as never)).toBe(initialDesignState);
+  it("changes the typeface, and keeps the colors and the border", () => {
+    const next = designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "angosta" });
+    expect(next.nameNumberStyle).toEqual({ ...initialDesignState.nameNumberStyle, presetId: "angosta" });
+  });
+
+  it("ignores a typeface that is not offered, and one already chosen", () => {
+    expect(designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "classic" })).toBe(initialDesignState);
+    expect(designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "bloque" })).toBe(initialDesignState);
+  });
+
+  it("goes back to Bloque when the design is reset", () => {
+    const tweaked = designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "retro" });
+    expect(designReducer(tweaked, { type: "RESET_DESIGN" }).nameNumberStyle.presetId).toBe("bloque");
+  });
+
+  it("the keeper's shirt wears the team's typeface", () => {
+    const withFont = designReducer(initialDesignState, { type: "SET_NN_PRESET", id: "curva" });
+    const withKeeper = designReducer(withFont, { type: "SET_KEEPER_INCLUDED", value: true });
+    expect(lookFor(withKeeper, "keeper").nameNumberStyle.presetId).toBe("curva");
   });
 
   it("the keeper's shirt wears the same border as the team's, with its own text color", () => {

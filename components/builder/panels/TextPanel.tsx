@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useDesign, useEditedLook } from "@/lib/builder/state/design-context";
-import { NAME_PLACEHOLDER, NUMBER_PLACEHOLDER } from "@/lib/builder/texture/number-text";
+import { NAME_NUMBER_PRESETS, getNameNumberPreset } from "@/lib/builder/catalog/name-number-presets";
+import { NAME_PLACEHOLDER, NUMBER_PLACEHOLDER, displayNumber } from "@/lib/builder/texture/number-text";
 import { ColorField } from "./ColorField";
 import { PanelShell } from "./PanelShell";
 
@@ -14,6 +15,8 @@ export function TextPanel() {
   const style = state.nameNumberStyle;
   // Which color's palette is open: one at a time, so the panel stays short.
   const [openField, setOpenField] = useState<"fill" | "outline" | null>(null);
+  const preset = getNameNumberPreset(style.presetId);
+  const losesEnye = !preset.hasEnye && /ñ/i.test(state.playerName);
 
   return (
     <PanelShell title="Nombre y número" hint="El nombre y el número van en la espalda. El número también va en el short.">
@@ -40,6 +43,44 @@ export function TextPanel() {
             className={INPUT}
           />
         </label>
+
+        <div>
+          <p id="nn-typeface-label" className="mb-2 text-sm font-medium">
+            Tipografía
+          </p>
+          {/* Each choice is written in its own letters, with the player's number. */}
+          <div role="radiogroup" aria-labelledby="nn-typeface-label" className="grid grid-cols-2 gap-2">
+            {NAME_NUMBER_PRESETS.map((option) => {
+              const checked = option.id === preset.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={checked}
+                  aria-label={option.label}
+                  onClick={() => dispatch({ type: "SET_NN_PRESET", id: option.id })}
+                  className={`flex flex-col items-center gap-0.5 rounded-xl border-2 bg-white/70 px-2 py-2 transition active:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 ${
+                    checked ? "border-accent shadow-sm" : "border-transparent hover:border-line"
+                  }`}
+                >
+                  <span
+                    data-font-sample
+                    aria-hidden="true"
+                    style={{ fontFamily: `var(${option.cssVar})` }}
+                    className="text-3xl leading-none"
+                  >
+                    {displayNumber(state)}
+                  </span>
+                  <span aria-hidden="true" className="text-xs font-medium text-muted">
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {losesEnye && <p className="mt-2 text-sm text-muted">Esta tipografía no tiene Ñ: se imprime N.</p>}
+        </div>
 
         {/* The title and the switch share the first row; the hint takes the full width below. */}
         <button

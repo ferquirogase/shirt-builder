@@ -12,6 +12,7 @@ import { initialDesignState } from "@/lib/builder/state/design-state";
 import { CREST_SHAPES } from "@/lib/builder/catalog/crest-shapes";
 import { crestDataUrl } from "@/lib/builder/crest/crest-svg";
 import { INITIAL_CREST } from "@/lib/builder/crest/crest-config";
+import { NAME_NUMBER_PRESETS } from "@/lib/builder/catalog/name-number-presets";
 import { PALETTE } from "@/lib/builder/color/palette";
 import { formatCmyk } from "@/lib/builder/color/cmyk";
 
@@ -249,11 +250,28 @@ describe("TextPanel", () => {
     }
   });
 
-  it("offers no choice of typeface: it is Clásico only", () => {
-    renderWithDesign(<TextPanel />);
-    expect(screen.queryAllByRole("radio")).toHaveLength(0);
-    expect(screen.queryByText("Moderno")).toBeNull();
-    expect(screen.queryByText("Clásico")).toBeNull();
+  it("offers the ten typefaces, each shown in its own letters, and chooses one", () => {
+    const { api } = renderWithDesign(<TextPanel />);
+    const group = screen.getByRole("radiogroup", { name: "Tipografía" });
+    const radios = within(group).getAllByRole("radio");
+    expect(radios).toHaveLength(NAME_NUMBER_PRESETS.length);
+    expect(within(group).getByRole("radio", { name: "Bloque" })).toHaveAttribute("aria-checked", "true");
+
+    const angosta = within(group).getByRole("radio", { name: "Angosta" });
+    expect(angosta.querySelector("[data-font-sample]")).toHaveStyle({ fontFamily: "var(--font-nn-angosta)" });
+    fireEvent.click(angosta);
+    expect(api.current!.state.nameNumberStyle.presetId).toBe("angosta");
+    expect(angosta).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("warns that a typeface without a Ñ prints an N, only when the name has one", () => {
+    const { api } = renderWithDesign(<TextPanel />);
+    fireEvent.click(screen.getByRole("radio", { name: "Angosta" }));
+    expect(screen.queryByText(/no tiene Ñ/)).toBeNull();
+    fireEvent.change(screen.getByLabelText("Nombre"), { target: { value: "muñoz" } });
+    expect(screen.getByText("Esta tipografía no tiene Ñ: se imprime N.")).toBeInTheDocument();
+    act(() => api.current!.dispatch({ type: "SET_NN_PRESET", id: "bloque" }));
+    expect(screen.queryByText(/no tiene Ñ/)).toBeNull();
   });
 
   it("starts with the border on, in black, and lets it be switched off, and the text color be set", () => {

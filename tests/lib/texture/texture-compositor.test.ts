@@ -4,7 +4,11 @@ import { NAME_PLACEHOLDER, NUMBER_PLACEHOLDER, displayName, displayNumber, shows
 import { CHEST_NUMBER_FONT_FRACTION } from "@/lib/builder/texture/front-layout";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import { NAME_V_FRAC, NUMBER_V_FRAC } from "@/lib/builder/texture/back-layout";
-import { OUTLINE_COLOR, OUTLINE_WIDTH } from "@/lib/builder/catalog/name-number-presets";
+import { DEFAULT_PRESET_ID, OUTLINE_COLOR, OUTLINE_WIDTH, getNameNumberPreset } from "@/lib/builder/catalog/name-number-presets";
+
+const DEFAULT_PRESET = getNameNumberPreset(DEFAULT_PRESET_ID);
+// The size in a canvas font string ("400 120px ...").
+const fontPx = (font: string) => parseFloat(/([\d.]+)px/.exec(font)![1]);
 import { GEPE_UV_REGIONS, UV_FLIP_Y, type UVRegions, type UVRect } from "@/lib/builder/geometry/uv-regions";
 
 function createMockCtx() {
@@ -308,9 +312,10 @@ describe("drawDesignToCanvas", () => {
       const fonts: string[] = [];
       (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
       drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10" }), blank, regions, "'Oswald', sans-serif");
-      // classic: weight 700, number base 0.12 * 1000 = 120px, scale 1
+      // Number base 0.12 * 1000 = 120px, times the typeface's scale.
       // The example name comes first (0.05 * 1000 = 50px); the number is the last text.
-      expect(fonts.at(-1)).toBe("700 120px 'Oswald', sans-serif");
+      expect(fonts.at(-1)).toMatch(new RegExp(`^${DEFAULT_PRESET.weight} [\\d.]+px 'Oswald', sans-serif$`));
+      expect(fontPx(fonts.at(-1)!)).toBeCloseTo(120 * DEFAULT_PRESET.numberScale, 5);
     });
 
     it("fills with the style's fill color", () => {
@@ -351,8 +356,8 @@ describe("drawDesignToCanvas", () => {
       expect(seen.strokeStyle).toBe(OUTLINE_COLOR);
       expect(seen.lineJoin).toBe("round");
       // Strokes are centered on the glyph edge, so the line is twice the visible border.
-      // Number size: 0.12 * 1000 * 1 = 120px.
-      expect(seen.lineWidth).toBeCloseTo(120 * OUTLINE_WIDTH * 2, 5);
+      // Number size: 0.12 * 1000 = 120px, times the typeface's scale.
+      expect(seen.lineWidth).toBeCloseTo(120 * DEFAULT_PRESET.numberScale * OUTLINE_WIDTH * 2, 5);
     });
 
     it("draws the border in the color the style asks for", () => {
@@ -458,11 +463,11 @@ describe("drawDesignToCanvas", () => {
       const fonts: string[] = [];
       (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
       drawDesignToCanvas(ctx, 1000, withStyle({ playerName: "LEO" }), blank, regions);
-      // classic: name base 0.05 * 1000 = 50px, scale 1
-      expect(fonts[0]).toMatch(/^700 50px /);
+      // Name base 0.05 * 1000 = 50px, times the typeface's scale.
+      expect(fontPx(fonts[0])).toBeCloseTo(50 * DEFAULT_PRESET.nameScale, 5);
     });
 
-    it("falls back to the classic preset for an unknown preset id (Review Focus 2)", () => {
+    it("falls back to the default preset for an unknown preset id (Review Focus 2)", () => {
       const ctx = createMockCtx();
       const fonts: string[] = [];
       (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
@@ -471,7 +476,7 @@ describe("drawDesignToCanvas", () => {
         nameNumberStyle: { ...initialDesignState.nameNumberStyle, presetId: "gone" },
       });
       expect(() => drawDesignToCanvas(ctx, 1000, design, blank, regions)).not.toThrow();
-      expect(fonts.at(-1)).toMatch(/^700 120px /);
+      expect(fontPx(fonts.at(-1)!)).toBeCloseTo(120 * DEFAULT_PRESET.numberScale, 5);
     });
   });
 
@@ -989,11 +994,11 @@ describe("drawDesignToCanvas", () => {
       const fonts: string[] = [];
       (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
       drawDesignToCanvas(ctx, 1000, withChest({ playerNumber: "10" }), blank, regions, "'Oswald', sans-serif");
-      const px = (font: string) => parseFloat(/([\d.]+)px/.exec(font)![1]);
-      expect(fonts[0]).toMatch(/^700 .*'Oswald', sans-serif$/);
+      const px = fontPx;
+      expect(fonts[0]).toMatch(new RegExp(`^${DEFAULT_PRESET.weight} .*'Oswald', sans-serif$`));
       // fonts: the chest's, the example name, the back's number.
       expect(px(fonts[0])).toBeLessThan(px(fonts[2]));
-      expect(px(fonts[0])).toBeCloseTo(1000 * CHEST_NUMBER_FONT_FRACTION, 5);
+      expect(px(fonts[0])).toBeCloseTo(1000 * CHEST_NUMBER_FONT_FRACTION * DEFAULT_PRESET.numberScale, 5);
     });
 
     it("takes the place of sponsor 1: its sponsor is not drawn while the option is on, and is again when off", () => {

@@ -121,7 +121,7 @@ describe("useShortsTexture", () => {
     let release: () => void = () => {};
     fontsLoad.mockReturnValue(new Promise((resolve) => (release = () => resolve([]))));
     mount();
-    await waitFor(() => expect(fontsLoad).toHaveBeenCalledWith(expect.stringMatching(/^700 48px /), expect.any(String)));
+    await waitFor(() => expect(fontsLoad).toHaveBeenCalledWith(expect.stringMatching(/^400 48px /), expect.any(String)));
     expect(lastFamily()).toBe("sans-serif");
     const paintsBefore = draw.mock.calls.length;
     await act(async () => release());

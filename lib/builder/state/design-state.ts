@@ -5,7 +5,7 @@ import type { CrestConfig } from "../crest/crest-config";
 import { crestDataUrl } from "../crest/crest-svg";
 import { findPattern, visibleColors } from "../catalog/patterns";
 import { clampSponsorScale, isSponsorSlotId, type SponsorMap, type SponsorSlotId } from "../catalog/sponsor-slots";
-import { initialNameNumberStyle, type NameNumberStyle } from "../catalog/name-number-presets";
+import { findNameNumberPreset, initialNameNumberStyle, type NameNumberStyle } from "../catalog/name-number-presets";
 
 export type ShortsColorSource = "primary" | "secondary";
 export type ShortsConfig = { included: boolean; colorSource: ShortsColorSource };
@@ -83,6 +83,7 @@ export type DesignAction =
   | { type: "SET_PLAYER_NUMBER"; value: string }
   | { type: "SET_CHEST_NUMBER"; value: boolean }
   | { type: "SET_NN_FILL"; value: string; target?: LookTarget }
+  | { type: "SET_NN_PRESET"; id: string }
   | { type: "SET_NN_OUTLINE"; value: boolean }
   | { type: "SET_NN_OUTLINE_COLOR"; value: string }
   | { type: "SET_PROJECT_NAME"; value: string }
@@ -215,6 +216,10 @@ export function designReducer(state: DesignState, action: DesignAction): DesignS
       return state.chestNumber === action.value ? state : { ...state, chestNumber: action.value };
     case "SET_NN_FILL":
       return { ...state, nameNumberStyle: { ...state.nameNumberStyle, fill: action.value } };
+    case "SET_NN_PRESET":
+      return !findNameNumberPreset(action.id) || state.nameNumberStyle.presetId === action.id
+        ? state
+        : { ...state, nameNumberStyle: { ...state.nameNumberStyle, presetId: action.id } };
     case "SET_NN_OUTLINE":
       return { ...state, nameNumberStyle: { ...state.nameNumberStyle, outline: action.value } };
     case "SET_NN_OUTLINE_COLOR":
