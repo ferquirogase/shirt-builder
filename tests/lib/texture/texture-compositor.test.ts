@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { PATTERN_BLEED, PATTERN_EDGE_PAD, NAPE_BRAND_SQUEEZE_Y, backVisibleWidth, drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
+import fs from "node:fs";
+import path from "node:path";
+import { PATTERN_EDGE_PAD, NAPE_BRAND_SQUEEZE_Y, drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
 import { NAME_PLACEHOLDER, NUMBER_PLACEHOLDER, displayName, displayNumber, showsNamePlaceholder } from "@/lib/builder/texture/number-text";
 import { CHEST_NUMBER_FONT_FRACTION } from "@/lib/builder/texture/front-layout";
 import { initialDesignState } from "@/lib/builder/state/design-state";
@@ -1082,13 +1084,14 @@ describe("drawDesignToCanvas", () => {
     expect(used).toEqual([front, back]);
   });
 
-  // The back panel is narrower than the front but the cloth has the same density on both: the pattern is
-  // one strip, so the back's image is drawn at the front's scale, from the panel's left edge seen from behind.
-  describe("the pattern over the panels the cloth shows", () => {
-    const panels: UVRegions = {
+  // The moldes' images are made for the whole cloth of the front and of the back (and a margin round it), as
+  // the compositor draws them: scripts/moldes/extract_moldes.py lays the PDF pieces on the cloth outline to
+  // outline, so the rects here and there must be the same.
+  describe("the pattern over the cloth's own rects", () => {
+    const withRects: UVRegions = {
       ...regions,
-      bodyFrontPanel: { u0: 0.3, v0: 0.5, u1: 0.7, v1: 0.9 },
-      bodyBackPanel: { u0: 0.35, v0: 0.1, u1: 0.65, v1: 0.5 },
+      bodyFrontPattern: { u0: 0.3, v0: 0.5, u1: 0.7, v1: 0.9 },
+      bodyBackPattern: { u0: 0.35, v0: 0.1, u1: 0.65, v1: 0.5 },
     };
     const images = (front: HTMLImageElement, back: HTMLImageElement) => ({
       bodyPatternImage: front,
@@ -1096,48 +1099,49 @@ describe("drawDesignToCanvas", () => {
       logoImage: null,
       bodyBackPatternImage: back,
     });
-
-    it("draws the front's pattern over the front panel, a little over it", () => {
+    const drawn = (image: HTMLImageElement, which: "front" | "back") => {
       const ctx = createMockCtx();
+      const other = {} as HTMLImageElement;
+      drawDesignToCanvas(ctx, 1000, initialDesignState, which === "front" ? images(image, other) : images(other, image), withRects);
+      const call = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === image && c.length === 5)!;
+      const centres = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
+      return { call, centres };
+    };
+
+    it("draws the front's image over the front rect, exactly", () => {
       const front = { id: "front" } as unknown as HTMLImageElement;
-      drawDesignToCanvas(ctx, 1000, initialDesignState, images(front, {} as HTMLImageElement), panels);
-      // Drawn about its centre (its edges are stretched out first, see PATTERN_EDGE_PAD).
-      const call = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === front && c.length === 5)!;
-      const width = (0.4 + 2 * PATTERN_BLEED) * 1000;
-      expect(call[3]).toBeCloseTo(width, 5);
-      expect(call[1]).toBeCloseTo(-width / 2, 5);
-      const centre = (0.3 - PATTERN_BLEED) * 1000 + width / 2;
-      expect((ctx.translate as ReturnType<typeof vi.fn>).mock.calls.some((c) => Math.abs(c[0] - centre) < 1e-6)).toBe(true);
+      const { call, centres } = drawn(front, "front");
+      expect(call.slice(1).map((n: number) => Math.round(n))).toEqual([-200, -200, 400, 400]);
+      expect(centres.some((c) => Math.abs(c[0] - 500) < 1e-6 && Math.abs(c[1] - 300) < 1e-6)).toBe(true);
     });
 
-    it("draws the back's image as wide as the front's, ending at the back panel's seam edge", () => {
-      const ctx = createMockCtx();
+    it("draws the back's image over the back rect, exactly, turned like the back", () => {
       const back = { id: "back" } as unknown as HTMLImageElement;
-      drawDesignToCanvas(ctx, 1000, initialDesignState, images({} as HTMLImageElement, back), panels);
-      const call = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === back && c.length === 5)!;
-      const width = (0.4 + 2 * PATTERN_BLEED) * 1000; // the front's, not the back panel's 0.3
-      expect(call[3]).toBeCloseTo(width, 5);
-      // rotated 180deg about its centre: the centre is the right edge (0.65 + bleed) minus half of it
-      const centre = (0.65 + PATTERN_BLEED) * 1000 - width / 2;
-      const translate = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls.find((c) => Math.abs(c[0] - centre) < 1e-6);
-      expect(translate).toBeDefined();
-    });
-
-    it("tells how much of the back image is on the shirt", () => {
-      expect(backVisibleWidth(panels, 512)).toBeCloseTo((512 * 0.3) / 0.4, 5);
-      expect(backVisibleWidth(regions, 512)).toBe(512);
+      const { call, centres } = drawn(back, "back");
+      expect(call.slice(1).map((n: number) => Math.round(n))).toEqual([-150, -200, 300, 400]);
+      expect(centres.some((c) => Math.abs(c[0] - 500) < 1e-6 && Math.abs(c[1] - 700) < 1e-6)).toBe(true);
     });
   });
 
-  it("knows the measured panels of the GEPE shirt: the back is narrower than the front, and as tall", () => {
-    const { bodyFrontPanel: f, bodyBackPanel: b } = GEPE_UV_REGIONS;
-    expect(f).toBeDefined();
-    expect(b).toBeDefined();
-    expect(b!.u1 - b!.u0).toBeLessThan(f!.u1 - f!.u0);
-    expect(b!.v1 - b!.v0).toBeCloseTo(f!.v1 - f!.v0, 2);
-    // both panels are centered on the shirt
-    expect((f!.u0 + f!.u1) / 2).toBeCloseTo(0.5, 3);
-    expect((b!.u0 + b!.u1) / 2).toBeCloseTo(0.5, 3);
+  it("knows the GEPE shirt's pattern rects: the cloth's islands and a margin, front and back meeting at the shoulder", () => {
+    const { bodyFrontPattern: f, bodyBackPattern: b } = GEPE_UV_REGIONS;
+    // the cloth reaches u 0.3137..0.686 at the front's armpits, 0.3396..0.6602 at the back's, v 0.0576..0.942
+    expect(f!.u0).toBeLessThan(0.3137);
+    expect(f!.u1).toBeGreaterThan(0.686);
+    expect(f!.v0).toBeLessThan(0.0576);
+    expect(b!.u0).toBeLessThan(0.3396);
+    expect(b!.u1).toBeGreaterThan(0.6602);
+    expect(b!.v1).toBeGreaterThan(0.942);
+    expect(f!.v1).toBe(0.5);
+    expect(b!.v0).toBe(0.5);
+  });
+
+  it("uses the same pattern rects as the script that makes the moldes", () => {
+    const script = fs.readFileSync(path.join(process.cwd(), "scripts/moldes/extract_moldes.py"), "utf8");
+    const m = /PATTERN_RECTS = \{"front": \(([^)]*)\), "back": \(([^)]*)\)\}/.exec(script)!;
+    const rect = (r: UVRect) => [r.u0, r.v0, r.u1, r.v1];
+    expect(m[1].split(",").map(Number)).toEqual(rect(GEPE_UV_REGIONS.bodyFrontPattern!));
+    expect(m[2].split(",").map(Number)).toEqual(rect(GEPE_UV_REGIONS.bodyBackPattern!));
   });
 
   it("falls back to the front image for the back when the back image is missing (Review Focus 4)", () => {

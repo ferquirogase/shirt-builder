@@ -2,47 +2,48 @@
 #
 # Each molde is three pieces (front, back, sleeve). For each piece:
 #   - the artwork is every drawing under a clip whose centre is inside the piece (logos and seam marks
-#     sit under the page clip, so they are left out); inner clips are kept as SVG clipPaths, the piece's
-#     own outline clip is not (the design runs past the outline, so the seams show no gap);
+#     sit under the page clip, so they are left out); inner clips are kept, the piece's own outline clip is
+#     not (the design runs past the outline, so the seams show no gap);
 #   - the sleeve's cuff band (a full-width band at the cuff) is taken out: the builder paints it in the
 #     cuff color, from `cuffFrom` (share of the sleeve image, cap -> cuff along x) to the edge;
 #   - colors become roles by the area they really cover (measured by rasterizing), the largest first;
 #     a color that covers next to nothing is an artifact and takes the role of the nearest gray.
-# A molde whose SVG is light is written as SVG (`data-color-slot` / `data-stroke-slot` roles). A heavy one
-# is written as a color mask PNG: red, green and blue are the coverage of roles 2, 3 and 4, and what is
-# left is role 1; the browser mixes the user's colors from it.
+# Front and back are laid on the model's cloth outline to outline (see body_image), so the design meets
+# itself over the shoulders and under the arms. Every piece is written as a color mask PNG: red, green and
+# blue are the coverage of roles 2, 3 and 4, and what is left is role 1; the browser mixes the user's colors.
 #
 # usage: python scripts/moldes/extract_moldes.py "ESTAMPAS WEB.pdf"
 #        (writes public/patterns/moldes/ and lib/builder/catalog/moldes.generated.ts)
-import io
 import json
 import os
 import sys
 
 import numpy as np
 import pymupdf
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT_DIR = os.path.join(ROOT, "public", "patterns", "moldes")
 OUT_TS = os.path.join(ROOT, "lib", "builder", "catalog", "moldes.generated.ts")
+MODEL_OBJ = os.path.join(ROOT, "public", "models", "gepe_shirt.obj")
 COUNT = 20
 ROLES = ["primary", "secondary", "accent", "quaternary"]
-BACK_RATIO = 0.7732  # back panel width / front panel width on the 3D model (GEPE_UV_REGIONS)
-# Measured on public/models/gepe_shirt.obj. The side seam runs from the hem (v 0.0576) to the armpit (v 0.355),
-# and the shoulder seam is at v 0.5: the armpit is this share of the panel's height down from the shoulder.
-MODEL_ARMPIT = (0.5 - 0.355) / (0.5 - 0.0576)
-# How wide the panels really are round the body: UV width x 3D length per UV unit along u.
-MODEL_FRONT_W = 0.3536 * 296.9
-MODEL_BACK_W = 0.2734 * 291.4
-# How each molde goes round the body (see Geometry); the rest use DEFAULT_MODE.
-DEFAULT_MODE = os.environ.get("MOLDE_MODE", "panel")
-MODES = {}
-SVG_SIZE = 512
+# The rects the compositor draws the front and the back pattern images over: u0, v0, u1, v1. They must be
+# GEPE_UV_REGIONS.bodyFrontPattern / bodyBackPattern (a test checks): the cloth's island, and a margin.
+PATTERN_RECTS = {"front": (0.3037, 0.0476, 0.6963, 0.5), "back": (0.3296, 0.5, 0.6704, 0.9521)}
+# On the model (front-equivalent v; the back's is 1 - v): the shoulder seam, the armpit (top of the side
+# seam) and the hem at the side seam.
+MODEL_SHOULDER, MODEL_ARMPIT_V, MODEL_HEM = 0.5, 0.355, 0.0576
+# The PDF pieces are drawn flat at this many px per point, with this margin (points) round them.
+SOURCE_RES = 4
+SOURCE_MARGIN = 40
+# Points kept inside a piece's outline when sampling it (see body_image): the outline's stroke hides the
+# outermost ~2 pt of the PDF, where some designs stop short of the edge (molde 10's back).
+EDGE_INSET = 2.5
 MASK_SIZE = {"front": 1024, "back": 1024, "sleeve": 512}
+# Rows at the top and bottom of the cloth's island whose edges are not trusted (see Island).
+ISLAND_EDGE_ROWS = 3
 THUMB_SIZE = 192
-# A molde whose three SVGs weigh more than this is written as masks.
-SVG_BUDGET = 260_000
 # A color covering less than this share of the molde is an artifact.
 MIN_SHARE = 0.004
 BLACK = "#231f20"
@@ -216,71 +217,184 @@ class Piece:
         return out
 
 
-class Geometry:
-    """How a molde's PDF pieces go onto the model's front and back panels.
-
-    Up the body, the side seam decides: the PDF's side seam, from the hem to the armpit, lands on the
-    model's, so what reaches the line under the arm is what the PDF has there, on the front and the back
-    alike (both pieces share their page heights). Round the body there are two ways, since the model's back
-    is narrower than its front while the PDF's pieces are as wide as each other:
-      - "panel": each PDF piece fills its own panel, seam to seam (the back comes out narrower);
-      - "strip": one scale round the body, as a strip back | front | back, so the PDF's seam sits a little
-        forward of the model's and the front shows the edges of the back."""
-
-    def __init__(self, front, back, mode):
-        self.front, self.back, self.mode = front, back, mode
-        self.arm, self.hem = front.seam
-
-    def matrix(self, kind, size):
-        fr, rb = self.front.r, self.back.r
-        sy = size * (1 - MODEL_ARMPIT) / (self.hem - self.arm)
-        ty = size - self.hem * sy
-        if self.mode == "panel":
-            if kind == "front":
-                sx = size / fr.width
-                tx = -fr.x0 * sx
-            else:
-                # The compositor draws a front-wide back image turned 180deg, ending at the back panel's seam:
-                # what lands on the cloth is the image's left BACK_RATIO. The whole PDF back goes there.
-                sx = BACK_RATIO * size / rb.width
-                tx = -rb.x0 * sx
-        else:
-            round_pdf = fr.width + rb.width
-            round_model = MODEL_FRONT_W + MODEL_BACK_W
-            if kind == "front":
-                sx = size / (round_pdf * MODEL_FRONT_W / round_model)
-                tx = size / 2 - (fr.x0 + fr.x1) / 2 * sx
-            else:
-                sx = BACK_RATIO * size / (round_pdf * MODEL_BACK_W / round_model)
-                tx = BACK_RATIO / 2 * size - (rb.x0 + rb.x1) / 2 * sx
-        return (sx, 0, 0, sy, tx, ty)
-
-    def layers(self, kind):
-        """(piece, dx, x-range it is cut to) drawn in the image of `kind`."""
-        fr, rb = self.front.r, self.back.r
-        if kind == "front":
-            if self.mode == "strip":
-                # The back goes on past both side seams: its right edge meets the front's left edge, and its
-                # left edge the front's right edge.
-                return [
-                    (self.back, fr.x0 - rb.x1, (fr.x0 - rb.width - 50, fr.x0)),
-                    (self.back, fr.x1 - rb.x0, (fr.x1, fr.x1 + rb.width + 50)),
-                    (self.front, 0, (fr.x0, fr.x1)),
-                ]
-            return [(self.front, 0, None)]
-        return [(self.back, 0, None)]
-
-
-def seam_span(outline_drawings, r):
-    """(armpit, hem) page heights of a body piece's side seam: where its outline runs straight down its edge."""
-    pts = []
+def outline_of(outline_drawings, r):
+    """The black outline stroke of the body piece at `r`."""
     for x in outline_drawings:
-        if abs(x["rect"].x0 - r.x0) < 5 and abs(x["rect"].y0 - r.y0) < 40:
-            for it in x["items"]:
-                pts += [p for p in it[1:] if isinstance(p, pymupdf.Point) and abs(p.x - r.x0) < 1.5]
+        if abs(x["rect"].x0 - r.x0) < 5 and abs(x["rect"].y0 - r.y0) < 40 and abs(x["rect"].x1 - r.x1) < 5:
+            return x
+    raise SystemExit(f"no outline found for the piece at {r}")
+
+
+def seam_span(outline, r):
+    """(armpit, hem) page heights of a body piece's side seam: where its outline runs straight down its edge."""
+    pts = [p for it in outline["items"] for p in it[1:] if isinstance(p, pymupdf.Point) and abs(p.x - r.x0) < 1.5]
     if not pts:
         raise SystemExit(f"no side seam found for the piece at {r}")
     return min(p.y for p in pts), max(p.y for p in pts)
+
+
+def shoulder_tip(outline, r):
+    """Page height of the shoulder tips: the outer ends of the two shoulder lines (long, gently sloped lines at
+    the top of the piece), where the armholes begin."""
+    tips = []
+    for it in outline["items"]:
+        if it[0] != "l":
+            continue
+        a, b = it[1], it[2]
+        dx, dy = abs(b.x - a.x), abs(b.y - a.y)
+        if dx > 60 and dy < 0.5 * dx and max(a.y, b.y) < r.y0 + 80:
+            outer = a if abs(a.x - (r.x0 + r.x1) / 2) > abs(b.x - (r.x0 + r.x1) / 2) else b
+            tips.append(outer.y)
+    if len(tips) != 2:
+        raise SystemExit(f"expected two shoulder lines for the piece at {r}, found {len(tips)}")
+    return sum(tips) / 2
+
+
+class Island:
+    """Where the model's cloth is in a body pattern image, row by row: the image is the compositor's front or
+    back pattern rect (see PATTERN_RECTS), as the compositor draws it (the back turned 180deg)."""
+
+    _faces = None
+
+    @classmethod
+    def faces(cls):
+        if cls._faces is None:
+            T, F = [], []
+            for line in open(MODEL_OBJ):
+                a = line.split()
+                if not a:
+                    continue
+                if a[0] == "vt":
+                    T.append((float(a[1]), float(a[2])))
+                elif a[0] == "f":
+                    F.append([int(p.split("/")[1]) - 1 for p in a[1:]])
+            parent = list(range(len(T)))
+
+            def find(i):
+                while parent[i] != i:
+                    parent[i] = parent[parent[i]]
+                    i = parent[i]
+                return i
+
+            for f in F:
+                for k in f[1:]:
+                    a, b = find(f[0]), find(k)
+                    if a != b:
+                        parent[a] = b
+            T = np.array(T)
+            start = int(np.argmin(np.abs(T[:, 0] - 0.5) + np.abs(T[:, 1] - 0.25)))
+            root = find(start)
+            cls._faces = [T[f] for f in F if find(f[0]) == root]
+        return cls._faces
+
+    def __init__(self, kind, size):
+        u0, v0, u1, v1 = PATTERN_RECTS[kind]
+        self.kind, self.size = kind, size
+        mask = Image.new("L", (size, size), 0)
+        draw = ImageDraw.Draw(mask)
+        for tri in self.faces():
+            cv = tri[:, 1].mean()
+            if (kind == "front") != (cv < 0.5):
+                continue
+            pts = [self.to_px(u, v) for u, v in tri]
+            draw.polygon(pts, fill=255)
+        m = np.asarray(mask) > 0
+        # The first and last rows are cut by the island's edge (the shoulder seam, the hem) and come out
+        # short: they take the edges of the nearest whole row, or the shoulder seam shows as a line.
+        rows = np.where(m.any(axis=1))[0][ISLAND_EDGE_ROWS:-ISLAND_EDGE_ROWS]
+        left = np.full(size, np.nan)
+        right = np.full(size, np.nan)
+        for j in rows:
+            cols = np.where(m[j])[0]
+            left[j], right[j] = cols[0], cols[-1] + 1
+        idx = np.arange(size)
+        self.left = np.interp(idx, rows, left[rows])
+        self.right = np.interp(idx, rows, right[rows])
+
+    def to_px(self, u, v):
+        u0, v0, u1, v1 = PATTERN_RECTS[self.kind]
+        s = self.size
+        if self.kind == "front":
+            return ((u - u0) / (u1 - u0) * s, (v1 - v) / (v1 - v0) * s)
+        return ((u1 - u) / (u1 - u0) * s, (v - v0) / (v1 - v0) * s)
+
+    def row_v(self):
+        """The front-equivalent v of each image row (the back's is mirrored, 1 - v)."""
+        u0, v0, u1, v1 = PATTERN_RECTS[self.kind]
+        j = np.arange(self.size) + 0.5
+        if self.kind == "front":
+            return v1 - j / self.size * (v1 - v0)
+        return 1 - (v0 + j / self.size * (v1 - v0))
+
+
+class PieceRaster:
+    """A body piece drawn flat at SOURCE_RES px per point (with a margin, the design running on past its
+    outline), and the piece's outline, row by row."""
+
+    def __init__(self, piece, paint):
+        r = piece.r
+        self.x0, self.y0 = r.x0 - SOURCE_MARGIN, r.y0 - SOURCE_MARGIN
+        w, h = int((r.width + 2 * SOURCE_MARGIN) * SOURCE_RES), int((r.height + 2 * SOURCE_MARGIN) * SOURCE_RES)
+        m = (SOURCE_RES, 0, 0, SOURCE_RES, -self.x0 * SOURCE_RES, -self.y0 * SOURCE_RES)
+        keyed = lambda col, s: f'{"stroke" if s else "fill"}="{col}"'
+        self.img = rasterize(piece_svg(piece, m, w, h, paint, keyed)).astype(np.float32)
+        shape = f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}"><rect width="{w}" height="{h}" fill="#ffffff"/><g transform="matrix({" ".join("%.6f" % v for v in m)})"><path fill="#000000" d="{path_d(piece.outline["items"])}"/></g></svg>'
+        inside = rasterize(shape, aa=False)[:, :, 0] < 128
+        rows = np.where(inside.any(axis=1))[0]
+        left, right = np.zeros(h), np.zeros(h)
+        for j in rows:
+            cols = np.where(inside[j])[0]
+            left[j], right[j] = cols[0], cols[-1] + 1
+        idx = np.arange(h)
+        # Rows past the outline (above the neck, below the hem) take the nearest row's edges.
+        self.left = np.interp(idx, rows, left[rows]) / SOURCE_RES + self.x0
+        self.right = np.interp(idx, rows, right[rows]) / SOURCE_RES + self.x0
+
+    def edges_at(self, y):
+        j = (y - self.y0) * SOURCE_RES
+        idx = np.arange(len(self.left))
+        return np.interp(j, idx, self.left), np.interp(j, idx, self.right)
+
+    def sample(self, x, y):
+        """Bilinear sample at page points (arrays)."""
+        h, w = self.img.shape[:2]
+        fx = np.clip((x - self.x0) * SOURCE_RES - 0.5, 0, w - 1.001)
+        fy = np.clip((y - self.y0) * SOURCE_RES - 0.5, 0, h - 1.001)
+        ix, iy = fx.astype(int), fy.astype(int)
+        ax, ay = (fx - ix)[..., None], (fy - iy)[..., None]
+        im = self.img
+        top = im[iy, ix] * (1 - ax) + im[iy, ix + 1] * ax
+        bottom = im[iy + 1, ix] * (1 - ax) + im[iy + 1, ix + 1] * ax
+        return top * (1 - ay) + bottom * ay
+
+
+def body_image(piece, paint, size):
+    """The body piece as the compositor's pattern image: the PDF piece's outline laid on the model's cloth,
+    row by row. Up the body, the model's shoulder seam, armpit and hem land on the PDF piece's shoulder tips,
+    armpit and side-seam hem; across each row, the cloth's edges land on the piece's edges (the side seams
+    below the armpit, the armholes above it, the shoulder tips at the top). Front and back share the shoulder
+    seam and the side seams, and so do their PDF pieces, so the design meets itself over the shoulders and
+    under the arms."""
+    island = Island(piece.kind, size)
+    src = PieceRaster(piece, paint)
+    v = island.row_v()
+    arm, hem = piece.seam
+    # v -> page y, piecewise straight through the three landmarks (and on past them at the end slopes).
+    y = np.interp(-v, [-MODEL_SHOULDER, -MODEL_ARMPIT_V, -MODEL_HEM], [piece.tip, arm, hem])
+    above = v > MODEL_SHOULDER
+    y[above] = piece.tip - (v[above] - MODEL_SHOULDER) * (arm - piece.tip) / (MODEL_SHOULDER - MODEL_ARMPIT_V)
+    below = v < MODEL_HEM
+    y[below] = hem + (MODEL_HEM - v[below]) * (hem - arm) / (MODEL_ARMPIT_V - MODEL_HEM)
+    xl, xr = src.edges_at(y)
+    # Never past what the PDF shows inside the piece's outline: its edge is antialiased against what lies
+    # outside, or stops short under the outline's stroke, and the side seam would show a hairline. Off the
+    # cloth, the edge's color goes on (the image's padding).
+    xl, xr = xl + EDGE_INSET, xr - EDGE_INSET
+    cols = np.arange(size) + 0.5
+    t = np.clip((cols[None, :] - island.left[:, None]) / (island.right - island.left)[:, None], 0, 1)
+    x = xl[:, None] + t * (xr - xl)[:, None]
+    yy = np.repeat(y[:, None], size, axis=1)
+    return np.clip(src.sample(x, yy), 0, 255).astype(np.uint8)
 
 
 def sleeve_matrix(piece, size):
@@ -289,13 +403,10 @@ def sleeve_matrix(piece, size):
     return (0, size / r.width, size / r.height, 0, -r.y0 * size / r.height, -r.x0 * size / r.width)
 
 
-def svg_markup(piece, geo, size, paint, attrs):
-    """The piece as SVG. `paint(hex)` gives the color key for a PDF color; `attrs` whether to write roles
-    (data-color-slot) or plain fills (for rasterizing)."""
-    if piece.kind == "sleeve":
-        m, layers = sleeve_matrix(piece, size), [(piece, 0, None)]
-    else:
-        m, layers = geo.matrix(piece.kind, size), geo.layers(piece.kind)
+def piece_svg(piece, m, width, height, paint, attrs):
+    """The piece as SVG, drawn through the matrix `m`. `paint(hex)` gives the color for a PDF color and
+    `attrs(color, is_stroke)` writes it."""
+    layers = [(piece, 0, None)]
     defs, body = {}, []
     run = {"key": None, "d": []}
 
@@ -351,7 +462,7 @@ def svg_markup(piece, geo, size, paint, attrs):
     mat = " ".join("%.6f" % v for v in m)
     return "\n".join(
         [
-            f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 {size} {size}">',
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
             f'<g transform="matrix({mat})">',
             f'<defs>{"".join(defs.values())}</defs>' if defs else "",
             *body,
@@ -368,23 +479,37 @@ def rasterize(markup, aa=True):
     return np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)[:, :, :3]
 
 
-def measure(pieces, geo, colors):
+def keyed(col, is_stroke):
+    return f'{"stroke" if is_stroke else "fill"}="{col}"'
+
+
+def flat_matrix(piece, size):
+    r = piece.r
+    return (size / r.width, 0, 0, size / r.height, -r.x0 * size / r.width, -r.y0 * size / r.height)
+
+
+def measure(pieces, colors):
     """Area each PDF color really covers, over the three pieces (the sleeve without its cuff)."""
     keys = {c: "#%02x%02x%02x" % (i * 9 + 3, (i * 37) % 256, (i * 71) % 256) for i, c in enumerate(colors)}
     lookup = {tuple(int(k[j : j + 2], 16) for j in (1, 3, 5)): c for c, k in keys.items()}
     area = {c: 0 for c in colors}
     size = 256
     for p in pieces:
-        img = rasterize(svg_markup(p, geo, size, lambda h: keys[h], lambda col, s: f'{"stroke" if s else "fill"}="{col}"'), aa=False)
+        m = sleeve_matrix(p, size) if p.kind == "sleeve" else flat_matrix(p, size)
+        img = rasterize(piece_svg(p, m, size, size, lambda h: keys[h], keyed), aa=False)
         if p.kind == "sleeve" and p.cuff:
             img = img[:, : int(p.cuff["from"] * size)]
-        flat = img.reshape(-1, 3)
-        uniq, counts = np.unique(flat, axis=0, return_counts=True)
+        uniq, counts = np.unique(img.reshape(-1, 3), axis=0, return_counts=True)
         for u, n in zip(uniq, counts):
             c = lookup.get(tuple(int(v) for v in u))
             if c:
                 area[c] += int(n)
     return area
+
+
+def save_mask(pixels, path, colors=64):
+    img = Image.fromarray(np.ascontiguousarray(pixels), "RGB")
+    img.quantize(colors=colors, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).save(path, optimize=True)
 
 
 def main():
@@ -400,54 +525,43 @@ def main():
         rf, rb, rs = piece_rects(scans[pi])[(n - 1) % 4]
         front, back, sleeve = Piece(scans[pi], "front", rf), Piece(scans[pi], "back", rb), Piece(scans[pi], "sleeve", rs)
         sleeve.take_cuff()
-        front.seam = seam_span(scans[pi][4], rf)
-        geo = Geometry(front, back, MODES.get(n, DEFAULT_MODE))
+        for body in (front, back):
+            body.outline = outline_of(scans[pi][4], body.r)
+            body.seam = seam_span(body.outline, body.r)
+            body.tip = shoulder_tip(body.outline, body.r)
         pieces = [front, back, sleeve]
         colors = list(dict.fromkeys(c for p in pieces for c in p.colors()))
-        area = measure(pieces, geo, colors)
+        area = measure(pieces, colors)
         total = sum(area.values()) or 1
         kept = sorted((c for c in colors if area[c] / total >= MIN_SHARE), key=lambda c: -area[c])[: len(ROLES)]
         role_of = {c: ROLES[i] for i, c in enumerate(kept)}
         for c in colors:
             if c not in role_of:
                 role_of[c] = role_of[min(kept, key=lambda k: abs(luma(k) - luma(c)))]
+        paint = lambda h: MASK_KEYS[role_of[h]]
 
         name = f"molde-{n:02d}"
-        roles_attr = lambda col, s: f'data-{"stroke" if s else "color"}-slot="{col}"'
-        svgs = {p.kind: svg_markup(p, geo, SVG_SIZE, lambda h: role_of[h], roles_attr) for p in pieces}
-        weight = sum(len(s) for s in svgs.values())
-        fmt_ = "svg" if weight <= SVG_BUDGET else "png"
         for old in os.listdir(OUT_DIR):
             if old.startswith(name + "-"):
                 os.remove(os.path.join(OUT_DIR, old))
-        for p in pieces:
-            path = os.path.join(OUT_DIR, f"{name}-{p.kind}.{fmt_}")
-            if fmt_ == "svg":
-                with open(path, "w", encoding="utf-8", newline="\n") as f:
-                    f.write(svgs[p.kind] + "\n")
-            else:
-                size = MASK_SIZE[p.kind]
-                markup = svg_markup(p, geo, size, lambda h: MASK_KEYS[role_of[h]], lambda col, s: f'{"stroke" if s else "fill"}="{col}"')
-                img = Image.fromarray(np.ascontiguousarray(rasterize(markup)), "RGB")
-                img = img.quantize(colors=64, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
-                img.save(path, optimize=True)
-                if p.kind == "front":
-                    # The Design panel shows every molde at once: a small mask is enough for its thumbnail.
-                    thumb = rasterize(svg_markup(p, geo, THUMB_SIZE, lambda h: MASK_KEYS[role_of[h]], lambda col, s: f'{"stroke" if s else "fill"}="{col}"'))
-                    thumb_img = Image.fromarray(np.ascontiguousarray(thumb), "RGB")
-                    thumb_img = thumb_img.quantize(colors=32, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
-                    thumb_img.save(os.path.join(OUT_DIR, f"{name}-thumb.png"), optimize=True)
+        for body in (front, back):
+            pixels = body_image(body, paint, MASK_SIZE[body.kind])
+            save_mask(pixels, os.path.join(OUT_DIR, f"{name}-{body.kind}.png"))
+            if body.kind == "front":
+                # The Design panel shows every molde at once: a small mask is enough for its thumbnail.
+                thumb = np.asarray(Image.fromarray(pixels, "RGB").resize((THUMB_SIZE, THUMB_SIZE), Image.Resampling.BOX))
+                save_mask(thumb, os.path.join(OUT_DIR, f"{name}-thumb.png"), colors=32)
+        size = MASK_SIZE["sleeve"]
+        save_mask(rasterize(piece_svg(sleeve, sleeve_matrix(sleeve, size), size, size, paint, keyed)), os.path.join(OUT_DIR, f"{name}-sleeve.png"))
         entries.append(
             {
                 "id": name,
-                "format": fmt_,
                 "roles": ROLES[: len(kept)],
                 "cuffFrom": round(sleeve.cuff["from"], 4) if sleeve.cuff else None,
-                "pdfColors": {role_of[c]: c for c in reversed(kept)},
                 "share": {role_of[c]: round(area[c] / total, 3) for c in kept},
             }
         )
-        print(name, fmt_, round(weight / 1000), "KB svg", entries[-1]["roles"], "cuff", entries[-1]["cuffFrom"], entries[-1]["share"], flush=True)
+        print(name, entries[-1]["roles"], "cuff", entries[-1]["cuffFrom"], entries[-1]["share"], flush=True)
 
     lines = [
         "// Generated by scripts/moldes/extract_moldes.py from the owners' ESTAMPAS WEB.pdf: do not edit by hand.",
@@ -455,8 +569,6 @@ def main():
         "",
         "export type MoldeData = {",
         "  id: string;",
-        '  /** "svg": artwork with roles; "png": color mask (red, green, blue = roles 2-4, the rest role 1). */',
-        '  format: "svg" | "png";',
         "  /** Roles the molde uses, the one covering the most first. */",
         "  roles: PatternRole[];",
         "  /** Where the cuff band starts along the sleeve image (cap -> cuff), or null when it has none. */",
@@ -467,7 +579,7 @@ def main():
     ]
     for e in entries:
         roles = ", ".join(json.dumps(r) for r in e["roles"])
-        lines.append(f'  {{ id: "{e["id"]}", format: "{e["format"]}", roles: [{roles}], cuffFrom: {json.dumps(e["cuffFrom"])} }},')
+        lines.append(f'  {{ id: "{e["id"]}", roles: [{roles}], cuffFrom: {json.dumps(e["cuffFrom"])} }},')
     lines.append("];")
     with open(OUT_TS, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines) + "\n")

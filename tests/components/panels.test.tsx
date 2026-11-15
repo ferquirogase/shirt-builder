@@ -7,7 +7,7 @@ import { CrestPanel } from "@/components/builder/panels/CrestPanel";
 import { SponsorPanel } from "@/components/builder/panels/SponsorPanel";
 import { TextPanel } from "@/components/builder/panels/TextPanel";
 import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
-import { loadImage } from "@/lib/builder/texture/image-loader";
+import { loadImage, loadMaskPiece } from "@/lib/builder/texture/image-loader";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import { CREST_SHAPES } from "@/lib/builder/catalog/crest-shapes";
 import { crestDataUrl } from "@/lib/builder/crest/crest-svg";
@@ -55,17 +55,15 @@ describe("DesignPanel", () => {
   });
 
   it("draws an accent design's thumbnail with the design's own accent, not the stale one (Fix 1)", async () => {
-    const accentSvg = `<svg xmlns="http://www.w3.org/2000/svg"><rect data-color-slot="accent" fill="#000"/></svg>`;
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, text: async () => accentSvg })));
     const { api } = renderWithDesign(<DesignPanel />);
     // The current design does not show the accent, so the one in the state is stale.
     act(() => api.current!.dispatch({ type: "SET_COLOR", slot: "accent", value: "#123456" }));
-    const radio = screen.getByRole("radio", { name: "Espigas" });
-    await waitFor(() => expect(radio.querySelector('[data-thumb="loaded"]')).not.toBeNull());
-    const style = (radio.querySelector('[data-thumb="loaded"]') as HTMLElement).style.backgroundImage;
-    const decoded = decodeURIComponent(style);
-    expect(decoded).toContain("#f5b700");
-    expect(decoded).not.toContain("#123456");
+    // The molde's thumbnail is a color mask, painted with the colors a click on it would give.
+    const thumb = "/patterns/moldes/molde-12-thumb.png";
+    await waitFor(() => expect(vi.mocked(loadMaskPiece).mock.calls.some(([p]) => p === thumb)).toBe(true));
+    const accents = vi.mocked(loadMaskPiece).mock.calls.filter(([p]) => p === thumb).map(([, colors]) => colors.accent);
+    expect(accents.at(-1)).toBe("#f5b700");
+    expect(accents).not.toContain("#123456");
   });
 });
 

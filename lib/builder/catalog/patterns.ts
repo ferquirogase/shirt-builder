@@ -61,8 +61,9 @@ const MOLDE_LABELS = [
   "Rayos",
 ];
 
+// Every piece of a molde is a color mask, laid on the cloth by scripts/moldes/extract_moldes.py.
 const MOLDES: PatternDef[] = MOLDES_DATA.map((m, i) => {
-  const piece = (kind: string) => `/patterns/moldes/${m.id}-${kind}.${m.format}`;
+  const piece = (kind: string) => `/patterns/moldes/${m.id}-${kind}.png`;
   return {
     id: m.id,
     label: MOLDE_LABELS[i],
@@ -70,7 +71,7 @@ const MOLDES: PatternDef[] = MOLDES_DATA.map((m, i) => {
     backPath: piece("back"),
     sleevePath: piece("sleeve"),
     cuffFrom: m.cuffFrom,
-    thumbPath: m.format === "png" ? piece("thumb") : piece("front"),
+    thumbPath: piece("thumb"),
     colors: colorsFor(m.roles),
   };
 });

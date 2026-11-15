@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-<g transform="matrix(1.261923 0.000000 0.000000 0.977688 -15.944639 -195.274432)">
-
-<rect data-color-slot="primary" x="-1987.4" y="-1826" width="4405.7" height="4549.4"/>
-<path data-color-slot="secondary" d="M215.5 426L-111.6 270.6L215.5 -56.5L542.6 270.6L215.5 426"/>
-<path data-stroke-slot="secondary" fill="none" stroke-width="4" d="M215.5 437.1L542.6 281.7L215.5 -45.4L-111.6 281.7Z"/>
-</g>
-</svg>

@@ -3,8 +3,6 @@ import type { PatternRole } from "../texture/svg-recolor";
 
 export type MoldeData = {
   id: string;
-  /** "svg": artwork with roles; "png": color mask (red, green, blue = roles 2-4, the rest role 1). */
-  format: "svg" | "png";
   /** Roles the molde uses, the one covering the most first. */
   roles: PatternRole[];
   /** Where the cuff band starts along the sleeve image (cap -> cuff), or null when it has none. */
@@ -12,24 +10,24 @@ export type MoldeData = {
 };
 
 export const MOLDES_DATA: MoldeData[] = [
-  { id: "molde-01", format: "svg", roles: ["primary", "secondary"], cuffFrom: 0.8531 },
-  { id: "molde-02", format: "svg", roles: ["primary", "secondary"], cuffFrom: 0.8531 },
-  { id: "molde-03", format: "svg", roles: ["primary", "secondary"], cuffFrom: null },
-  { id: "molde-04", format: "svg", roles: ["primary", "secondary"], cuffFrom: null },
-  { id: "molde-05", format: "svg", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-06", format: "svg", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-07", format: "svg", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-08", format: "svg", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-09", format: "svg", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-10", format: "svg", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-11", format: "png", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8531 },
-  { id: "molde-12", format: "svg", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8631 },
-  { id: "molde-13", format: "png", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8235 },
-  { id: "molde-14", format: "png", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8235 },
-  { id: "molde-15", format: "png", roles: ["primary", "secondary"], cuffFrom: 0.8531 },
-  { id: "molde-16", format: "png", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8631 },
-  { id: "molde-17", format: "png", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8531 },
-  { id: "molde-18", format: "png", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-19", format: "png", roles: ["primary", "secondary", "accent", "quaternary"], cuffFrom: 0.8582 },
-  { id: "molde-20", format: "svg", roles: ["primary", "secondary"], cuffFrom: 0.8631 },
+  { id: "molde-01", roles: ["primary", "secondary"], cuffFrom: 0.8531 },
+  { id: "molde-02", roles: ["primary", "secondary"], cuffFrom: 0.8531 },
+  { id: "molde-03", roles: ["primary", "secondary"], cuffFrom: null },
+  { id: "molde-04", roles: ["primary", "secondary"], cuffFrom: null },
+  { id: "molde-05", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
+  { id: "molde-06", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
+  { id: "molde-07", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
+  { id: "molde-08", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
+  { id: "molde-09", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
+  { id: "molde-10", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
+  { id: "molde-11", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8531 },
+  { id: "molde-12", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8631 },
+  { id: "molde-13", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8235 },
+  { id: "molde-14", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8235 },
+  { id: "molde-15", roles: ["primary", "secondary"], cuffFrom: 0.8531 },
+  { id: "molde-16", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8631 },
+  { id: "molde-17", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8531 },
+  { id: "molde-18", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
+  { id: "molde-19", roles: ["primary", "secondary", "accent", "quaternary"], cuffFrom: 0.8582 },
+  { id: "molde-20", roles: ["primary", "secondary"], cuffFrom: 0.8631 },
 ];

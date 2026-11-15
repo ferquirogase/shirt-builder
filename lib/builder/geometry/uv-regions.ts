@@ -4,12 +4,12 @@ export type UVRegions = {
   bodyFront: UVRect;
   bodyBack: UVRect;
   /**
-   * What the cloth really shows of the front and of the back, when the rects above are not it exactly
-   * (measured at the side seams: both panels meet there, and the back is narrower than the front).
-   * The torso pattern is drawn over these, at one scale for both, so it goes on round the shirt.
+   * Where the torso pattern's front and back images are drawn, when the rects above are not it: the
+   * cloth's whole island (and a margin), front and back meeting at the shoulder seam. The moldes' images
+   * are made for exactly these rects (scripts/moldes/extract_moldes.py, PATTERN_RECTS).
    */
-  bodyFrontPanel?: UVRect;
-  bodyBackPanel?: UVRect;
+  bodyFrontPattern?: UVRect;
+  bodyBackPattern?: UVRect;
   sleeveLeft: UVRect;
   sleeveRight: UVRect;
   /**
@@ -33,11 +33,12 @@ export const GEPE_UV_REGIONS: UVRegions = {
   bodyBack: { u0: 0.296, v0: 0.51, u1: 0.704, v1: 0.98 },
   sleeveLeft: { u0: 0.641, v0: 0.668, u1: 0.758, v1: 0.98 },
   sleeveRight: { u0: 0.242, v0: 0.668, u1: 0.36, v1: 0.98 },
-  // Side seam: the front reaches u 0.3232 and 0.6768, the back 0.3633 and 0.6367, at every height from the
-  // hem to the armpit (the same vertex, in both islands). The back's v is the front's mirrored (1 - v),
-  // and the shoulder seam is at v 0.5, so the two panels have the same height.
-  bodyFrontPanel: { u0: 0.3232, v0: 0.0576, u1: 0.6768, v1: 0.5 },
-  bodyBackPanel: { u0: 0.3633, v0: 0.5, u1: 0.6367, v1: 0.942 },
+  // The torso island: front below the shoulder seam (v 0.5), back above it, turned 180deg. The side seam
+  // runs from the hem (v 0.0576, back 0.942) to the armpit (v 0.355, back 0.645) at u 0.3232..0.6768 on the
+  // front and 0.3633..0.6367 on the back; the cloth is widest at the armpits (front u 0.3137..0.686, back
+  // 0.3396..0.6602) and the shoulder seam spans u 0.359..0.641. The rects are that and a margin of 0.01.
+  bodyFrontPattern: { u0: 0.3037, v0: 0.0476, u1: 0.6963, v1: 0.5 },
+  bodyBackPattern: { u0: 0.3296, v0: 0.5, u1: 0.6704, v1: 0.9521 },
   // The rect above spans the sleeves too: the back panel itself is only u 0.355..0.645
   // (0.29 wide, measured from the OBJ's UV triangles). 0.5 of the rect is 0.204, about
   // 70% of that panel, which leaves room for the shirt curving away at the sides.
