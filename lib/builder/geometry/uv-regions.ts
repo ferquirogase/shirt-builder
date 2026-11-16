@@ -10,6 +10,9 @@ export type UVRegions = {
    */
   bodyFrontPattern?: UVRect;
   bodyBackPattern?: UVRect;
+  /** Where the brand labels go (see BRAND_LABEL_URLS): each label's image fills its rect. */
+  frontLabel?: UVRect;
+  backLabel?: UVRect;
   sleeveLeft: UVRect;
   sleeveRight: UVRect;
   /**
@@ -39,6 +42,13 @@ export const GEPE_UV_REGIONS: UVRegions = {
   // 0.3396..0.6602) and the shoulder seam spans u 0.359..0.641. The rects are that and a margin of 0.01.
   bodyFrontPattern: { u0: 0.3037, v0: 0.0476, u1: 0.6963, v1: 0.5 },
   bodyBackPattern: { u0: 0.3296, v0: 0.5, u1: 0.6704, v1: 0.9521 },
+  // The labels where the owners' moldes put them (ESTAMPAS WEB.pdf, the same place on all but moldes 1-6),
+  // laid on the cloth the way scripts/moldes/extract_moldes.py lays the moldes: the front tag low on the
+  // viewer's right, the back strip centered about 40 mm (on the PDF) above the hem. The front tag is moved
+  // 0.0126 toward the middle from the PDF's spot, to sit centered in a white stripe of Franjas anchas
+  // (molde 01's stripe there: u 0.5767..0.6284).
+  frontLabel: { u0: 0.5838, v0: 0.1149, u1: 0.6213, v1: 0.1329 },
+  backLabel: { u0: 0.483, v0: 0.8694, u1: 0.5168, v1: 0.8724 },
   // The rect above spans the sleeves too: the back panel itself is only u 0.355..0.645
   // (0.29 wide, measured from the OBJ's UV triangles). 0.5 of the rect is 0.204, about
   // 70% of that panel, which leaves room for the shirt curving away at the sides.

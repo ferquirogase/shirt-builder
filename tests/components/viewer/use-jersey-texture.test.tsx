@@ -17,7 +17,7 @@ import { useJerseyTexture } from "@/components/builder/viewer/use-jersey-texture
 import { DesignProvider, useDesign } from "@/lib/builder/state/design-context";
 import { drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
 import { loadImage, loadPatternImage, loadSleeveImage, loadTintedMask } from "@/lib/builder/texture/image-loader";
-import { BRAND_LOGO_URLS } from "@/lib/builder/catalog/brand-logo";
+import { BRAND_LABEL_URLS, BRAND_LOGO_URLS } from "@/lib/builder/catalog/brand-logo";
 import { BODY_PATTERNS } from "@/lib/builder/catalog/patterns";
 import { JERSEY_MODEL } from "@/lib/builder/geometry/jersey-model";
 import { UV_FLIP_Y } from "@/lib/builder/geometry/uv-regions";
@@ -141,6 +141,26 @@ describe("useJerseyTexture", () => {
     expect(lastImages().brandLogoForDark).toEqual({ src: BRAND_LOGO_URLS.forDark });
     expect(loadedWith(BRAND_LOGO_URLS.forLight)).toBe(1);
     expect(loadedWith(BRAND_LOGO_URLS.forDark)).toBe(1);
+  });
+
+  it("loads the front and the back brand label once", async () => {
+    mount();
+    await waitFor(() => expect(lastImages().frontLabelImage).toEqual({ src: BRAND_LABEL_URLS.front }));
+    expect(lastImages().backLabelImage).toEqual({ src: BRAND_LABEL_URLS.back });
+    expect(loadedWith(BRAND_LABEL_URLS.front)).toBe(1);
+    expect(loadedWith(BRAND_LABEL_URLS.back)).toBe(1);
+  });
+
+  it("keeps painting when a brand label fails to load, leaving it out", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(loadImage).mockImplementation(async (src: string) => {
+      if (src === BRAND_LABEL_URLS.back) throw new Error("404");
+      return { src } as unknown as HTMLImageElement;
+    });
+    mount();
+    await waitFor(() => expect(lastImages().frontLabelImage).toEqual({ src: BRAND_LABEL_URLS.front }));
+    expect(lastImages().backLabelImage).toBeNull();
+    expect(error).toHaveBeenCalled();
   });
 
   it("keeps painting when one brand logo fails to load, leaving that version out", async () => {

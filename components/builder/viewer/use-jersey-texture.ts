@@ -8,7 +8,7 @@ import { drawDesignToCanvas } from "@/lib/builder/texture/texture-compositor";
 import { UV_FLIP_Y } from "@/lib/builder/geometry/uv-regions";
 import { JERSEY_MODEL } from "@/lib/builder/geometry/jersey-model";
 import { loadSponsorImages, type SponsorImageCache, type SponsorImages } from "@/lib/builder/texture/sponsor-images";
-import { useBrandLogos, useCrestImage, useNameNumberFont } from "./use-garment-images";
+import { useBrandLabels, useBrandLogos, useCrestImage, useNameNumberFont } from "./use-garment-images";
 
 const CANVAS_SIZE = 2048;
 // Pattern SVGs are re-fetched/re-rasterized only when the pattern choice or
@@ -46,6 +46,7 @@ export function useJerseyTexture(): THREE.CanvasTexture {
   });
   const logoImage = useCrestImage(state.logoDataUrl);
   const brandLogos = useBrandLogos();
+  const brandLabels = useBrandLabels();
   const font = useNameNumberFont(state.nameNumberStyle.presetId);
   const sponsorCache = useRef<SponsorImageCache>(new Map());
   const [sponsorImages, setSponsorImages] = useState<SponsorImages>({});
@@ -135,13 +136,15 @@ export function useJerseyTexture(): THREE.CanvasTexture {
         logoImage,
         brandLogoForLight: brandLogos.forLight,
         brandLogoForDark: brandLogos.forDark,
+        frontLabelImage: brandLabels.front,
+        backLabelImage: brandLabels.back,
         sponsorImages,
       },
       JERSEY_MODEL.uvRegions,
       font.family
     );
     flagForUpload(texture);
-  }, [state, canvas, texture, patternImages, logoImage, brandLogos, sponsorImages, font.family, font.version]);
+  }, [state, canvas, texture, patternImages, logoImage, brandLogos, brandLabels, sponsorImages, font.family, font.version]);
 
   return texture;
 }
