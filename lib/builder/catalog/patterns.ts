@@ -25,6 +25,8 @@ export type PatternDef = {
   thumbPath: string;
   /** Roles the pieces use, in the order they appear in the Colors panel. */
   colors: PatternColor[];
+  /** Where the maker's logo goes on the chest (the model's UV), when the design says; else the model's spot. */
+  brandLogoAt?: { u: number; v: number };
 };
 
 const ROLE_DEFAULTS: Record<PatternRole, string> = {
@@ -73,6 +75,8 @@ const MOLDES: PatternDef[] = MOLDES_DATA.map((m, i) => {
     cuffFrom: m.cuffFrom,
     thumbPath: piece("thumb"),
     colors: colorsFor(m.roles),
+    // As the PDF has it: a little higher on the moldes of horizontal bands, over a band.
+    ...(m.brandLogo ? { brandLogoAt: m.brandLogo } : {}),
   };
 });
 

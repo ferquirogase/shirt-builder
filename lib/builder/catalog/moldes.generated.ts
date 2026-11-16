@@ -7,27 +7,29 @@ export type MoldeData = {
   roles: PatternRole[];
   /** Where the cuff band starts along the sleeve image (cap -> cuff), or null when it has none. */
   cuffFrom: number | null;
+  /** Where the PDF puts the maker's logo on the chest, as the model's UV (laid on the cloth like the molde). */
+  brandLogo: { u: number; v: number } | null;
 };
 
 export const MOLDES_DATA: MoldeData[] = [
-  { id: "molde-01", roles: ["primary", "secondary"], cuffFrom: 0.8531 },
-  { id: "molde-02", roles: ["primary", "secondary"], cuffFrom: 0.8531 },
-  { id: "molde-03", roles: ["primary", "secondary"], cuffFrom: null },
-  { id: "molde-04", roles: ["primary", "secondary"], cuffFrom: null },
-  { id: "molde-05", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-06", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-07", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-08", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-09", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-10", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-11", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8531 },
-  { id: "molde-12", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8631 },
-  { id: "molde-13", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8235 },
-  { id: "molde-14", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8235 },
-  { id: "molde-15", roles: ["primary", "secondary"], cuffFrom: 0.8531 },
-  { id: "molde-16", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8631 },
-  { id: "molde-17", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8531 },
-  { id: "molde-18", roles: ["primary", "secondary"], cuffFrom: 0.8235 },
-  { id: "molde-19", roles: ["primary", "secondary", "accent", "quaternary"], cuffFrom: 0.8582 },
-  { id: "molde-20", roles: ["primary", "secondary"], cuffFrom: 0.8631 },
+  { id: "molde-01", roles: ["primary", "secondary"], cuffFrom: 0.8531, brandLogo: { u: 0.4436, v: 0.4084 } },
+  { id: "molde-02", roles: ["primary", "secondary"], cuffFrom: 0.8531, brandLogo: { u: 0.4434, v: 0.4124 } },
+  { id: "molde-03", roles: ["primary", "secondary"], cuffFrom: null, brandLogo: { u: 0.4437, v: 0.4179 } },
+  { id: "molde-04", roles: ["primary", "secondary"], cuffFrom: null, brandLogo: { u: 0.4441, v: 0.4278 } },
+  { id: "molde-05", roles: ["primary", "secondary"], cuffFrom: 0.8235, brandLogo: { u: 0.4436, v: 0.4082 } },
+  { id: "molde-06", roles: ["primary", "secondary"], cuffFrom: 0.8235, brandLogo: { u: 0.4436, v: 0.4083 } },
+  { id: "molde-07", roles: ["primary", "secondary"], cuffFrom: 0.8235, brandLogo: { u: 0.4436, v: 0.4081 } },
+  { id: "molde-08", roles: ["primary", "secondary"], cuffFrom: 0.8235, brandLogo: { u: 0.4436, v: 0.4078 } },
+  { id: "molde-09", roles: ["primary", "secondary"], cuffFrom: 0.8235, brandLogo: { u: 0.4436, v: 0.4082 } },
+  { id: "molde-10", roles: ["primary", "secondary"], cuffFrom: 0.8235, brandLogo: { u: 0.4436, v: 0.4078 } },
+  { id: "molde-11", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8531, brandLogo: { u: 0.4435, v: 0.4077 } },
+  { id: "molde-12", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8631, brandLogo: { u: 0.4435, v: 0.4062 } },
+  { id: "molde-13", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8235, brandLogo: { u: 0.4435, v: 0.4076 } },
+  { id: "molde-14", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8235, brandLogo: { u: 0.4435, v: 0.4075 } },
+  { id: "molde-15", roles: ["primary", "secondary"], cuffFrom: 0.8531, brandLogo: { u: 0.4436, v: 0.4088 } },
+  { id: "molde-16", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8631, brandLogo: { u: 0.4435, v: 0.4079 } },
+  { id: "molde-17", roles: ["primary", "secondary", "accent"], cuffFrom: 0.8531, brandLogo: { u: 0.4436, v: 0.4077 } },
+  { id: "molde-18", roles: ["primary", "secondary"], cuffFrom: 0.8235, brandLogo: { u: 0.4436, v: 0.4081 } },
+  { id: "molde-19", roles: ["primary", "secondary", "accent", "quaternary"], cuffFrom: 0.8582, brandLogo: { u: 0.4435, v: 0.4076 } },
+  { id: "molde-20", roles: ["primary", "secondary"], cuffFrom: 0.8631, brandLogo: { u: 0.4435, v: 0.4082 } },
 ];

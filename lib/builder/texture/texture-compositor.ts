@@ -11,6 +11,7 @@ import {
 } from "../catalog/sponsor-slots";
 import { CHEST_NUMBER_FONT_FRACTION, CHEST_NUMBER_MAX_WIDTH_FRACTION } from "./front-layout";
 import { getNameNumberPreset } from "../catalog/name-number-presets";
+import { findPattern } from "../catalog/patterns";
 
 export type CompositorImages = {
   bodyPatternImage: CanvasImageSource | null;
@@ -195,7 +196,12 @@ function drawBrandLogos(
 ): void {
   const logos = { forLight: images.brandLogoForLight ?? null, forDark: images.brandLogoForDark ?? null };
   const primary = design.colors.primary;
-  const chest = pointInRegionToCanvas(regions.bodyFront, BRAND_U_FRAC, CREST_V_FRAC, canvasSize);
+  // Where the chosen design puts it (a molde, as its PDF does), else the model's own spot. A design's spot is
+  // UV of the model the moldes are laid on, the one that has a spot of its own: not used on any other.
+  const at = regions.brandLogoAt && (findPattern(design.bodyPatternId)?.brandLogoAt ?? regions.brandLogoAt);
+  const chest = at
+    ? { x: at.u * canvasSize, y: vToY(at.v) * canvasSize }
+    : pointInRegionToCanvas(regions.bodyFront, BRAND_U_FRAC, CREST_V_FRAC, canvasSize);
   drawBrandLogoAt(ctx, canvasSize, logos, primary, chest, BRAND_BOX_FRACTION);
   // Turned like the rest of the back, so it reads upright on the model.
   const nape = pointInRegionToCanvas(regions.bodyBack, 0.5, NAPE_V_FRAC, canvasSize);
@@ -312,7 +318,9 @@ export function drawDesignToCanvas(
     // Moving away from that shared line (toward bodyFront.v0 / bodyBack.v1)
     // goes down the torso toward the hem. So "top of bodyFront" in UV space
     // is vFrac=1 (its v1 edge, the one shared with bodyBack).
+    // At the model's logo height when it has one, so crest and maker's logo sit level.
     const center = pointInRegionToCanvas(regions.bodyFront, CREST_U_FRAC, CREST_V_FRAC, canvasSize);
+    if (regions.brandLogoAt) center.y = vToY(regions.brandLogoAt.v) * canvasSize;
     const box = fitLogoBox(images.logoImage, center, canvasSize, CREST_BOX_FRACTION);
     ctx.drawImage(images.logoImage, box.x, box.y, box.width, box.height);
   }
