@@ -468,9 +468,10 @@ def piece_svg(piece, m, width, height, paint, attrs):
                 key = ("s", paint(hexof(x["color"])), False, x.get("width") or 1)
             else:
                 key = ("f", paint(hexof(x["fill"])), bool(x.get("even_odd")), 0)
-            if key != run["key"]:
-                flush()
-                run["key"] = key
+            # One path per drawing: drawings of one color joined into one path can wind against each other and
+            # cut holes where they overlap (molde 12's side panel over its stripes of the same gray).
+            flush()
+            run["key"] = key
             run["d"].append(path_d(x["items"]))
         flush()
         body.extend(["</g>"] * (len(open_chain) + opened))
