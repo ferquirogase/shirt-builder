@@ -1,4 +1,5 @@
 import { findPattern } from "@/lib/builder/catalog/patterns";
+import { findShortsPattern } from "@/lib/builder/catalog/shorts-patterns";
 import { initialDesignState, type DesignState } from "@/lib/builder/state/design-state";
 import { SIZES, type Confirmation, type Order, type Thumbnails } from "./order";
 
@@ -70,6 +71,20 @@ export function withColorDefaults(colors: DesignState["colors"]): DesignState["c
   };
 }
 
+// The shorts as an order saved them. Before they had a design of their own they wore one of the shirt's
+// colors (`colorSource`): that becomes their main color, so they look as they did.
+function withShortsDesign(design: Order["design"]): DesignState["shorts"] {
+  const saved: Partial<DesignState["shorts"]> & { colorSource?: "primary" | "secondary" } = design.shorts ?? {};
+  const defaults = initialDesignState.shorts;
+  const colors = { ...defaults.colors, ...saved.colors };
+  if (!saved.colors && saved.colorSource && design.colors?.[saved.colorSource]) colors.primary = design.colors[saved.colorSource];
+  return {
+    included: saved.included ?? defaults.included,
+    patternId: saved.patternId && findShortsPattern(saved.patternId) ? saved.patternId : defaults.patternId,
+    colors,
+  };
+}
+
 // Orders saved before the shorts existed lack their fields: fill in the defaults.
 function withShortsDefaults(order: Order): Order {
   const keeper = order.design.keeper;
@@ -85,7 +100,7 @@ function withShortsDefaults(order: Order): Order {
       keeper: keeper?.look
         ? { ...keeper, look: { ...keeper.look, bodyPatternId: pattern(keeper.look.bodyPatternId), colors: withColorDefaults(keeper.look.colors) } }
         : keeper,
-      shorts: { ...initialDesignState.shorts, ...order.design.shorts },
+      shorts: withShortsDesign(order.design),
     },
     roster: order.roster.map((line) => ({ ...line, shortsSize: line.shortsSize ?? "M", keeper: line.keeper ?? false })),
   };

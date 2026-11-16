@@ -50,7 +50,7 @@ describe("payWithRipple", () => {
   });
 
   it("confirms the shorts and charges them for a full kit", async () => {
-    const kit: Order = { ...order, design: { ...order.design, shorts: { included: true, colorSource: "primary" } } };
+    const kit: Order = { ...order, design: { ...order.design, shorts: { ...initialDesignState.shorts, included: true } } };
     const confirmation = await payWithRipple(kit, contact, async () => {});
     expect(confirmation.shorts).toBe(2);
     expect(confirmation.total).toBe(orderTotals(kit.roster, true).total);

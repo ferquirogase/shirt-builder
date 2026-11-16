@@ -103,7 +103,7 @@ describe("CheckoutView", () => {
   it("asks for a shorts size per player only when the order is a full kit", () => {
     const kit = makeOrder();
     const { unmount } = render(
-      <CheckoutView initial={{ ...kit, design: { ...kit.design, shorts: { included: true, colorSource: "primary" } } }} />
+      <CheckoutView initial={{ ...kit, design: { ...kit.design, shorts: { ...initialDesignState.shorts, included: true } } }} />
     );
     expect(screen.getByLabelText("Talle del short del jugador 1")).toBeInTheDocument();
     unmount();
@@ -114,7 +114,7 @@ describe("CheckoutView", () => {
   it("charges the shorts in the total of a full kit", () => {
     const kit = makeOrder();
     render(
-      <CheckoutView initial={{ ...kit, design: { ...kit.design, shorts: { included: true, colorSource: "primary" } } }} />
+      <CheckoutView initial={{ ...kit, design: { ...kit.design, shorts: { ...initialDesignState.shorts, included: true } } }} />
     );
     const summary = within(screen.getByRole("region", { name: "Resumen del pedido" }));
     expect(summary.getByText("Shorts").nextElementSibling).toHaveTextContent("1");
@@ -332,7 +332,7 @@ describe("the size guide in the order", () => {
 
   it("adds the shorts' chart when the order is a full kit", () => {
     const kit = makeOrder();
-    render(<CheckoutView initial={{ ...kit, design: { ...kit.design, shorts: { included: true, colorSource: "primary" } } }} />);
+    render(<CheckoutView initial={{ ...kit, design: { ...kit.design, shorts: { ...initialDesignState.shorts, included: true } } }} />);
     fireEvent.click(screen.getByRole("button", { name: "Ver talles" }));
     fireEvent.click(screen.getByRole("tab", { name: "Short" }));
     const dialog = screen.getByRole("dialog", { name: "Guía de talles" });

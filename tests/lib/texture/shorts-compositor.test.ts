@@ -9,6 +9,8 @@ import {
   SHORTS_NUMBER_FONT_FRACTION,
   SHORTS_UV_REGIONS,
   SHORTS_UV_STRETCH,
+  SHORTS_HEM_BAND_TOP_V,
+  SHORTS_TWO_TONE_SPLIT,
 } from "@/lib/builder/geometry/shorts-uv-regions";
 import { BRAND_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
 import { NUMBER_PLACEHOLDER } from "@/lib/builder/texture/number-text";
@@ -338,5 +340,93 @@ describe("the front of the shorts: number, maker's logo and crest", () => {
     drawShortsToCanvas(ctx, 1000, withNumber("10"), "#000", { logoImage: crest, ...brand });
     expect(calls(ctx.save).length).toBe(calls(ctx.restore).length);
     expect(calls(ctx.save).length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+// The owners' shorts designs, drawn on the shorts' UV band (see SHORTS_PATTERN_SHAPES): a band round the hem,
+// a stripe down each side seam, and that stripe in two colors, cut on a slant.
+describe("the shorts' design", () => {
+  type Fill = { color: string; points: [number, number][] };
+  function ctxWithPaths() {
+    const ctx = createMockCtx() as unknown as Record<string, unknown>;
+    const fills: Fill[] = [];
+    const rects: { color: string; rect: number[] }[] = [];
+    let current: [number, number][] = [];
+    Object.assign(ctx, {
+      beginPath: vi.fn(() => (current = [])),
+      moveTo: vi.fn((x: number, y: number) => current.push([x, y])),
+      lineTo: vi.fn((x: number, y: number) => current.push([x, y])),
+      closePath: vi.fn(),
+      fill: vi.fn(() => fills.push({ color: ctx.fillStyle as string, points: current })),
+      fillRect: vi.fn((...rect: number[]) => rects.push({ color: ctx.fillStyle as string, rect })),
+    });
+    return { ctx: ctx as unknown as CanvasRenderingContext2D, fills, rects };
+  }
+  const colors = { primary: "#111111", secondary: "#222222", accent: "#333333" };
+  const shorts = (patternId: string) => ({ ...kit({}), shorts: { included: true, patternId, colors } });
+  const xs = (f: Fill) => f.points.map((p) => p[0] / 1000);
+
+  it("draws nothing over the main color on the plain shorts", () => {
+    const { ctx, fills, rects } = ctxWithPaths();
+    drawShortsToCanvas(ctx, 1000, shorts("shorts-plain"), colors.primary, {});
+    expect(fills).toEqual([]);
+    expect(rects).toEqual([{ color: colors.primary, rect: [0, 0, 1000, 1000] }]);
+  });
+
+  it("puts a band in color 2 all round the hem, from the hem up", () => {
+    const { ctx, rects } = ctxWithPaths();
+    drawShortsToCanvas(ctx, 1000, shorts("shorts-hem-band"), colors.primary, {});
+    const band = rects[1];
+    expect(band.color).toBe(colors.secondary);
+    const [x, y, w, h] = band.rect;
+    expect([x, w]).toEqual([0, 1000]);
+    // From below the hem (v 0.035) up to SHORTS_HEM_BAND_TOP_V; the canvas is flipped (v 0 at the bottom).
+    expect(y + h).toBe(1000);
+    expect(1 - y / 1000).toBeCloseTo(SHORTS_HEM_BAND_TOP_V, 5);
+    expect(SHORTS_HEM_BAND_TOP_V).toBeGreaterThan(0.06);
+    expect(SHORTS_HEM_BAND_TOP_V).toBeLessThan(0.09);
+  });
+
+  it("runs a stripe in color 2 down each side seam, hem to waist, one per leg", () => {
+    const { ctx, fills } = ctxWithPaths();
+    drawShortsToCanvas(ctx, 1000, shorts("shorts-side-stripe"), colors.primary, {});
+    expect(fills.map((f) => f.color)).toEqual([colors.secondary, colors.secondary]);
+    const [right, left] = fills;
+    // Round the side seam of each leg (u 0.32 at the hem on the player's right, 0.68 on the left).
+    expect(Math.min(...xs(right))).toBeGreaterThan(0.25);
+    expect(Math.max(...xs(right))).toBeLessThan(0.36);
+    expect(Math.min(...xs(left))).toBeGreaterThan(0.64);
+    expect(Math.max(...xs(left))).toBeLessThan(0.75);
+    // Up the whole leg and on through the waistband, as in the PDF's side view.
+    const ys = right.points.map((p) => 1 - p[1] / 1000);
+    expect(Math.min(...ys)).toBeLessThanOrEqual(0);
+    expect(Math.max(...ys)).toBeGreaterThanOrEqual(1);
+    // The two legs mirror each other.
+    expect(Math.min(...xs(right)) + Math.max(...xs(left))).toBeCloseTo(1, 5);
+  });
+
+  it("draws the side stripe in color 2 with its lower part in color 3, cut on a slant that rises to the back", () => {
+    const { ctx, fills } = ctxWithPaths();
+    drawShortsToCanvas(ctx, 1000, shorts("shorts-side-two-tone"), colors.primary, {});
+    expect(fills.map((f) => f.color)).toEqual([colors.secondary, colors.secondary, colors.accent, colors.accent]);
+    const lower = fills[2]; // the player's right leg: its front is toward higher u
+    const top = lower.points.filter((p) => 1 - p[1] / 1000 > 0.1);
+    const front = top.reduce((a, b) => (a[0] > b[0] ? a : b));
+    const back = top.reduce((a, b) => (a[0] < b[0] ? a : b));
+    expect(1 - front[1] / 1000).toBeCloseTo(SHORTS_TWO_TONE_SPLIT.frontV, 5);
+    expect(1 - back[1] / 1000).toBeCloseTo(SHORTS_TWO_TONE_SPLIT.backV, 5);
+    expect(SHORTS_TWO_TONE_SPLIT.backV).toBeGreaterThan(SHORTS_TWO_TONE_SPLIT.frontV);
+  });
+
+  it("draws the design before the sponsors, crest, number and maker's logo", () => {
+    const { ctx, fills } = ctxWithPaths();
+    let filledBeforeImage = -1;
+    (ctx.drawImage as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      if (filledBeforeImage < 0) filledBeforeImage = fills.length;
+    });
+    drawShortsToCanvas(ctx, 1000, { ...shorts("shorts-side-stripe"), sponsors: { "shorts-front-right": entry() } }, colors.primary, {
+      sponsorImages: { "shorts-front-right": square("s") },
+    });
+    expect(filledBeforeImage).toBe(2);
   });
 });

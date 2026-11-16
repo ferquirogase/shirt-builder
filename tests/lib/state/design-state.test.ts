@@ -275,8 +275,8 @@ describe("sponsors", () => {
 });
 
 describe("shorts", () => {
-  it("starts as shirt only, with the primary color", () => {
-    expect(initialDesignState.shorts).toEqual({ included: false, colorSource: "primary" });
+  it("starts as shirt only, plain, with colors of its own", () => {
+    expect(initialDesignState.shorts).toEqual({ included: false, patternId: "shorts-plain", colors: { primary: "#0a5c36", secondary: "#ffffff", accent: "#f5b700" } });
   });
 
   it("includes and drops the shorts", () => {
@@ -285,17 +285,29 @@ describe("shorts", () => {
     expect(designReducer(set, { type: "SET_SHORTS_INCLUDED", value: false }).shorts.included).toBe(false);
   });
 
-  it("picks the secondary color and keeps the rest of the shorts config", () => {
+  it("picks a design of its own, keeping the rest of the shorts config", () => {
     const set = designReducer(
       designReducer(initialDesignState, { type: "SET_SHORTS_INCLUDED", value: true }),
-      { type: "SET_SHORTS_COLOR_SOURCE", value: "secondary" }
+      { type: "SET_SHORTS_PATTERN", id: "shorts-side-stripe" }
     );
-    expect(set.shorts).toEqual({ included: true, colorSource: "secondary" });
+    expect(set.shorts).toEqual({ ...initialDesignState.shorts, included: true, patternId: "shorts-side-stripe" });
+    expect(set.bodyPatternId).toBe(initialDesignState.bodyPatternId);
   });
 
-  it("ignores a color source that is not primary or secondary", () => {
-    const next = designReducer(initialDesignState, { type: "SET_SHORTS_COLOR_SOURCE", value: "accent" as never });
-    expect(next).toBe(initialDesignState);
+  it("ignores a design that does not exist", () => {
+    expect(designReducer(initialDesignState, { type: "SET_SHORTS_PATTERN", id: "nope" })).toBe(initialDesignState);
+  });
+
+  it("takes colors of its own, never the shirt's: the shirt changing leaves them alone", () => {
+    let state = designReducer(initialDesignState, { type: "SET_SHORTS_COLOR", slot: "secondary", value: "#123456" });
+    expect(state.shorts.colors).toEqual({ ...initialDesignState.shorts.colors, secondary: "#123456" });
+    expect(state.colors).toEqual(initialDesignState.colors);
+    state = designReducer(state, { type: "SET_COLOR", slot: "primary", value: "#ff0000" });
+    expect(state.shorts.colors.primary).toBe(initialDesignState.shorts.colors.primary);
+  });
+
+  it("ignores a shorts color slot it does not have", () => {
+    expect(designReducer(initialDesignState, { type: "SET_SHORTS_COLOR", slot: "collar" as never, value: "#123456" })).toBe(initialDesignState);
   });
 
   it("does not mutate the previous state", () => {
@@ -305,15 +317,9 @@ describe("shorts", () => {
 });
 
 describe("shortsColor", () => {
-  it("follows the shirt's primary or secondary color", () => {
-    const base = { ...initialDesignState, colors: { ...initialDesignState.colors, primary: "#112233", secondary: "#aabbcc" } };
-    expect(shortsColor({ ...base, shorts: { included: true, colorSource: "primary" } })).toBe("#112233");
-    expect(shortsColor({ ...base, shorts: { included: true, colorSource: "secondary" } })).toBe("#aabbcc");
-  });
-
-  it("changes when the shirt's color changes", () => {
-    const next = designReducer(initialDesignState, { type: "SET_COLOR", slot: "primary", value: "#ff0000" });
-    expect(shortsColor(next)).toBe("#ff0000");
+  it("is the shorts' own main color", () => {
+    const next = designReducer(initialDesignState, { type: "SET_SHORTS_COLOR", slot: "primary", value: "#112233" });
+    expect(shortsColor(next)).toBe("#112233");
   });
 });
 
@@ -324,7 +330,8 @@ describe("RESET_DESIGN", () => {
     { type: "SET_PLAYER_NAME", value: "Leo" },
     { type: "SET_PLAYER_NUMBER", value: "10" },
     { type: "SET_LOGO", dataUrl: "data:image/png;base64,AAAA" },
-    { type: "SET_SHORTS_COLOR_SOURCE", value: "secondary" },
+    { type: "SET_SHORTS_PATTERN", id: "shorts-hem-band" },
+    { type: "SET_SHORTS_COLOR", slot: "primary", value: "#654321" },
   ] as const;
 
   it("brings every design choice back to the start", () => {

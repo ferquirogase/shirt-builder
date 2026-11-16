@@ -6,10 +6,15 @@ import { crestDataUrl } from "../crest/crest-svg";
 import { findPattern, visibleColors } from "../catalog/patterns";
 import { clampSponsorScale, isSponsorSlotId, type SponsorMap, type SponsorSlotId } from "../catalog/sponsor-slots";
 import { findNameNumberPreset, initialNameNumberStyle, type NameNumberStyle } from "../catalog/name-number-presets";
+import {
+  DEFAULT_SHORTS_PATTERN_ID,
+  SHORTS_DEFAULT_COLORS,
+  findShortsPattern,
+  type ShortsRole,
+} from "../catalog/shorts-patterns";
 
-export type ShortsColorSource = "primary" | "secondary";
-export type ShortsConfig = { included: boolean; colorSource: ShortsColorSource };
-const SHORTS_COLOR_SOURCES: readonly ShortsColorSource[] = ["primary", "secondary"];
+/** The shorts: whether the kit has them, their design and their own colors (never the shirt's). */
+export type ShortsConfig = { included: boolean; patternId: string; colors: Record<ShortsRole, string> };
 
 export type LookTarget = "player" | "keeper";
 
@@ -88,7 +93,8 @@ export type DesignAction =
   | { type: "SET_NN_OUTLINE_COLOR"; value: string }
   | { type: "SET_PROJECT_NAME"; value: string }
   | { type: "SET_SHORTS_INCLUDED"; value: boolean }
-  | { type: "SET_SHORTS_COLOR_SOURCE"; value: ShortsColorSource }
+  | { type: "SET_SHORTS_PATTERN"; id: string }
+  | { type: "SET_SHORTS_COLOR"; slot: ShortsRole; value: string }
   | { type: "SET_KEEPER_INCLUDED"; value: boolean }
   | { type: "RESET_DESIGN" };
 
@@ -108,13 +114,13 @@ export const initialDesignState: DesignState = {
   chestNumber: false,
   nameNumberStyle: initialNameNumberStyle(),
   projectName: "Mi diseño",
-  shorts: { included: false, colorSource: "primary" },
+  shorts: { included: false, patternId: DEFAULT_SHORTS_PATTERN_ID, colors: { ...SHORTS_DEFAULT_COLORS } },
   keeper: { included: false, look: null, nameNumberFill: null },
 };
 
-// The shorts have no color of their own: they wear one of the shirt's.
-export function shortsColor(state: Pick<DesignState, "colors" | "shorts">): string {
-  return state.colors[state.shorts.colorSource];
+// The shorts' main color, the one the whole of them is painted in under their design.
+export function shortsColor(state: Pick<DesignState, "shorts">): string {
+  return state.shorts.colors.primary;
 }
 
 // The cuff starts as the shirt's secondary and follows it until the user chooses its own: a cuff still
@@ -253,10 +259,14 @@ export function designReducer(state: DesignState, action: DesignAction): DesignS
           look: state.keeper.look ?? (action.value ? defaultKeeperLook(state.colors) : null),
         },
       };
-    case "SET_SHORTS_COLOR_SOURCE":
-      return SHORTS_COLOR_SOURCES.includes(action.value)
-        ? { ...state, shorts: { ...state.shorts, colorSource: action.value } }
-        : state;
+    case "SET_SHORTS_PATTERN":
+      return !findShortsPattern(action.id) || state.shorts.patternId === action.id
+        ? state
+        : { ...state, shorts: { ...state.shorts, patternId: action.id } };
+    case "SET_SHORTS_COLOR":
+      return !(action.slot in SHORTS_DEFAULT_COLORS) || state.shorts.colors[action.slot] === action.value
+        ? state
+        : { ...state, shorts: { ...state.shorts, colors: { ...state.shorts.colors, [action.slot]: action.value } } };
     default:
       return state;
   }

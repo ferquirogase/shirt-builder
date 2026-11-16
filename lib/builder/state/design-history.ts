@@ -80,7 +80,8 @@ function sameDesign(a: DesignState, b: DesignState): boolean {
     a.keeper.included === b.keeper.included &&
     a.keeper.nameNumberFill === b.keeper.nameNumberFill &&
     JSON.stringify(a.keeper.look) === JSON.stringify(b.keeper.look) &&
-    a.shorts.colorSource === b.shorts.colorSource &&
+    a.shorts.patternId === b.shorts.patternId &&
+    JSON.stringify(a.shorts.colors) === JSON.stringify(b.shorts.colors) &&
     a.projectName === b.projectName
   );
 }

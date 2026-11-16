@@ -44,3 +44,25 @@ export const SHORTS_CREST_STRETCH = 0.64;
 // The size of the number on the shorts, as a share of the canvas: a lot smaller than the one on the
 // back of the shirt (0.12), like on GEPE's shorts.
 export const SHORTS_NUMBER_FONT_FRACTION = 0.085;
+
+// The owners' shorts designs (ESTAMPAS WEB.pdf, page 6), measured on the PDF and laid on this OBJ. The leg
+// runs 89 units from the hem (v 0.035) to the waist (v 0.592), v growing evenly with height.
+//
+// The side seam of the player's right leg, as [v, u] points up the leg (the left leg is its mirror, 1 - u).
+// Measured on the OBJ: where the leg reaches farthest out, at each height. The leg's front is toward
+// higher u on the right leg (lower u on the left).
+export const SHORTS_SIDE_SEAM: readonly (readonly [number, number])[] = [
+  [0.035, 0.32],
+  [0.25, 0.32],
+  [0.4, 0.313],
+  [0.55, 0.295],
+  [0.592, 0.29],
+];
+// The side stripe: 37 pt across a leg 156 pt deep in the PDF's side view, about 10.6 units on this leg, which
+// takes about 0.048 of u by the side seam (about 220 units of cloth per unit of u there).
+export const SHORTS_SIDE_STRIPE_HALF_WIDTH = 0.024;
+// The band round the hem: 20 pt of the 300 pt side view, from the hem up, about 6 units on this leg.
+export const SHORTS_HEM_BAND_TOP_V = 0.073;
+// The two-tone stripe: color 3 below a cut from 37% of the leg's height at its front edge to 50% at its back
+// edge (the PDF: 63% and 50% down from the waist), color 2 above.
+export const SHORTS_TWO_TONE_SPLIT = { frontV: 0.242, backV: 0.314 } as const;

@@ -54,7 +54,7 @@ describe("buildAiPrompt", () => {
     const full = promptFor({
       logoDataUrl: "data:image/png;base64,AAAA",
       sponsors: { abdomen: { dataUrl: "data:image/png;base64,BBBB", scale: 1 } },
-      shorts: { included: true, colorSource: "secondary" },
+      shorts: { ...initialDesignState.shorts, included: true, colors: { ...initialDesignState.shorts.colors, primary: "#ffffff" } },
     });
     expect(full).toMatch(/escudo/);
     expect(full).toMatch(/sponsor/i);
