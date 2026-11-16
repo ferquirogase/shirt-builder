@@ -49,6 +49,8 @@ ISLAND_EDGE_ROWS = 3
 # little spikes in the stripes near the side seams.
 EDGE_SMOOTH_ROWS = 32
 THUMB_SIZE = 192
+# A fill drawn with more segments than this is a texture, never a piece's plain base (see Piece).
+MAX_BASE_ITEMS = 16
 # A color covering less than this share of the molde is an artifact.
 MIN_SHARE = 0.004
 BLACK = "#231f20"
@@ -185,8 +187,10 @@ class Piece:
             if near(x["rect"], r, 8) and x.get("fill"):
                 self.base = x["fill"]
         inner = pymupdf.Rect(r.x0 + 2, r.y0 + 2, r.x1 - 2, r.y1 - 2)
+        # A plain shape over the whole piece is its base too. Not a texture that happens to span it: molde 19's
+        # mid gray covers the front with holes, and taken for the base it filled them, hiding the dark under it.
         for chain, x in self.fills:
-            if x["type"] != "s" and not chain and x["rect"].contains(inner):
+            if x["type"] != "s" and not chain and x["rect"].contains(inner) and len(x["items"]) <= MAX_BASE_ITEMS:
                 self.base = x["fill"]
         self.cuff = None
 
