@@ -43,6 +43,11 @@ EDGE_INSET = 2.5
 MASK_SIZE = {"front": 1024, "back": 1024, "sleeve": 512}
 # Rows at the top and bottom of the cloth's island whose edges are not trusted (see Island).
 ISLAND_EDGE_ROWS = 3
+# The cloth's edges and the piece's edges are smoothed up the body over this many image rows (Gaussian
+# sigma, out of the mask's 1024) before one is laid on the other. At the armpit the model's UV island juts
+# out in a small fin and the PDF outline turns a sharp corner a few rows away: followed exactly, they put
+# little spikes in the stripes near the side seams.
+EDGE_SMOOTH_ROWS = 20
 THUMB_SIZE = 192
 # A color covering less than this share of the molde is an artifact.
 MIN_SHARE = 0.004
@@ -368,6 +373,13 @@ class PieceRaster:
         return top * (1 - ay) + bottom * ay
 
 
+def smooth(a, sigma):
+    """Gaussian blur of a 1-D array, its ends held."""
+    r = int(3 * sigma)
+    k = np.exp(-0.5 * (np.arange(-r, r + 1) / sigma) ** 2)
+    return np.convolve(np.pad(a, r, mode="edge"), k / k.sum(), mode="valid")
+
+
 def body_image(piece, paint, size):
     """The body piece as the compositor's pattern image: the PDF piece's outline laid on the model's cloth,
     row by row. Up the body, the model's shoulder seam, armpit and hem land on the PDF piece's shoulder tips,
@@ -390,8 +402,12 @@ def body_image(piece, paint, size):
     # outside, or stops short under the outline's stroke, and the side seam would show a hairline. Off the
     # cloth, the edge's color goes on (the image's padding).
     xl, xr = xl + EDGE_INSET, xr - EDGE_INSET
+    # Smoothed alike (see EDGE_SMOOTH_ROWS): what a smoothed cloth edge leaves outside takes the edge's color.
+    s = EDGE_SMOOTH_ROWS * size / 1024
+    left, right = smooth(island.left, s), smooth(island.right, s)
+    xl, xr = smooth(xl, s), smooth(xr, s)
     cols = np.arange(size) + 0.5
-    t = np.clip((cols[None, :] - island.left[:, None]) / (island.right - island.left)[:, None], 0, 1)
+    t = np.clip((cols[None, :] - left[:, None]) / (right - left)[:, None], 0, 1)
     x = xl[:, None] + t * (xr - xl)[:, None]
     yy = np.repeat(y[:, None], size, axis=1)
     return np.clip(src.sample(x, yy), 0, 255).astype(np.uint8)
