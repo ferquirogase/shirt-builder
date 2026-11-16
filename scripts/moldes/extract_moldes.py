@@ -47,7 +47,7 @@ ISLAND_EDGE_ROWS = 3
 # sigma, out of the mask's 1024) before one is laid on the other. At the armpit the model's UV island juts
 # out in a small fin and the PDF outline turns a sharp corner a few rows away: followed exactly, they put
 # little spikes in the stripes near the side seams.
-EDGE_SMOOTH_ROWS = 20
+EDGE_SMOOTH_ROWS = 32
 THUMB_SIZE = 192
 # A color covering less than this share of the molde is an artifact.
 MIN_SHARE = 0.004
