@@ -397,7 +397,10 @@ def body_image(piece, paint, size):
     y[above] = piece.tip - (v[above] - MODEL_SHOULDER) * (arm - piece.tip) / (MODEL_SHOULDER - MODEL_ARMPIT_V)
     below = v < MODEL_HEM
     y[below] = hem + (MODEL_HEM - v[below]) * (hem - arm) / (MODEL_ARMPIT_V - MODEL_HEM)
-    xl, xr = src.edges_at(y)
+    # Below the side seam's hem the piece's edges are held: the back's hem curves down to its middle, and
+    # followed inward it would round off the bottom of whatever runs down the side seam (a side panel).
+    # (taken a little above it: on the hem's own row the outline has already turned the corner).
+    xl, xr = src.edges_at(np.minimum(y, hem - EDGE_INSET))
     # Never past what the PDF shows inside the piece's outline: its edge is antialiased against what lies
     # outside, or stops short under the outline's stroke, and the side seam would show a hairline. Off the
     # cloth, the edge's color goes on (the image's padding).
