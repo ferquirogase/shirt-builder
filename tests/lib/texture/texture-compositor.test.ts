@@ -843,6 +843,9 @@ describe("drawDesignToCanvas", () => {
       // Front: u grows toward the viewer's right; the hem is at v 0.0576, the armpit at 0.355.
       expect(frontLabel!.u0).toBeGreaterThan(0.5);
       expect(frontLabel!.u1).toBeLessThan(0.6768);
+      // Centered in Franjas anchas' white stripe (u 0.5767..0.6284 at that height), clear of its edges.
+      expect(frontLabel!.u0).toBeGreaterThan(0.5767 + 0.005);
+      expect(frontLabel!.u1).toBeLessThan(0.6284 - 0.005);
       expect(frontLabel!.v0).toBeGreaterThan(0.0576);
       expect(frontLabel!.v1).toBeLessThan(0.2);
       // Its shape on the cloth stays close to the tag's 2:1 (the atlas is square, the cloth about as stretched).
