@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { BRAND_LOGO_URLS } from "@/lib/builder/catalog/brand-logo";
+import { BRAND_LABEL_URLS, BRAND_LOGO_URLS } from "@/lib/builder/catalog/brand-logo";
 import { getNameNumberPreset } from "@/lib/builder/catalog/name-number-presets";
 import { loadImage } from "@/lib/builder/texture/image-loader";
 import { resolveFontFamily } from "@/lib/builder/texture/resolve-font-family";
@@ -63,6 +63,31 @@ export function useBrandLogos(): { forLight: HTMLImageElement | null; forDark: H
   }, []);
 
   return logos;
+}
+
+/** The shirt's brand labels never change either: loaded once, and a broken one is just left out. */
+export function useBrandLabels(): { front: HTMLImageElement | null; back: HTMLImageElement | null } {
+  const [labels, setLabels] = useState<{ front: HTMLImageElement | null; back: HTMLImageElement | null }>({
+    front: null,
+    back: null,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = (src: string) =>
+      loadImage(src).catch((err) => {
+        console.error("Failed to load brand label", err);
+        return null;
+      });
+    Promise.all([load(BRAND_LABEL_URLS.front), load(BRAND_LABEL_URLS.back)]).then(([front, back]) => {
+      if (!cancelled) setLabels({ front, back });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return labels;
 }
 
 /**

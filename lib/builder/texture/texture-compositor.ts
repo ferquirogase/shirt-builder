@@ -26,6 +26,9 @@ export type CompositorImages = {
   /** The brand logo for light backgrounds (dark artwork) and for dark ones (light artwork). */
   brandLogoForLight?: HTMLImageElement | null;
   brandLogoForDark?: HTMLImageElement | null;
+  /** The brand labels (see BRAND_LABEL_URLS), drawn where the model's regions say. */
+  frontLabelImage?: HTMLImageElement | null;
+  backLabelImage?: HTMLImageElement | null;
   /** Decoded sponsor images, by placement; a missing or null one is not drawn. */
   sponsorImages?: Partial<Record<SponsorSlotId, HTMLImageElement | null>>;
 };
@@ -202,6 +205,16 @@ function drawBrandLogos(
   });
 }
 
+// The brand labels, on every shirt: each fills its rect (the back one turned like the rest of the back).
+function drawBrandLabels(ctx: CanvasRenderingContext2D, canvasSize: number, images: CompositorImages, regions: UVRegions): void {
+  if (images.frontLabelImage && regions.frontLabel) {
+    drawImageInRegion(ctx, images.frontLabelImage, regions.frontLabel, canvasSize);
+  }
+  if (images.backLabelImage && regions.backLabel) {
+    drawImageInRegion(ctx, images.backLabelImage, regions.backLabel, canvasSize, "rotate180");
+  }
+}
+
 // The sponsors: one image per placement. Each is fitted into its box (placement
 // base size x the user's scale), centered on the placement's point and turned so
 // it reads upright on the model.
@@ -305,6 +318,7 @@ export function drawDesignToCanvas(
   }
 
   drawBrandLogos(ctx, canvasSize, design, images, regions);
+  drawBrandLabels(ctx, canvasSize, images, regions);
   drawSponsors(ctx, canvasSize, design, images, regions);
 
   const nnStyle = design.nameNumberStyle;
