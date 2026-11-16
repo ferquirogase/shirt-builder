@@ -104,3 +104,25 @@ describe("findPattern and visibleColors", () => {
     expect(visibleColors("molde-19").map((c) => c.role)).toEqual(ROLES);
   });
 });
+
+describe("the maker's logo on each molde", () => {
+  it("is where the PDF puts it on the chest: on the viewer's left of the middle, high on the front", () => {
+    for (const p of BODY_PATTERNS.filter((x) => x.id.startsWith("molde-"))) {
+      const at = p.brandLogoAt!;
+      expect(at.u).toBeGreaterThan(0.43);
+      expect(at.u).toBeLessThan(0.46);
+      expect(at.v).toBeGreaterThan(0.4);
+      expect(at.v).toBeLessThan(0.44);
+    }
+  });
+
+  it("sits higher on the moldes of horizontal bands, in the gap above a band, as the designer drew it", () => {
+    const v = (id: string) => findPattern(id)!.brandLogoAt!.v;
+    expect(v("molde-03")).toBeGreaterThan(v("molde-01") + 0.005);
+    expect(v("molde-04")).toBeGreaterThan(v("molde-03") + 0.005);
+  });
+
+  it("is not given by the plain shirt, which takes the model's own spot", () => {
+    expect(findPattern("plain-body")!.brandLogoAt).toBeUndefined();
+  });
+});

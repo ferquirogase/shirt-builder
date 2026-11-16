@@ -13,6 +13,11 @@ export type UVRegions = {
   /** Where the brand labels go (see BRAND_LABEL_URLS): each label's image fills its rect. */
   frontLabel?: UVRect;
   backLabel?: UVRect;
+  /**
+   * The center of the maker's logo on the chest when the design gives none (see PatternDef.brandLogoAt); the
+   * crest goes up to its height too. Without it both sit at the compositor's own shares of bodyFront.
+   */
+  brandLogoAt?: { u: number; v: number };
   sleeveLeft: UVRect;
   sleeveRight: UVRect;
   /**
@@ -49,6 +54,9 @@ export const GEPE_UV_REGIONS: UVRegions = {
   // (molde 01's stripe there: u 0.5767..0.6284).
   frontLabel: { u0: 0.5838, v0: 0.1149, u1: 0.6213, v1: 0.1329 },
   backLabel: { u0: 0.483, v0: 0.8694, u1: 0.5168, v1: 0.8724 },
+  // Where the PDF puts the maker's logo on 18 of the 20 moldes (laid on the cloth the same way): more to the
+  // middle and higher than the old 0.30 / 0.71 of bodyFront. Moldes 3 and 4 raise it over a band (moldes.generated.ts).
+  brandLogoAt: { u: 0.4436, v: 0.408 },
   // The rect above spans the sleeves too: the back panel itself is only u 0.355..0.645
   // (0.29 wide, measured from the OBJ's UV triangles). 0.5 of the rect is 0.204, about
   // 70% of that panel, which leaves room for the shirt curving away at the sides.

@@ -384,40 +384,78 @@ def smooth(a, sigma):
     return np.convolve(np.pad(a, r, mode="edge"), k / k.sum(), mode="valid")
 
 
+class Layout:
+    """How a body piece is laid on the model's cloth, row by row of the compositor's pattern image: up the body,
+    the model's shoulder seam, armpit and hem land on the PDF piece's shoulder tips, armpit and side-seam hem;
+    across each row, the cloth's edges land on the piece's edges (the side seams below the armpit, the armholes
+    above it, the shoulder tips at the top). Front and back share the shoulder seam and the side seams, and so
+    do their PDF pieces, so the design meets itself over the shoulders and under the arms."""
+
+    def __init__(self, piece, src, size):
+        island = Island(piece.kind, size)
+        self.kind, self.size = piece.kind, size
+        v = island.row_v()
+        arm, hem = piece.seam
+        # v -> page y, piecewise straight through the three landmarks (and on past them at the end slopes).
+        y = np.interp(-v, [-MODEL_SHOULDER, -MODEL_ARMPIT_V, -MODEL_HEM], [piece.tip, arm, hem])
+        above = v > MODEL_SHOULDER
+        y[above] = piece.tip - (v[above] - MODEL_SHOULDER) * (arm - piece.tip) / (MODEL_SHOULDER - MODEL_ARMPIT_V)
+        below = v < MODEL_HEM
+        y[below] = hem + (MODEL_HEM - v[below]) * (hem - arm) / (MODEL_ARMPIT_V - MODEL_HEM)
+        # Below the side seam's hem the piece's edges are held: the back's hem curves down to its middle, and
+        # followed inward it would round off the bottom of whatever runs down the side seam (a side panel).
+        # (taken a little above it: on the hem's own row the outline has already turned the corner).
+        xl, xr = src.edges_at(np.minimum(y, hem - EDGE_INSET))
+        # Never past what the PDF shows inside the piece's outline: its edge is antialiased against what lies
+        # outside, or stops short under the outline's stroke, and the side seam would show a hairline. Off the
+        # cloth, the edge's color goes on (the image's padding).
+        xl, xr = xl + EDGE_INSET, xr - EDGE_INSET
+        # Smoothed alike (see EDGE_SMOOTH_ROWS): what a smoothed cloth edge leaves outside takes the edge's color.
+        s = EDGE_SMOOTH_ROWS * size / 1024
+        self.left, self.right = smooth(island.left, s), smooth(island.right, s)
+        self.xl, self.xr = smooth(xl, s), smooth(xr, s)
+        self.y = y
+
+    def image(self, src):
+        size = self.size
+        cols = np.arange(size) + 0.5
+        t = np.clip((cols[None, :] - self.left[:, None]) / (self.right - self.left)[:, None], 0, 1)
+        x = self.xl[:, None] + t * (self.xr - self.xl)[:, None]
+        yy = np.repeat(self.y[:, None], size, axis=1)
+        return np.clip(src.sample(x, yy), 0, 255).astype(np.uint8)
+
+    def uv_of(self, px, py):
+        """The model's UV of a page point on the piece (the inverse of the layout)."""
+        rows = np.arange(self.size) + 0.5
+        j = float(np.interp(py, self.y, rows))  # y grows down the image rows on both pieces
+        k = min(int(j), self.size - 1)
+        t = (px - self.xl[k]) / (self.xr[k] - self.xl[k])
+        c = self.left[k] + t * (self.right[k] - self.left[k])
+        u0, v0, u1, v1 = PATTERN_RECTS[self.kind]
+        if self.kind == "front":
+            return u0 + c / self.size * (u1 - u0), v1 - j / self.size * (v1 - v0)
+        return u1 - c / self.size * (u1 - u0), v0 + j / self.size * (v1 - v0)
+
+
 def body_image(piece, paint, size):
-    """The body piece as the compositor's pattern image: the PDF piece's outline laid on the model's cloth,
-    row by row. Up the body, the model's shoulder seam, armpit and hem land on the PDF piece's shoulder tips,
-    armpit and side-seam hem; across each row, the cloth's edges land on the piece's edges (the side seams
-    below the armpit, the armholes above it, the shoulder tips at the top). Front and back share the shoulder
-    seam and the side seams, and so do their PDF pieces, so the design meets itself over the shoulders and
-    under the arms."""
-    island = Island(piece.kind, size)
+    """The body piece as the compositor's pattern image (see Layout), and its layout."""
     src = PieceRaster(piece, paint)
-    v = island.row_v()
-    arm, hem = piece.seam
-    # v -> page y, piecewise straight through the three landmarks (and on past them at the end slopes).
-    y = np.interp(-v, [-MODEL_SHOULDER, -MODEL_ARMPIT_V, -MODEL_HEM], [piece.tip, arm, hem])
-    above = v > MODEL_SHOULDER
-    y[above] = piece.tip - (v[above] - MODEL_SHOULDER) * (arm - piece.tip) / (MODEL_SHOULDER - MODEL_ARMPIT_V)
-    below = v < MODEL_HEM
-    y[below] = hem + (MODEL_HEM - v[below]) * (hem - arm) / (MODEL_ARMPIT_V - MODEL_HEM)
-    # Below the side seam's hem the piece's edges are held: the back's hem curves down to its middle, and
-    # followed inward it would round off the bottom of whatever runs down the side seam (a side panel).
-    # (taken a little above it: on the hem's own row the outline has already turned the corner).
-    xl, xr = src.edges_at(np.minimum(y, hem - EDGE_INSET))
-    # Never past what the PDF shows inside the piece's outline: its edge is antialiased against what lies
-    # outside, or stops short under the outline's stroke, and the side seam would show a hairline. Off the
-    # cloth, the edge's color goes on (the image's padding).
-    xl, xr = xl + EDGE_INSET, xr - EDGE_INSET
-    # Smoothed alike (see EDGE_SMOOTH_ROWS): what a smoothed cloth edge leaves outside takes the edge's color.
-    s = EDGE_SMOOTH_ROWS * size / 1024
-    left, right = smooth(island.left, s), smooth(island.right, s)
-    xl, xr = smooth(xl, s), smooth(xr, s)
-    cols = np.arange(size) + 0.5
-    t = np.clip((cols[None, :] - left[:, None]) / (right - left)[:, None], 0, 1)
-    x = xl[:, None] + t * (xr - xl)[:, None]
-    yy = np.repeat(y[:, None], size, axis=1)
-    return np.clip(src.sample(x, yy), 0, 255).astype(np.uint8)
+    layout = Layout(piece, src, size)
+    return layout.image(src), layout
+
+
+def chest_logo(page_scan, front):
+    """Page rect of the maker's logo on the chest of a front piece: the small drawings outside the piece's
+    clip, high on the wearer's right (the viewer's left)."""
+    r = front.r
+    zone = pymupdf.Rect(r.x0, r.y0 + 20, r.x0 + r.width * 0.5, r.y0 + 160)
+    rects = [x["rect"] for x in page_scan[3] if zone.contains(x["rect"]) and x["rect"].width < 40 and x["rect"].height < 40]
+    if not rects:
+        return None
+    box = pymupdf.Rect(rects[0])
+    for x in rects[1:]:
+        box |= x
+    return box
 
 
 def sleeve_matrix(piece, size):
@@ -568,8 +606,14 @@ def main():
         for old in os.listdir(OUT_DIR):
             if old.startswith(name + "-"):
                 os.remove(os.path.join(OUT_DIR, old))
+        logo = None
         for body in (front, back):
-            pixels = body_image(body, paint, MASK_SIZE[body.kind])
+            pixels, layout = body_image(body, paint, MASK_SIZE[body.kind])
+            if body.kind == "front":
+                box = chest_logo(scans[pi], body)
+                if box is not None:
+                    u, v = layout.uv_of((box.x0 + box.x1) / 2, (box.y0 + box.y1) / 2)
+                    logo = {"u": round(float(u), 4), "v": round(float(v), 4)}
             save_mask(pixels, os.path.join(OUT_DIR, f"{name}-{body.kind}.png"))
             if body.kind == "front":
                 # The Design panel shows every molde at once: a small mask is enough for its thumbnail.
@@ -582,10 +626,11 @@ def main():
                 "id": name,
                 "roles": ROLES[: len(kept)],
                 "cuffFrom": round(sleeve.cuff["from"], 4) if sleeve.cuff else None,
+                "brandLogo": logo,
                 "share": {role_of[c]: round(area[c] / total, 3) for c in kept},
             }
         )
-        print(name, entries[-1]["roles"], "cuff", entries[-1]["cuffFrom"], entries[-1]["share"], flush=True)
+        print(name, entries[-1]["roles"], "cuff", entries[-1]["cuffFrom"], "logo", logo, entries[-1]["share"], flush=True)
 
     lines = [
         "// Generated by scripts/moldes/extract_moldes.py from the owners' ESTAMPAS WEB.pdf: do not edit by hand.",
@@ -597,13 +642,16 @@ def main():
         "  roles: PatternRole[];",
         "  /** Where the cuff band starts along the sleeve image (cap -> cuff), or null when it has none. */",
         "  cuffFrom: number | null;",
+        "  /** Where the PDF puts the maker's logo on the chest, as the model's UV (laid on the cloth like the molde). */",
+        "  brandLogo: { u: number; v: number } | null;",
         "};",
         "",
         "export const MOLDES_DATA: MoldeData[] = [",
     ]
     for e in entries:
         roles = ", ".join(json.dumps(r) for r in e["roles"])
-        lines.append(f'  {{ id: "{e["id"]}", roles: [{roles}], cuffFrom: {json.dumps(e["cuffFrom"])} }},')
+        logo = "null" if e["brandLogo"] is None else f'{{ u: {e["brandLogo"]["u"]}, v: {e["brandLogo"]["v"]} }}'
+        lines.append(f'  {{ id: "{e["id"]}", roles: [{roles}], cuffFrom: {json.dumps(e["cuffFrom"])}, brandLogo: {logo} }},')
     lines.append("];")
     with open(OUT_TS, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines) + "\n")

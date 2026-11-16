@@ -12,6 +12,7 @@ const DEFAULT_PRESET = getNameNumberPreset(DEFAULT_PRESET_ID);
 // The size in a canvas font string ("400 120px ...").
 const fontPx = (font: string) => parseFloat(/([\d.]+)px/.exec(font)![1]);
 import { GEPE_UV_REGIONS, UV_FLIP_Y, type UVRegions, type UVRect } from "@/lib/builder/geometry/uv-regions";
+import { findPattern } from "@/lib/builder/catalog/patterns";
 
 function createMockCtx() {
   const ctx = {
@@ -653,6 +654,48 @@ describe("drawDesignToCanvas", () => {
       expect(h).toBeCloseTo(30 * (381 / 512), 5);
       expect(x + w / 2).toBeCloseTo(420, 5);
       expect(y + h / 2).toBeCloseTo(216, 5);
+    });
+
+    describe("where the model and the molde say", () => {
+      const placed: UVRegions = { ...regions, brandLogoAt: { u: 0.45, v: 0.82 } };
+
+      it("goes on the model's own spot when the design has none (the plain shirt)", () => {
+        const ctx = ctxWithPixels(0, 0, 0);
+        drawDesignToCanvas(ctx, 1000, { ...initialDesignState, bodyPatternId: "plain-body" }, { ...base, ...brand }, placed);
+        const [, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
+        // u 0.45 -> x 450; v 0.82 -> y (flipped) 180.
+        expect(x + w / 2).toBeCloseTo(450, 5);
+        expect(y + h / 2).toBeCloseTo(180, 5);
+      });
+
+      it("goes where the chosen molde puts it", () => {
+        const ctx = ctxWithPixels(0, 0, 0);
+        const at = findPattern("molde-04")!.brandLogoAt!;
+        drawDesignToCanvas(ctx, 1000, { ...initialDesignState, bodyPatternId: "molde-04" }, { ...base, ...brand }, placed);
+        const [, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
+        expect(x + w / 2).toBeCloseTo(at.u * 1000, 5);
+        expect(y + h / 2).toBeCloseTo((1 - at.v) * 1000, 5);
+      });
+
+      it("raises the crest to the model's logo height, keeping it on the other chest", () => {
+        const ctx = ctxWithPixels(0, 0, 0);
+        const crest = { naturalWidth: 100, naturalHeight: 100 } as HTMLImageElement;
+        drawDesignToCanvas(ctx, 1000, { ...initialDesignState, bodyPatternId: "molde-04" }, { ...base, ...brand, logoImage: crest }, placed);
+        const [img, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
+        expect(img).toBe(crest);
+        // Across as before (0.66 of bodyFront -> x 564), up at the model's common logo height (v 0.82 -> y 180).
+        expect(x + w / 2).toBeCloseTo(564, 5);
+        expect(y + h / 2).toBeCloseTo(180, 5);
+      });
+
+      it("on the real shirt, sits more to the middle and higher than it used to, where the PDF has it", () => {
+        const at = GEPE_UV_REGIONS.brandLogoAt!;
+        // It was 0.30 across bodyFront (u 0.4321) and 0.71 up (v 0.379).
+        expect(at.u).toBeGreaterThan(0.44);
+        expect(at.u).toBeLessThan(0.5);
+        expect(at.v).toBeGreaterThan(0.4);
+        expect(at.v).toBeLessThan(0.42);
+      });
     });
 
     it("is always drawn, with or without a crest, and does not move when a crest is set", () => {
