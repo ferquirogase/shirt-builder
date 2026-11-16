@@ -767,6 +767,103 @@ describe("drawDesignToCanvas", () => {
     });
   });
 
+  // The two labels the owners' moldes carry: a tag low on the front, on the viewer's right, and a strip
+  // low in the middle of the back. Their rects are where the PDF puts them, laid on the cloth like the
+  // moldes (the image fills the rect, so it follows the cloth's stretch there).
+  describe("brand labels", () => {
+    const base = { bodyPatternImage: null, sleevePatternImage: null, logoImage: null };
+    const front = { id: "front-label", naturalWidth: 425, naturalHeight: 213 } as unknown as HTMLImageElement;
+    const back = { id: "back-label", naturalWidth: 496, naturalHeight: 35 } as unknown as HTMLImageElement;
+    const labels = { frontLabelImage: front, backLabelImage: back };
+    const labelled: UVRegions = {
+      ...regions,
+      frontLabel: { u0: 0.6, v0: 0.6, u1: 0.64, v1: 0.62 },
+      backLabel: { u0: 0.48, v0: 0.4, u1: 0.52, v1: 0.403 },
+    };
+    const calls = (ctx: CanvasRenderingContext2D) => (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls;
+    const callOf = (ctx: CanvasRenderingContext2D, image: HTMLImageElement) => calls(ctx).find((c) => c[0] === image)!;
+
+    it("fills the model's front label rect with the front label, upright", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...labels }, labelled);
+      // u .6..0.64 -> x 600..640; v .6..0.62 -> y (flipped) 380..400.
+      const [, x, y, w, h] = callOf(ctx, front);
+      expect(x).toBeCloseTo(600, 5);
+      expect(y).toBeCloseTo(380, 5);
+      expect(w).toBeCloseTo(40, 5);
+      expect(h).toBeCloseTo(20, 5);
+    });
+
+    it("fills the back label rect with the back label, turned half a turn about its center like the rest of the back", () => {
+      const ctx = createMockCtx();
+      drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...labels }, labelled);
+      const index = calls(ctx).findIndex((c) => c[0] === back);
+      const [, x, y, w, h] = calls(ctx)[index];
+      // u .48..0.52 -> x 480..520; v .4..0.403 -> y (flipped) 597..600: centered on (500, 598.5).
+      expect(w).toBeCloseTo(40, 5);
+      expect(h).toBeCloseTo(3, 5);
+      expect(x + w / 2).toBeCloseTo(0, 5);
+      expect(y + h / 2).toBeCloseTo(0, 5);
+      const translate = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
+      const rotate = (ctx.rotate as ReturnType<typeof vi.fn>).mock.calls;
+      expect(translate[0][0]).toBeCloseTo(500, 5);
+      expect(translate[0][1]).toBeCloseTo(598.5, 5);
+      expect(rotate[0]).toEqual([Math.PI]);
+      expect((ctx.save as ReturnType<typeof vi.fn>).mock.calls.length).toBe((ctx.restore as ReturnType<typeof vi.fn>).mock.calls.length);
+    });
+
+    it("goes on every shirt, whatever its pattern, over the pattern and under the sponsors", () => {
+      const pattern = { id: "pattern" } as unknown as HTMLImageElement;
+      const low = { id: "low", naturalWidth: 100, naturalHeight: 100 } as unknown as HTMLImageElement;
+      for (const bodyPatternId of ["plain-body", "molde-07"]) {
+        const ctx = createMockCtx();
+        drawDesignToCanvas(
+          ctx,
+          1000,
+          { ...initialDesignState, bodyPatternId, sponsors: { "lower-back": { dataUrl: "data:image/png;base64,AAAA", scale: 1 } } },
+          { ...base, ...labels, bodyPatternImage: pattern, sponsorImages: { "lower-back": low } },
+          labelled
+        );
+        expect(calls(ctx).map((c) => c[0]).filter((i) => i !== pattern)).toEqual([front, back, low]);
+        expect(calls(ctx).findIndex((c) => c[0] === pattern)).toBeLessThan(calls(ctx).findIndex((c) => c[0] === front));
+      }
+    });
+
+    it("draws no label on a model without label rects, nor one that has not loaded", () => {
+      const bare = createMockCtx();
+      drawDesignToCanvas(bare, 1000, initialDesignState, { ...base, ...labels }, regions);
+      expect(bare.drawImage).not.toHaveBeenCalled();
+      const loading = createMockCtx();
+      drawDesignToCanvas(loading, 1000, initialDesignState, { ...base, frontLabelImage: front }, labelled);
+      expect(calls(loading).map((c) => c[0])).toEqual([front]);
+    });
+
+    it("sits on the real shirt where the moldes put it: front low on the viewer's right, back low in the middle", () => {
+      const { frontLabel, backLabel, bodyFrontPattern, bodyBackPattern } = GEPE_UV_REGIONS;
+      // Front: u grows toward the viewer's right; the hem is at v 0.0576, the armpit at 0.355.
+      expect(frontLabel!.u0).toBeGreaterThan(0.5);
+      expect(frontLabel!.u1).toBeLessThan(0.6768);
+      expect(frontLabel!.v0).toBeGreaterThan(0.0576);
+      expect(frontLabel!.v1).toBeLessThan(0.2);
+      // Its shape on the cloth stays close to the tag's 2:1 (the atlas is square, the cloth about as stretched).
+      expect((frontLabel!.u1 - frontLabel!.u0) / (frontLabel!.v1 - frontLabel!.v0)).toBeGreaterThan(1.6);
+      expect((frontLabel!.u1 - frontLabel!.u0) / (frontLabel!.v1 - frontLabel!.v0)).toBeLessThan(2.6);
+      // Back: centered across, between the number's sponsor and the hem (v 0.942, the back turned).
+      expect((backLabel!.u0 + backLabel!.u1) / 2).toBeCloseTo(0.5, 2);
+      expect(backLabel!.v0).toBeGreaterThan(0.85);
+      expect(backLabel!.v1).toBeLessThan(0.942);
+      for (const [label, cloth] of [
+        [frontLabel!, bodyFrontPattern!],
+        [backLabel!, bodyBackPattern!],
+      ]) {
+        expect(label.u0).toBeGreaterThan(cloth.u0);
+        expect(label.u1).toBeLessThan(cloth.u1);
+        expect(label.v0).toBeGreaterThan(cloth.v0);
+        expect(label.v1).toBeLessThan(cloth.v1);
+      }
+    });
+  });
+
   describe("sponsors", () => {
     const base = { bodyPatternImage: null, sleevePatternImage: null, logoImage: null };
     const square = (id: string) => ({ id, naturalWidth: 100, naturalHeight: 100 }) as unknown as HTMLImageElement;
