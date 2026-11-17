@@ -107,9 +107,14 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     uFrac: 0.5,
     vFrac: UPPER_BACK_V_FRAC,
     rotation: Math.PI,
-    baseBox: 0.03,
+    // As big as the front ones (1, 2, 3).
+    baseBox: 0.12,
+    baseHeight: 0.05,
     // The player's name is printed on the strip where this one goes.
     blockedBy: "playerName",
+    // At the name's height the back's cloth has not started yet (the collar's cloth shows there): the
+    // marker sits just below, where it does.
+    marker: { uFrac: 0.5, vFrac: 0.26 },
   },
   {
     id: "lower-back",
@@ -118,7 +123,9 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     uFrac: 0.5,
     vFrac: LOWER_BACK_V_FRAC,
     rotation: Math.PI,
-    baseBox: 0.045,
+    // As big as the front ones (1, 2, 3).
+    baseBox: 0.12,
+    baseHeight: 0.05,
   },
   {
     id: "chest-right",

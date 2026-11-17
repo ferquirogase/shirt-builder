@@ -315,10 +315,10 @@ describe("drawDesignToCanvas", () => {
       const fonts: string[] = [];
       (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
       drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10" }), blank, regions, "'Oswald', sans-serif");
-      // Number base 0.12 * 1000 = 120px, times the typeface's scale.
+      // Number base 0.135 * 1000 = 135px, times the typeface's scale.
       // The example name comes first (0.05 * 1000 = 50px); the number is the last text.
       expect(fonts.at(-1)).toMatch(new RegExp(`^${DEFAULT_PRESET.weight} [\\d.]+px 'Oswald', sans-serif$`));
-      expect(fontPx(fonts.at(-1)!)).toBeCloseTo(120 * DEFAULT_PRESET.numberScale, 5);
+      expect(fontPx(fonts.at(-1)!)).toBeCloseTo(135 * DEFAULT_PRESET.numberScale, 5);
     });
 
     it("fills with the style's fill color", () => {
@@ -359,8 +359,8 @@ describe("drawDesignToCanvas", () => {
       expect(seen.strokeStyle).toBe(OUTLINE_COLOR);
       expect(seen.lineJoin).toBe("round");
       // Strokes are centered on the glyph edge, so the line is twice the visible border.
-      // Number size: 0.12 * 1000 = 120px, times the typeface's scale.
-      expect(seen.lineWidth).toBeCloseTo(120 * DEFAULT_PRESET.numberScale * OUTLINE_WIDTH * 2, 5);
+      // Number size: 0.135 * 1000 = 135px, times the typeface's scale.
+      expect(seen.lineWidth).toBeCloseTo(135 * DEFAULT_PRESET.numberScale * OUTLINE_WIDTH * 2, 5);
     });
 
     it("draws the border in the color the style asks for", () => {
@@ -479,7 +479,7 @@ describe("drawDesignToCanvas", () => {
         nameNumberStyle: { ...initialDesignState.nameNumberStyle, presetId: "gone" },
       });
       expect(() => drawDesignToCanvas(ctx, 1000, design, blank, regions)).not.toThrow();
-      expect(fontPx(fonts.at(-1)!)).toBeCloseTo(120 * DEFAULT_PRESET.numberScale, 5);
+      expect(fontPx(fonts.at(-1)!)).toBeCloseTo(135 * DEFAULT_PRESET.numberScale, 5);
     });
   });
 
@@ -999,11 +999,11 @@ describe("drawDesignToCanvas", () => {
       drawDesignToCanvas(ctx, 1000, designWith({ "lower-back": entry() }), { ...base, sponsorImages: { "lower-back": low } }, regions);
       // The sponsor, then the example name and number, all turned like the back.
       expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI], [Math.PI], [Math.PI]]);
-      // bodyBack u .3..0.7 -> x 500; vFrac 0.66 -> v 0.1+0.66*0.4=0.364 -> y 636.
+      // bodyBack u .3..0.7 -> x 500; vFrac 0.64 -> v 0.1+0.64*0.4=0.356 -> y 644. A square image fits the 0.12 x 0.05 box by its height.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       expect(t[0][0]).toBeCloseTo(500, 5);
-      expect(t[0][1]).toBeCloseTo(636, 5);
-      expect(drawn(ctx, low).w).toBeCloseTo(45, 5);
+      expect(t[0][1]).toBeCloseTo(644, 5);
+      expect(drawn(ctx, low).w).toBeCloseTo(50, 5);
     });
 
     it("draws the rest of the front placements on GEPE's center column and upper chest", () => {
@@ -1039,11 +1039,11 @@ describe("drawDesignToCanvas", () => {
       drawDesignToCanvas(ctx, 1000, designWith({ "upper-back": entry() }), { ...base, sponsorImages: { "upper-back": upper } }, regions);
       // The sponsor and then the number's 0, both turned like the back.
       expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI], [Math.PI]]);
-      // bodyBack v .1..0.5, vFrac .275 -> v .21 -> y 790.
+      // bodyBack v .1..0.5, vFrac .21 -> v .184 -> y 816. A square image fits the 0.12 x 0.05 box by its height.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       expect(t[0][0]).toBeCloseTo(500, 5);
-      expect(t[0][1]).toBeCloseTo(790, 5);
-      expect(drawn(ctx, upper).w).toBeCloseTo(30, 5);
+      expect(t[0][1]).toBeCloseTo(816, 5);
+      expect(drawn(ctx, upper).w).toBeCloseTo(50, 5);
     });
 
     it("does not draw the upper back sponsor while the player has a name, but draws it again without one", () => {

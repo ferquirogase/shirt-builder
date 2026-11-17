@@ -129,14 +129,14 @@ describe("sponsor slots", () => {
     expect(v - (slot.baseHeight ?? slot.baseBox) / 2).toBeGreaterThanOrEqual(logoTop);
   });
 
-  it("sizes them: the chest column widest, then the sleeves, the small corners and the back", () => {
+  it("sizes them: the chest column and the back widest, then the sleeves and the small corners", () => {
     const size = (id: string) => findSponsorSlot(id)!.baseBox;
     expect(size("sleeve-left")).toBe(0.05);
     expect(size("sleeve-right")).toBe(0.05);
-    expect(size("lower-back")).toBe(0.045);
+    expect(size("lower-back")).toBe(size("abdomen"));
     expect(size("chest-right")).toBe(size("chest-left"));
     expect(size("chest-right")).toBeLessThan(size("abdomen"));
-    expect(size("upper-back")).toBeLessThan(size("lower-back"));
+    expect(size("upper-back")).toBe(size("lower-back"));
   });
 
   it("puts the two upper chest placements on either side, on the shoulders beside the collar, above the logo and the crest", () => {
