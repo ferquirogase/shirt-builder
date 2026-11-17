@@ -263,9 +263,10 @@ const CREST_V_FRAC = 0.71;
 // The longer side of the crest, as a share of the canvas (it was 0.08, then 0.065 and 0.058, which still
 // reached the curve of the sleeve).
 export const CREST_BOX_FRACTION = 0.052;
-// The maker's mark is smaller than the crest, like a brand on a real shirt.
-export const BRAND_BOX_FRACTION = 0.03;
-// At the nape it is smaller still: it is a tag, not a brand mark.
+// The maker's mark is smaller than the crest, like a brand on a real shirt (it was 0.03). The one on the shorts
+// is as big on the garment (SHORTS_BRAND_BOX_FRACTION).
+export const BRAND_BOX_FRACTION = 0.021;
+// At the nape it is a tag, about as big as the mark on the chest.
 export const NAPE_BRAND_BOX_FRACTION = 0.022;
 // The collar has more cloth up the neck than across it (about 1.37 times at the nape), which would
 // stretch the logo upwards: it is drawn this much shorter so it looks as it should (a test measures it).

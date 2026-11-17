@@ -3,6 +3,8 @@ import { drawShortsToCanvas } from "@/lib/builder/texture/shorts-compositor";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import { DEFAULT_PRESET_ID, getNameNumberPreset } from "@/lib/builder/catalog/name-number-presets";
 import {
+  SHORTS_BRAND_BOX_FRACTION,
+  SHORTS_BRAND_STRETCH,
   SHORTS_CREST_BOX_FRACTION,
   SHORTS_CREST_STRETCH,
   SHORTS_FRONT_LAYOUT,
@@ -15,7 +17,6 @@ import {
   SHORTS_SIDE_SEAM,
   SHORTS_SIDE_STRIPE_HALF_WIDTH,
 } from "@/lib/builder/geometry/shorts-uv-regions";
-import { BRAND_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
 import { NUMBER_PLACEHOLDER } from "@/lib/builder/texture/number-text";
 
 function createMockCtx() {
@@ -188,7 +189,7 @@ const at = (region: keyof typeof SHORTS_UV_REGIONS, uFrac: number, vFrac: number
 describe("the front of the shorts: number, maker's logo and crest", () => {
   const { number: numberAt, brand: brandAt, crest: crestAt } = SHORTS_FRONT_LAYOUT;
 
-  it("writes the player's number on the front of the player's left leg, upright and squeezed like the rest", () => {
+  it("writes the player's number on the front of the player's left leg, upright and squeezed to look as it does on the chest", () => {
     const ctx = createMockCtx();
     drawShortsToCanvas(ctx, 1000, withNumber("10"), "#000", {});
     expect(calls(ctx.fillText)).toEqual([["10", 0, 0]]);
@@ -257,7 +258,7 @@ describe("the front of the shorts: number, maker's logo and crest", () => {
     expect(calls(light.drawImage)[0][0]).toBe(brand.brandLogoForLight);
   });
 
-  it("places the logo below the number, on the same leg, squeezed like the rest", () => {
+  it("places the logo below the number, on the same leg, squeezed to look as it does on the chest", () => {
     const ctx = createMockCtx();
     drawShortsToCanvas(ctx, 1000, withNumber("10"), "#000", brand);
     const target = at(brandAt.region, brandAt.uFrac, brandAt.vFrac);
@@ -268,8 +269,10 @@ describe("the front of the shorts: number, maker's logo and crest", () => {
     const translates = calls(ctx.translate).map(([x, y]) => [Math.round(x), Math.round(y)]);
     expect(translates).toContainEqual([Math.round(target.x), Math.round(target.y)]);
     const [, x, y, w, h] = calls(ctx.drawImage)[0];
-    expect(w).toBeCloseTo(1000 * BRAND_BOX_FRACTION, 5);
-    expect(h).toBeCloseTo(1000 * BRAND_BOX_FRACTION * (381 / 512), 5);
+    // Its own squeeze, not the number's: by the logo the cloth is stretched across more than the 0.74 of the rest.
+    expect(calls(ctx.scale)).toContainEqual([SHORTS_BRAND_STRETCH, 1]);
+    expect(w).toBeCloseTo(1000 * SHORTS_BRAND_BOX_FRACTION, 5);
+    expect(h).toBeCloseTo(1000 * SHORTS_BRAND_BOX_FRACTION * (381 / 512), 5);
     expect(x + w / 2).toBeCloseTo(0, 5);
     expect(y + h / 2).toBeCloseTo(0, 5);
   });
@@ -278,9 +281,9 @@ describe("the front of the shorts: number, maker's logo and crest", () => {
     const numberY = at(numberAt.region, numberAt.uFrac, numberAt.vFrac).y;
     const brandY = at(brandAt.region, brandAt.uFrac, brandAt.vFrac).y;
     // The number rests on its baseline, which is the point it is placed at: the digits are above it.
-    // The logo is centered on its point and BRAND_BOX_FRACTION * 381/512 tall.
+    // The logo is centered on its point and SHORTS_BRAND_BOX_FRACTION * 381/512 tall.
     const numberBottom = numberY;
-    const logoTop = brandY - 1000 * BRAND_BOX_FRACTION * (381 / 512) * 0.5;
+    const logoTop = brandY - 1000 * SHORTS_BRAND_BOX_FRACTION * (381 / 512) * 0.5;
     const gap = logoTop - numberBottom;
     expect(gap).toBeGreaterThan(0);
     expect(gap).toBeLessThan(15);

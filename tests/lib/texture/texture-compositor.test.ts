@@ -649,9 +649,9 @@ describe("drawDesignToCanvas", () => {
       const [img, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(img).toBe(forDark);
       // bodyFront u .3..0.7, v .5..0.9: 0.30 across -> u 0.42 -> x 420; same height as the crest, y 216.
-      // Smaller than the crest (52px): a maker's mark is 3% of the canvas.
-      expect(w).toBeCloseTo(30, 5);
-      expect(h).toBeCloseTo(30 * (381 / 512), 5);
+      // Smaller than the crest (52px): a maker's mark is 2.1% of the canvas (it was 3%).
+      expect(w).toBeCloseTo(21, 5);
+      expect(h).toBeCloseTo(21 * (381 / 512), 5);
       expect(x + w / 2).toBeCloseTo(420, 5);
       expect(y + h / 2).toBeCloseTo(216, 5);
     });
@@ -770,13 +770,13 @@ describe("drawDesignToCanvas", () => {
         expect(ty).toBeCloseTo(860, 5);
         const [img, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[1];
         expect(img).toBe(forDark);
-        // Smaller than the logo on the chest (30px): 2.2% of the canvas. Centered on the translated point.
+        // 2.2% of the canvas, about as big as the logo on the chest (21px). Centered on the translated point.
         expect(w).toBeCloseTo(22, 5);
         expect(h).toBeCloseTo(22 * (381 / 512), 5);
         // Made shorter on the canvas, because the collar stretches the cloth upwards there.
         expect((ctx.scale as ReturnType<typeof vi.fn>).mock.calls).toEqual([[1, NAPE_BRAND_SQUEEZE_Y]]);
         const chestWidth = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0][3];
-        expect(w).toBeLessThan(chestWidth);
+        expect(w).toBeLessThan(chestWidth * 1.1);
         expect(x + w / 2).toBeCloseTo(0, 5);
         expect(y + h / 2).toBeCloseTo(0, 5);
       });

@@ -41,6 +41,11 @@ export const SHORTS_FRONT_LAYOUT = {
 export const SHORTS_CREST_BOX_FRACTION = 0.09;
 export const SHORTS_CREST_STRETCH = 0.64;
 
+// The maker's logo too, as big on the garment as the one on the chest (BRAND_BOX_FRACTION, 0.021), and not
+// stretched: measured on the two OBJs the same way (a test checks it).
+export const SHORTS_BRAND_BOX_FRACTION = 0.038;
+export const SHORTS_BRAND_STRETCH = 0.61;
+
 // The size of the number on the shorts, as a share of the canvas: a lot smaller than the one on the
 // back of the shirt (0.12), like on GEPE's shorts.
 export const SHORTS_NUMBER_FONT_FRACTION = 0.085;

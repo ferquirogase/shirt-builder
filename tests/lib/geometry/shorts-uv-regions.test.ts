@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { firstMeshGeometry } from "@/lib/builder/geometry/jersey-geometry";
 import {
+  SHORTS_BRAND_BOX_FRACTION,
+  SHORTS_BRAND_STRETCH,
   SHORTS_CREST_BOX_FRACTION,
   SHORTS_CREST_STRETCH,
   SHORTS_FRONT_LAYOUT,
@@ -10,7 +12,7 @@ import {
   SHORTS_UV_STRETCH,
 } from "@/lib/builder/geometry/shorts-uv-regions";
 import { GEPE_UV_REGIONS } from "@/lib/builder/geometry/uv-regions";
-import { CREST_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
+import { BRAND_BOX_FRACTION, CREST_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
 import { uvPointOnMesh } from "@/lib/builder/geometry/sponsor-anchor";
 
 // The shorts' texture is one band: the back of one leg, the front of both and the back of the other,
@@ -123,5 +125,49 @@ describe("the crest on the shorts, against the one on the chest", () => {
   it("is not stretched: as wide as it is tall, as the square crest box is", () => {
     expect(onShorts.width / onShorts.height).toBeGreaterThan(0.9);
     expect(onShorts.width / onShorts.height).toBeLessThan(1.1);
+  });
+});
+
+describe("the maker's logo on the shorts, against the one on the chest", () => {
+  const shirt = firstMeshGeometry(new OBJLoader().parse(readFileSync("public/models/gepe_shirt.obj", "utf8")))!;
+  const shorts = firstMeshGeometry(new OBJLoader().parse(readFileSync("public/models/gepe_shorts.obj", "utf8")))!;
+  const LOGO_ASPECT = 381 / 512; // height / width of the logo image
+
+  function clothPerUnit(geometry: typeof shirt, u: number, v: number) {
+    const d = 0.003;
+    const at = (du: number, dv: number) => uvPointOnMesh(geometry, u + du, v + dv)!.position;
+    return {
+      perU: at(d, 0).distanceTo(at(-d, 0)) / (2 * d),
+      perV: at(0, d).distanceTo(at(0, -d)) / (2 * d),
+    };
+  }
+
+  const chest = (() => {
+    // The logo's spot is by the neckline, where the jersey mesh has no cloth of its own (the collar's
+    // shows there): the cloth is measured just below it, at the same u.
+    const at = GEPE_UV_REGIONS.brandLogoAt!;
+    const c = clothPerUnit(shirt, at.u, 0.38);
+    return { width: BRAND_BOX_FRACTION * c.perU, height: BRAND_BOX_FRACTION * LOGO_ASPECT * c.perV };
+  })();
+
+  const onShorts = (() => {
+    const { region, uFrac, vFrac } = SHORTS_FRONT_LAYOUT.brand;
+    const r = SHORTS_UV_REGIONS[region];
+    const c = clothPerUnit(shorts, r.u0 + uFrac * (r.u1 - r.u0), r.v0 + vFrac * (r.v1 - r.v0));
+    return {
+      width: SHORTS_BRAND_BOX_FRACTION * c.perU * SHORTS_BRAND_STRETCH,
+      height: SHORTS_BRAND_BOX_FRACTION * LOGO_ASPECT * c.perV,
+    };
+  })();
+
+  it("is as wide and as tall as the one on the chest, within a twentieth", () => {
+    expect(onShorts.width / chest.width).toBeGreaterThan(0.95);
+    expect(onShorts.width / chest.width).toBeLessThan(1.05);
+    expect(onShorts.height / chest.height).toBeGreaterThan(0.95);
+    expect(onShorts.height / chest.height).toBeLessThan(1.05);
+  });
+
+  it("is a little smaller on the chest than it was (0.03 of the canvas): about 70%", () => {
+    expect(BRAND_BOX_FRACTION).toBeCloseTo(0.03 * 0.7, 3);
   });
 });
