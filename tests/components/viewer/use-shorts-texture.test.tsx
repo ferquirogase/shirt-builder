@@ -66,13 +66,11 @@ describe("useShortsTexture", () => {
     expect(color).toBe(shortsColor(result.current.design.state));
   });
 
-  it("repaints with the other color when the shorts take the secondary one", async () => {
+  it("repaints with the shorts' new main color when it changes", async () => {
     const { result } = mount();
     await waitFor(() => expect(draw).toHaveBeenCalled());
-    const before = lastColor();
-    act(() => result.current.design.dispatch({ type: "SET_SHORTS_COLOR_SOURCE", value: "secondary" }));
-    await waitFor(() => expect(lastColor()).toBe(result.current.design.state.colors.secondary));
-    expect(lastColor()).not.toBe(before);
+    act(() => result.current.design.dispatch({ type: "SET_SHORTS_COLOR", slot: "primary", value: "#123456" }));
+    await waitFor(() => expect(lastColor()).toBe("#123456"));
   });
 
   it("flags the texture for upload after every repaint, or the GPU keeps showing the old one", async () => {

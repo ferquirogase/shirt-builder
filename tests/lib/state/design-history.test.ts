@@ -258,13 +258,16 @@ describe("LOAD_DESIGN", () => {
     expect(undone.present.shorts.included).toBe(false);
   });
 
-  it("records switching the shorts color source as an undoable step", () => {
+  it("records the shorts' design and colors as undoable steps", () => {
     const changed = run([
       { type: "SET_SHORTS_INCLUDED", value: true },
-      { type: "SET_SHORTS_COLOR_SOURCE", value: "secondary" },
+      { type: "SET_SHORTS_PATTERN", id: "shorts-side-stripe" },
+      { type: "SET_SHORTS_COLOR", slot: "secondary", value: "#123456" },
     ]);
-    expect(changed.past).toHaveLength(2);
-    expect(historyReducer(changed, { type: "UNDO" }).present.shorts.colorSource).toBe("primary");
+    expect(changed.past).toHaveLength(3);
+    const once = historyReducer(changed, { type: "UNDO" });
+    expect(once.present.shorts.colors.secondary).toBe(initialDesignState.shorts.colors.secondary);
+    expect(historyReducer(once, { type: "UNDO" }).present.shorts.patternId).toBe("shorts-plain");
   });
 });
 

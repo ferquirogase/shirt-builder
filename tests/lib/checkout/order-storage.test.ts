@@ -51,8 +51,28 @@ describe("order storage", () => {
     const oldLine = { id: "a", name: "Leo", number: "10", size: "L" };
     sessionStorage.setItem(ORDER_KEY, JSON.stringify({ ...old, design: oldDesign, roster: [oldLine] }));
     const loaded = loadOrder()!;
-    expect(loaded.design.shorts).toEqual({ included: false, colorSource: "primary" });
+    expect(loaded.design.shorts).toEqual(initialDesignState.shorts);
     expect(loaded.roster[0]).toEqual({ ...oldLine, shortsSize: "M", keeper: false });
+  });
+
+  it("keeps an order's shorts looking as they did when they wore one of the shirt's colors", () => {
+    const old = makeOrder();
+    const colors = { ...old.design.colors, primary: "#112233", secondary: "#aabbcc" };
+    const design = { ...old.design, colors, shorts: { included: true, colorSource: "secondary" } };
+    sessionStorage.setItem(ORDER_KEY, JSON.stringify({ ...old, design }));
+    const loaded = loadOrder()!;
+    expect(loaded.design.shorts).toEqual({
+      included: true,
+      patternId: "shorts-plain",
+      colors: { ...initialDesignState.shorts.colors, primary: "#aabbcc" },
+    });
+  });
+
+  it("gives the plain shorts to an order saved with a shorts design that no longer exists", () => {
+    const old = makeOrder();
+    const design = { ...old.design, shorts: { ...initialDesignState.shorts, patternId: "gone" } };
+    sessionStorage.setItem(ORDER_KEY, JSON.stringify({ ...old, design }));
+    expect(loadOrder()!.design.shorts.patternId).toBe("shorts-plain");
   });
 
   it("gives the default torso pattern to an order saved with one that no longer exists", () => {

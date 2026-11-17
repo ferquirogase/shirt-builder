@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { act, fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { renderWithDesign } from "../helpers/render-with-design";
 import { ShortsPanel } from "@/components/builder/panels/ShortsPanel";
+import { initialDesignState } from "@/lib/builder/state/design-state";
 
 describe("ShortsPanel", () => {
   it("invites to add the shorts, with what they add to each player's price", () => {
@@ -9,29 +10,40 @@ describe("ShortsPanel", () => {
     const add = screen.getByRole("button", { name: "Sumar short" });
     expect(add).toHaveAccessibleDescription(/20/);
     expect(add).toHaveAccessibleDescription(/por jugador/);
-    expect(screen.queryByText("Color del short")).toBeNull();
+    expect(add).toHaveAccessibleDescription(/propios/);
+    expect(screen.queryByRole("tablist")).toBeNull();
     fireEvent.click(add);
     expect(api.current!.state.shorts.included).toBe(true);
   });
 
-  it("asks which shirt color the shorts wear, primary by default", () => {
+  it("opens on its designs, the plain one chosen, and picks another", () => {
     const { api } = renderWithDesign(<ShortsPanel />);
     act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
-    expect(screen.getByText("Color del short")).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /Color primario/ })).toBeChecked();
-    fireEvent.click(screen.getByRole("radio", { name: /Color secundario/ }));
-    expect(api.current!.state.shorts.colorSource).toBe("secondary");
-    expect(screen.getByRole("radio", { name: /Color secundario/ })).toBeChecked();
+    expect(screen.getByRole("tab", { name: "Diseño" })).toHaveAttribute("aria-selected", "true");
+    const designs = within(screen.getByRole("radiogroup", { name: "Diseño del short" })).getAllByRole("radio");
+    expect(designs.map((d) => d.textContent)).toEqual(["Liso", "Ruedo", "Franja lateral", "Lateral bicolor"]);
+    expect(screen.getByRole("radio", { name: "Liso" })).toBeChecked();
+    fireEvent.click(screen.getByRole("radio", { name: "Franja lateral" }));
+    expect(api.current!.state.shorts.patternId).toBe("shorts-side-stripe");
+    expect(screen.getByRole("radio", { name: "Franja lateral" })).toBeChecked();
   });
 
-  it("shows each option with the shirt's current color, in CMYK, without the hexadecimal", () => {
+  it("shows only the colors the chosen design uses, and changes them for the shorts alone", () => {
     const { api } = renderWithDesign(<ShortsPanel />);
     act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
-    act(() => api.current!.dispatch({ type: "SET_COLOR", slot: "secondary", value: "#123456" }));
-    const radio = screen.getByRole("radio", { name: /Color secundario/ });
-    expect(radio).toHaveTextContent("C 79 M 40 Y 0 K 66");
-    expect(radio).not.toHaveTextContent("#");
-    expect((radio.querySelector("[data-swatch]") as HTMLElement).style.backgroundColor).toBe("rgb(18, 52, 86)");
+    act(() => api.current!.dispatch({ type: "SET_SHORTS_PATTERN", id: "shorts-side-two-tone" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Colores" }));
+    const fields = screen.getAllByRole("button", { name: /^Color/ });
+    expect(fields.map((f) => f.getAttribute("aria-label")!.split(":")[0])).toEqual(["Color principal", "Color 2", "Color 3"]);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Color 2:/ }));
+    const palette = screen.getByRole("radiogroup", { name: "Color 2" });
+    fireEvent.click(within(palette).getAllByRole("radio").find((r) => r.getAttribute("aria-checked") !== "true")!);
+    expect(api.current!.state.shorts.colors.secondary).not.toBe(initialDesignState.shorts.colors.secondary);
+    expect(api.current!.state.colors).toEqual(initialDesignState.colors);
+
+    act(() => api.current!.dispatch({ type: "SET_SHORTS_PATTERN", id: "shorts-plain" }));
+    expect(screen.getAllByRole("button", { name: /^Color/ })).toHaveLength(1);
   });
 
   it("can be taken out again", () => {
