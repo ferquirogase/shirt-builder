@@ -23,6 +23,27 @@ describe("the real shorts model", () => {
     expect(SHORTS_MODEL.normalMapUrl).toBe("/textures/gepe-shorts-normal.png");
   });
 
+  it("has a straight hem on both legs, with no side slit rising from it", () => {
+    // Open edges belong to one face only: the waist, the two hems and nothing else.
+    const lines = readFileSync("public/models/gepe_shorts.obj", "utf8").split("\n");
+    const faceCount = new Map<string, number>();
+    for (const line of lines.filter((l) => l.startsWith("f "))) {
+      const ids = line.trim().split(/\s+/).slice(1).map((t) => Number(t.split("/")[0]));
+      ids.forEach((a, i) => {
+        const b = ids[(i + 1) % ids.length];
+        const key = a < b ? `${a}-${b}` : `${b}-${a}`;
+        faceCount.set(key, (faceCount.get(key) ?? 0) + 1);
+      });
+    }
+    const hemEdgeYs = [...faceCount]
+      .filter(([, count]) => count === 1)
+      .flatMap(([key]) => key.split("-").map((id) => vertices[Number(id) - 1][1]))
+      .filter((y) => y < 150);
+    expect(hemEdgeYs.length).toBeGreaterThan(0);
+    // The hem itself sways from 113.7 to about 117.3; the slit rose to 125.
+    expect(Math.max(...hemEdgeYs)).toBeLessThan(118);
+  });
+
   it("has the bottom edge SHORTS_BOTTOM_Y says", () => {
     expect(SHORTS_BOTTOM_Y).toBeCloseTo(Math.min(...vertices.map((v) => v[1])), 2);
   });
