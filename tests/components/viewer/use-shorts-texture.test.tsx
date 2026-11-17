@@ -13,7 +13,7 @@ import { DesignProvider, useDesign } from "@/lib/builder/state/design-context";
 import { drawShortsToCanvas } from "@/lib/builder/texture/shorts-compositor";
 import { loadImage } from "@/lib/builder/texture/image-loader";
 import { shortsColor } from "@/lib/builder/state/design-state";
-import { BRAND_LOGO_URLS } from "@/lib/builder/catalog/brand-logo";
+import { BRAND_LOGO_URLS, SHORTS_SIDE_MARK_URLS } from "@/lib/builder/catalog/brand-logo";
 import { UV_FLIP_Y } from "@/lib/builder/geometry/uv-regions";
 
 const draw = vi.mocked(drawShortsToCanvas);
@@ -103,6 +103,12 @@ describe("useShortsTexture", () => {
     mount();
     await waitFor(() => expect(lastImages().brandLogoForLight).toEqual({ src: BRAND_LOGO_URLS.forLight }));
     expect(lastImages().brandLogoForDark).toEqual({ src: BRAND_LOGO_URLS.forDark });
+  });
+
+  it("loads both versions of the side mark, for the outer side of the left leg", async () => {
+    mount();
+    await waitFor(() => expect(lastImages().sideMarkForLight).toEqual({ src: SHORTS_SIDE_MARK_URLS.forLight }));
+    expect(lastImages().sideMarkForDark).toEqual({ src: SHORTS_SIDE_MARK_URLS.forDark });
   });
 
   it("decodes the crest once there is one, and drops it when it is removed", async () => {

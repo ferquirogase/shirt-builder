@@ -4,6 +4,7 @@ import {
   SHORTS_FRONT_LAYOUT,
   SHORTS_HEM_BAND_TOP_V,
   SHORTS_NUMBER_FONT_FRACTION,
+  SHORTS_SIDE_MARK,
   SHORTS_SIDE_SEAM,
   SHORTS_SIDE_STRIPE_HALF_WIDTH,
   SHORTS_TWO_TONE_SPLIT,
@@ -14,7 +15,7 @@ import { UV_FLIP_Y } from "../geometry/uv-regions";
 import { getNameNumberPreset } from "../catalog/name-number-presets";
 import { availableSponsorSlots, clampSponsorScale, isShortsSlot, type SponsorSlotId } from "../catalog/sponsor-slots";
 import type { DesignState } from "../state/design-state";
-import { BRAND_BOX_FRACTION, drawBrandLogoAt, fitLogoBox, pointInRegionToCanvas } from "./texture-compositor";
+import { BRAND_BOX_FRACTION, drawBrandLogoAt, fitLogoBox, isLightUnder, pointInRegionToCanvas } from "./texture-compositor";
 import { displayNumber, drawStyledText } from "./number-text";
 
 export type ShortsCompositorImages = {
@@ -25,6 +26,9 @@ export type ShortsCompositorImages = {
   /** The maker's logo, under the number: the version for light cloth and the one for dark cloth. */
   brandLogoForLight?: HTMLImageElement | null;
   brandLogoForDark?: HTMLImageElement | null;
+  /** The side mark on the left leg: the version for light cloth and the one for dark cloth. */
+  sideMarkForLight?: HTMLImageElement | null;
+  sideMarkForDark?: HTMLImageElement | null;
 };
 
 // Paints the shorts' texture: their color, the sponsors of the three placements on the legs, and the
@@ -44,6 +48,7 @@ export function drawShortsToCanvas(
   if (!design.shorts.included) return;
 
   drawShortsPattern(ctx, canvasSize, design.shorts);
+  drawSideMark(ctx, canvasSize, color, images);
 
   for (const slot of availableSponsorSlots(design)) {
     if (!isShortsSlot(slot)) continue;
@@ -127,6 +132,19 @@ function drawShortsPattern(ctx: CanvasRenderingContext2D, size: number, shorts: 
   const { frontV, backV } = SHORTS_TWO_TONE_SPLIT;
   ctx.fillStyle = colors.accent;
   for (const leg of ["right", "left"] as const) fillSideStripe(ctx, size, leg, BELOW, backV, frontV);
+}
+
+// The side mark, upright on the outer side of the player's left leg, just behind the side seam (the left leg's
+// back is toward higher u), in the version that contrasts with the cloth already painted under it.
+function drawSideMark(ctx: CanvasRenderingContext2D, size: number, color: string, images: ShortsCompositorImages): void {
+  const forLight = images.sideMarkForLight ?? null;
+  const forDark = images.sideMarkForDark ?? null;
+  if (!forLight && !forDark) return;
+  const { backOffsetU, centerV, widthU, heightV } = SHORTS_SIDE_MARK;
+  const [cx, cy] = toCanvas(1 - sideSeamU(centerV) + backOffsetU, centerV, size);
+  const box = { x: cx - (widthU * size) / 2, y: cy - (heightV * size) / 2, width: widthU * size, height: heightV * size };
+  const image = (isLightUnder(ctx, box, size, color) ? forLight ?? forDark : forDark ?? forLight)!;
+  ctx.drawImage(image, box.x, box.y, box.width, box.height);
 }
 
 // The crest, the maker's logo and the number, on the front of the shorts.
