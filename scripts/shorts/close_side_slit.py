@@ -3,7 +3,9 @@
 Each leg's hem is one open loop that climbs up the side seam (the slit), turns at an
 apex and comes back down. This walks both sides of the slit from the apex, pairs their
 vertices, moves each pair to its midpoint, points the faces of the second vertex at the
-first one (so the seam is welded) and averages the normals there. UVs are untouched.
+first one (so the seam is welded) and averages the normals there. The slit is also a thin
+wedge in the UV layout; each pair's UVs go to their midpoint too, or the print inside the
+wedge would go missing and a side stripe would narrow at the hem.
 
 Run once: python scripts/shorts/close_side_slit.py public/models/gepe_shorts.obj
 A second run finds no slit and leaves the file as it is.
@@ -18,11 +20,15 @@ LEGS_BELOW_Y = 150.0
 
 def main(path):
     with open(path, encoding="utf-8", newline="") as fh:
-        lines = fh.read().split("\r\n")
-    v_line, vn_line, faces = [], [], []
+        text = fh.read()
+    eol = "\r\n" if "\r\n" in text else "\n"
+    lines = text.split(eol)
+    v_line, vt_line, vn_line, faces = [], [], [], []
     for i, line in enumerate(lines):
         if line.startswith("v "):
             v_line.append(i)
+        elif line.startswith("vt "):
+            vt_line.append(i)
         elif line.startswith("vn "):
             vn_line.append(i)
         elif line.startswith("f "):
@@ -69,6 +75,19 @@ def main(path):
         lines[v_line[keep - 1]] = text
         lines[v_line[drop - 1]] = text  # left unused
 
+    # UVs: each side of the slit uses one UV per vertex; both become their midpoint.
+    uv_of = {}
+    for i in faces:
+        for c in corners(i):
+            uv_of.setdefault(c[0], c[1])
+    uv_welds = {}
+    for drop, keep in welds.items():
+        a, b = (lines[vt_line[uv_of[v] - 1]].split()[1:3] for v in (keep, drop))
+        text = "vt " + " ".join(f"{(float(p) + float(q)) / 2:.6f}" for p, q in zip(a, b))
+        lines[vt_line[uv_of[keep] - 1]] = text
+        lines[vt_line[uv_of[drop] - 1]] = text  # left unused
+        uv_welds[uv_of[drop]] = uv_of[keep]
+
     # Normals: every normal used at a welded vertex (or an apex) becomes their average.
     groups = defaultdict(set)
     for i in faces:
@@ -88,10 +107,11 @@ def main(path):
         cs = corners(i)
         for c in cs:
             c[0] = welds.get(c[0], c[0])
+            c[1] = uv_welds.get(c[1], c[1])
         lines[i] = "f " + " ".join("/".join(str(x) for x in c) for c in cs)
 
     with open(path, "w", encoding="utf-8", newline="") as fh:
-        fh.write("\r\n".join(lines))
+        fh.write(eol.join(lines))
     print(f"welded {len(welds)} vertex pairs at {len(apexes)} slits:", welds)
 
 

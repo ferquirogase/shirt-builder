@@ -44,6 +44,25 @@ describe("the real shorts model", () => {
     expect(Math.max(...hemEdgeYs)).toBeLessThan(118);
   });
 
+  it("has the cloth's print sewn where the slit was closed, so a side stripe does not narrow at the hem", () => {
+    // Each vertex of the closed slit (the outer side, near the hem) takes one spot on the print.
+    const uvsAt = new Map<number, Set<string>>();
+    const lines = readFileSync("public/models/gepe_shorts.obj", "utf8").split("\n");
+    for (const line of lines.filter((l) => l.startsWith("f "))) {
+      for (const corner of line.trim().split(/\s+/).slice(1)) {
+        const [v, vt] = corner.split("/");
+        if (!uvsAt.has(Number(v))) uvsAt.set(Number(v), new Set());
+        uvsAt.get(Number(v))!.add(vt);
+      }
+    }
+    const slitSide = [...uvsAt].filter(([v]) => {
+      const [x, y] = vertices[v - 1];
+      return Math.abs(x) > 36 && y > 116 && y < 126;
+    });
+    expect(slitSide.length).toBeGreaterThan(0);
+    for (const [, uvs] of slitSide) expect(uvs.size).toBe(1);
+  });
+
   it("has the bottom edge SHORTS_BOTTOM_Y says", () => {
     expect(SHORTS_BOTTOM_Y).toBeCloseTo(Math.min(...vertices.map((v) => v[1])), 2);
   });
