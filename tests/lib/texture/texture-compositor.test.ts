@@ -936,9 +936,9 @@ describe("drawDesignToCanvas", () => {
       const img = square("abdomen");
       drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: img } }, regions);
       const { x, y, w, h, translate, rotate } = drawn(ctx, img);
-      // bodyFront u .3..0.7 -> center u 0.5 -> x 500; v .5..0.9, vFrac 0.58 -> v 0.732 -> y 268.
+      // bodyFront u .3..0.7 -> center u 0.5 -> x 500; v .5..0.9, vFrac 0.63 -> v 0.752 -> y 248.
       expect(translate[0][0]).toBeCloseTo(500, 5);
-      expect(translate[0][1]).toBeCloseTo(268, 5);
+      expect(translate[0][1]).toBeCloseTo(248, 5);
       expect(rotate.slice(0, -2)).toHaveLength(0); // the last two turns are the example name and number
       expect(w).toBeCloseTo(50, 5); // baseBox 0.05 of 1000
       expect(h).toBeCloseTo(50, 5);
@@ -1021,15 +1021,15 @@ describe("drawDesignToCanvas", () => {
       );
       // None is turned; the only turns are the example name's and the number's, drawn last.
       expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(2);
-      // bodyFront u .3..0.7, v .5..0.9: belly vFrac .41 -> v .664 -> y 336; waist .24 -> v .596 -> y 404.
-      // chest-right uFrac .27 -> u .408 -> x 408, chest-left .73 -> u .592 -> x 592, both vFrac .8 -> v .82 -> y 180.
+      // bodyFront u .3..0.7, v .5..0.9: belly vFrac .46 -> v .684 -> y 316; waist .29 -> v .616 -> y 384.
+      // chest-right uFrac .27 -> u .408 -> x 408, chest-left .73 -> u .592 -> x 592, both vFrac .85 -> v .84 -> y 160.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       // The four sponsors, and then the number's 0 (translated too, to be turned).
       expect(t.slice(0, 4).map(([x, y]) => [Math.round(x), Math.round(y)])).toEqual([
-        [500, 336],
-        [500, 404],
-        [408, 180],
-        [592, 180],
+        [500, 316],
+        [500, 384],
+        [408, 160],
+        [592, 160],
       ]);
     });
 
@@ -1163,7 +1163,7 @@ describe("drawDesignToCanvas", () => {
     it("sits where sponsor 1 would be, upright (the back's is turned)", () => {
       const ctx = createMockCtx();
       drawDesignToCanvas(ctx, 1000, withChest({ playerNumber: "10" }), blank, regions);
-      // bodyFront u .3..0.7 -> x 500; v .5..0.9, vFrac .58 -> v .732 -> y 268. Drawn first, before the back.
+      // bodyFront u .3..0.7 -> x 500; v .5..0.9, vFrac .63 -> v .752 -> y 248. Drawn first, before the back.
       const [tx, ty] = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(tx).toBeCloseTo(500, 5);
       expect(ty).toBeGreaterThan(200);

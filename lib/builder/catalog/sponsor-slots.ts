@@ -55,8 +55,10 @@ export const SPONSOR_MAX_SCALE = 1.5;
 
 // GEPE's map of where sponsors go (numbers 1 to 9 on the shirt), in its order. On the front
 // the three of the center column (1, 2, 3) are stacked: each is a wide, short rectangle (a
-// sponsor's banner), so even at their biggest they do not touch. GEPE draws 8 and 9 above the maker's logo and the crest, but on this
-// model the cloth ends at the collar there: they sit on the front of each shoulder, beside the collar.
+// sponsor's banner), so even at their biggest they do not touch. 1 is centered in the band of Banda al pecho
+// (molde 7) and fits in it at its biggest; 2 and 3 keep its spacing below it. GEPE draws 8 and 9 above the maker's logo and the crest, but on this
+// model the cloth ends at the collar there: they sit on the front of each shoulder, beside the collar,
+// high enough that 8 clears the maker's logo (brandLogoAt) at scale 1.
 //
 // Placements and orientations were derived from public/models/gepe_shirt.obj.
 // On the sleeves the UV axis u runs cuff-to-shoulder and v around the arm, so the
@@ -71,15 +73,15 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     label: "Pecho",
     region: "bodyFront",
     uFrac: 0.5,
-    vFrac: 0.58,
+    vFrac: 0.63,
     rotation: 0,
     baseBox: 0.12,
     baseHeight: 0.05,
     // The number goes here when it is also printed on the chest.
     blockedBy: "chestNumber",
   },
-  { id: "belly", label: "Abdomen", region: "bodyFront", uFrac: 0.5, vFrac: 0.41, rotation: 0, baseBox: 0.12, baseHeight: 0.05 },
-  { id: "waist", label: "Cintura", region: "bodyFront", uFrac: 0.5, vFrac: 0.24, rotation: 0, baseBox: 0.12, baseHeight: 0.05 },
+  { id: "belly", label: "Abdomen", region: "bodyFront", uFrac: 0.5, vFrac: 0.46, rotation: 0, baseBox: 0.12, baseHeight: 0.05 },
+  { id: "waist", label: "Cintura", region: "bodyFront", uFrac: 0.5, vFrac: 0.29, rotation: 0, baseBox: 0.12, baseHeight: 0.05 },
   {
     id: "sleeve-right",
     label: "Manga derecha",
@@ -123,8 +125,8 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     label: "Pecho alto derecho",
     region: "bodyFront",
     uFrac: 0.27,
-    vFrac: 0.8,
-    marker: { uFrac: 0.22, vFrac: 0.8 },
+    vFrac: 0.85,
+    marker: { uFrac: 0.22, vFrac: 0.85 },
     rotation: 0,
     baseBox: 0.045,
     baseHeight: 0.035,
@@ -134,8 +136,8 @@ export const SPONSOR_SLOTS: SponsorSlot[] = [
     label: "Pecho alto izquierdo",
     region: "bodyFront",
     uFrac: 0.73,
-    vFrac: 0.8,
-    marker: { uFrac: 0.78, vFrac: 0.8 },
+    vFrac: 0.85,
+    marker: { uFrac: 0.78, vFrac: 0.85 },
     rotation: 0,
     baseBox: 0.045,
     baseHeight: 0.035,
