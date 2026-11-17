@@ -11,6 +11,9 @@ import {
   SHORTS_UV_STRETCH,
   SHORTS_HEM_BAND_TOP_V,
   SHORTS_TWO_TONE_SPLIT,
+  SHORTS_SIDE_MARK,
+  SHORTS_SIDE_SEAM,
+  SHORTS_SIDE_STRIPE_HALF_WIDTH,
 } from "@/lib/builder/geometry/shorts-uv-regions";
 import { BRAND_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
 import { NUMBER_PLACEHOLDER } from "@/lib/builder/texture/number-text";
@@ -428,5 +431,59 @@ describe("the shorts' design", () => {
       sponsorImages: { "shorts-front-right": square("s") },
     });
     expect(filledBeforeImage).toBe(2);
+  });
+});
+
+describe("the side mark on the outer side of the left leg", () => {
+  const marks = {
+    sideMarkForLight: { id: "mark-black", naturalWidth: 100, naturalHeight: 408 } as unknown as HTMLImageElement,
+    sideMarkForDark: { id: "mark-white", naturalWidth: 100, naturalHeight: 408 } as unknown as HTMLImageElement,
+  };
+  const markCalls = (ctx: CanvasRenderingContext2D) =>
+    calls(ctx.drawImage).filter(([image]) => image === marks.sideMarkForLight || image === marks.sideMarkForDark);
+  // Low on the leg, where the side seam still runs straight up (its first stretch, in SHORTS_SIDE_SEAM).
+  const leftSeamU = 1 - SHORTS_SIDE_SEAM[0][1];
+
+  it("draws it once, on one leg only, as the PDF's side view shows it", () => {
+    const ctx = createMockCtx();
+    drawShortsToCanvas(ctx, 1000, kit({}), "#0a5c36", marks);
+    expect(markCalls(ctx)).toHaveLength(1);
+  });
+
+  it("puts it just behind the left leg's side seam, low on the leg, at the PDF's size and upright", () => {
+    expect(SHORTS_SIDE_MARK.centerV).toBeLessThan(SHORTS_SIDE_SEAM[1][0]);
+    const ctx = createMockCtx();
+    drawShortsToCanvas(ctx, 1000, kit({}), "#0a5c36", marks);
+    const [, x, y, w, h] = markCalls(ctx)[0] as number[];
+    expect(x + w / 2).toBeCloseTo((leftSeamU + SHORTS_SIDE_MARK.backOffsetU) * 1000, 5);
+    expect(y + h / 2).toBeCloseTo((1 - SHORTS_SIDE_MARK.centerV) * 1000, 5);
+    expect(w).toBeCloseTo(SHORTS_SIDE_MARK.widthU * 1000, 5);
+    expect(h).toBeCloseTo(SHORTS_SIDE_MARK.heightV * 1000, 5);
+    // The left leg's back is toward higher u, so behind the seam means right of it on the canvas.
+    expect(SHORTS_SIDE_MARK.backOffsetU).toBeGreaterThan(0);
+    expect(ctx.rotate).not.toHaveBeenCalled();
+  });
+
+  it("stays clear of the side stripe, behind its back edge", () => {
+    const ctx = createMockCtx();
+    drawShortsToCanvas(ctx, 1000, kit({}), "#0a5c36", marks);
+    const [, x] = markCalls(ctx)[0] as number[];
+    expect(x).toBeGreaterThan((leftSeamU + SHORTS_SIDE_STRIPE_HALF_WIDTH) * 1000);
+  });
+
+  it("is white over dark cloth and black over light cloth", () => {
+    const dark = createMockCtx();
+    drawShortsToCanvas(dark, 1000, kit({}), "#0a5c36", marks);
+    expect(markCalls(dark)[0][0]).toBe(marks.sideMarkForDark);
+    const light = createMockCtx();
+    drawShortsToCanvas(light, 1000, kit({}), "#f5f0e0", marks);
+    expect(markCalls(light)[0][0]).toBe(marks.sideMarkForLight);
+  });
+
+  it("is not drawn when the kit has no shorts", () => {
+    const ctx = createMockCtx();
+    const design = { ...kit({}), shorts: { ...initialDesignState.shorts, included: false } };
+    drawShortsToCanvas(ctx, 1000, design, "#0a5c36", marks);
+    expect(markCalls(ctx)).toHaveLength(0);
   });
 });

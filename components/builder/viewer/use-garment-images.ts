@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { BRAND_LABEL_URLS, BRAND_LOGO_URLS } from "@/lib/builder/catalog/brand-logo";
+import { BRAND_LABEL_URLS, BRAND_LOGO_URLS, SHORTS_SIDE_MARK_URLS } from "@/lib/builder/catalog/brand-logo";
 import { getNameNumberPreset } from "@/lib/builder/catalog/name-number-presets";
 import { loadImage } from "@/lib/builder/texture/image-loader";
 import { resolveFontFamily } from "@/lib/builder/texture/resolve-font-family";
@@ -37,32 +37,40 @@ export function useCrestImage(dataUrl: string | null): HTMLImageElement | null {
   return image;
 }
 
-/**
- * The maker's logo never changes: both versions are loaded once. A broken one must not break the
- * garment, so each failure just leaves that version out.
- */
-export function useBrandLogos(): { forLight: HTMLImageElement | null; forDark: HTMLImageElement | null } {
-  const [logos, setLogos] = useState<{ forLight: HTMLImageElement | null; forDark: HTMLImageElement | null }>({
-    forLight: null,
-    forDark: null,
-  });
+type LightDarkPair = { forLight: HTMLImageElement | null; forDark: HTMLImageElement | null };
+
+// Two versions of a fixed image (for light cloth and for dark cloth), loaded once. A broken one must not break
+// the garment, so each failure just leaves that version out.
+function useLightDarkPair(urls: { forLight: string; forDark: string }, what: string): LightDarkPair {
+  const [pair, setPair] = useState<LightDarkPair>({ forLight: null, forDark: null });
+  const { forLight: lightUrl, forDark: darkUrl } = urls;
 
   useEffect(() => {
     let cancelled = false;
     const load = (src: string) =>
       loadImage(src).catch((err) => {
-        console.error("Failed to load brand logo", err);
+        console.error(`Failed to load ${what}`, err);
         return null;
       });
-    Promise.all([load(BRAND_LOGO_URLS.forLight), load(BRAND_LOGO_URLS.forDark)]).then(([forLight, forDark]) => {
-      if (!cancelled) setLogos({ forLight, forDark });
+    Promise.all([load(lightUrl), load(darkUrl)]).then(([forLight, forDark]) => {
+      if (!cancelled) setPair({ forLight, forDark });
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [lightUrl, darkUrl, what]);
 
-  return logos;
+  return pair;
+}
+
+/** The maker's logo never changes: both versions are loaded once. */
+export function useBrandLogos(): LightDarkPair {
+  return useLightDarkPair(BRAND_LOGO_URLS, "brand logo");
+}
+
+/** The shorts' side mark, both versions, loaded once. */
+export function useShortsSideMarks(): LightDarkPair {
+  return useLightDarkPair(SHORTS_SIDE_MARK_URLS, "shorts side mark");
 }
 
 /** The shirt's brand labels never change either: loaded once, and a broken one is just left out. */

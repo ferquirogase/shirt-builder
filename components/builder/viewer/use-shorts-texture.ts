@@ -6,7 +6,7 @@ import { shortsColor } from "@/lib/builder/state/design-state";
 import { UV_FLIP_Y } from "@/lib/builder/geometry/uv-regions";
 import { drawShortsToCanvas } from "@/lib/builder/texture/shorts-compositor";
 import { loadSponsorImages, type SponsorImageCache, type SponsorImages } from "@/lib/builder/texture/sponsor-images";
-import { useBrandLogos, useCrestImage, useNameNumberFont } from "./use-garment-images";
+import { useBrandLogos, useCrestImage, useNameNumberFont, useShortsSideMarks } from "./use-garment-images";
 
 const CANVAS_SIZE = 2048;
 
@@ -18,7 +18,7 @@ function flagForUpload(texture: THREE.Texture): void {
 }
 
 // Owns the shorts' texture: a canvas with the color the shorts wear, the sponsors on their legs, the
-// crest, and the number with the maker's logo under it. It repaints whenever the design or a sponsor image changes, and returns the texture to
+// crest, the number with the maker's logo under it, and the side mark. It repaints whenever the design or a sponsor image changes, and returns the texture to
 // put on the shorts.
 export function useShortsTexture(): THREE.CanvasTexture {
   const { state } = useDesign();
@@ -55,6 +55,7 @@ export function useShortsTexture(): THREE.CanvasTexture {
 
   const logoImage = useCrestImage(state.logoDataUrl);
   const brandLogos = useBrandLogos();
+  const sideMarks = useShortsSideMarks();
   const font = useNameNumberFont(state.nameNumberStyle.presetId);
 
   const color = shortsColor(state);
@@ -66,11 +67,18 @@ export function useShortsTexture(): THREE.CanvasTexture {
       CANVAS_SIZE,
       state,
       color,
-      { sponsorImages, logoImage, brandLogoForLight: brandLogos.forLight, brandLogoForDark: brandLogos.forDark },
+      {
+        sponsorImages,
+        logoImage,
+        brandLogoForLight: brandLogos.forLight,
+        brandLogoForDark: brandLogos.forDark,
+        sideMarkForLight: sideMarks.forLight,
+        sideMarkForDark: sideMarks.forDark,
+      },
       font.family
     );
     flagForUpload(texture);
-  }, [state, color, canvas, texture, sponsorImages, logoImage, brandLogos, font.family, font.version]);
+  }, [state, color, canvas, texture, sponsorImages, logoImage, brandLogos, sideMarks, font.family, font.version]);
 
   return texture;
 }

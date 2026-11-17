@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { BRAND_LABEL_URLS, BRAND_LOGO_URLS } from "@/lib/builder/catalog/brand-logo";
+import { BRAND_LABEL_URLS, BRAND_LOGO_URLS, SHORTS_SIDE_MARK_URLS } from "@/lib/builder/catalog/brand-logo";
 
 describe("brand logo files", () => {
   it("points at two different files that exist under public/", () => {
@@ -33,5 +33,31 @@ describe("brand label files", () => {
       expect(height).toBeGreaterThan(0);
       expect(width / height).toBeCloseTo(vw / vh, 2);
     }
+  });
+});
+
+describe("the shorts' side mark files", () => {
+  const read = (url: string) => readFileSync(join(process.cwd(), "public", url), "utf8");
+
+  it("points at a black and a white SVG under public/brand/, standing up (taller than wide)", () => {
+    expect(SHORTS_SIDE_MARK_URLS.forLight).not.toBe(SHORTS_SIDE_MARK_URLS.forDark);
+    for (const url of Object.values(SHORTS_SIDE_MARK_URLS)) {
+      expect(url).toMatch(/^\/brand\/.+\.svg$/);
+      const root = /<svg\b[^>]*>/.exec(read(url))![0];
+      const width = Number(/\swidth="([\d.]+)"/.exec(root)?.[1]);
+      const height = Number(/\sheight="([\d.]+)"/.exec(root)?.[1]);
+      const [, , vw, vh] = /viewBox="([^"]+)"/.exec(root)![1].split(/[\s,]+/).map(Number);
+      expect(width / height).toBeCloseTo(vw / vh, 2);
+      expect(height).toBeGreaterThan(width * 3);
+    }
+  });
+
+  it("has the same drawing in both, black in one and white in the other", () => {
+    const black = read(SHORTS_SIDE_MARK_URLS.forLight);
+    const white = read(SHORTS_SIDE_MARK_URLS.forDark);
+    const paths = (svg: string) => [...svg.matchAll(/\sd="([^"]+)"/g)].map((m) => m[1]);
+    expect(paths(white)).toEqual(paths(black));
+    expect(black).not.toMatch(/#fff\b/i);
+    expect(white).not.toMatch(/#0{3}\b|#010101/i);
   });
 });

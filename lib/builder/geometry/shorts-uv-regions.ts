@@ -66,3 +66,9 @@ export const SHORTS_HEM_BAND_TOP_V = 0.073;
 // The two-tone stripe: color 3 below a cut from 37% of the leg's height at its front edge to 50% at its back
 // edge (the PDF: 63% and 50% down from the waist), color 2 above.
 export const SHORTS_TWO_TONE_SPLIT = { frontV: 0.242, backV: 0.314 } as const;
+
+// The side mark (the round GP with "GEPE SPORT" standing up over it), on the outer side of the player's left
+// leg only, as the PDF's side view shows it: just behind the side stripe, low on the leg. Measured on that view
+// (156 pt deep, 300 pt from the hem to the waist): 10 x 41 pt, its center 30 pt behind the stripe's center
+// (the side seam) and 44 pt above the hem. Laid on as the stripe was: about 0.0013 of u and 0.00186 of v a point.
+export const SHORTS_SIDE_MARK = { backOffsetU: 0.039, centerV: 0.117, widthU: 0.013, heightV: 0.076 } as const;
