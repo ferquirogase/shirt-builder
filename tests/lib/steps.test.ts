@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { existsSync } from "node:fs";
 import { STEPS, nextStep, stepIndex, stepStatus } from "@/lib/builder/steps";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 
@@ -8,6 +9,12 @@ describe("the builder's steps", () => {
   it("go shirt, shorts, keeper, crest and sponsors, order: the garments first, then what goes on all of them", () => {
     expect(STEPS.map((s) => s.id)).toEqual(["player", "shorts", "keeper", "logos", "order"]);
     expect(STEPS.map((s) => s.label)).toEqual(["Jugador", "Short", "Arquero", "Escudo y sponsors", "Pedido"]);
+  });
+
+  it("draws every step with a 3D picture that exists, the shorts and the order with their own", () => {
+    for (const step of STEPS) expect(existsSync(`public${step.icon}`), step.icon).toBe(true);
+    expect(STEPS.find((s) => s.id === "shorts")!.icon).toBe("/icons/sections/shorts.webp");
+    expect(STEPS.find((s) => s.id === "order")!.icon).toBe("/icons/sections/pedido.webp");
   });
 
   it("marks the shorts and the keeper as optional: they are offered, not required", () => {
