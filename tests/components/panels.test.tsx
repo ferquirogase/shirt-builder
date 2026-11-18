@@ -63,7 +63,7 @@ describe("DesignPanel", () => {
     const thumb = "/patterns/moldes/molde-12-thumb.png";
     await waitFor(() => expect(vi.mocked(loadMaskPiece).mock.calls.some(([p]) => p === thumb)).toBe(true));
     const accents = vi.mocked(loadMaskPiece).mock.calls.filter(([p]) => p === thumb).map(([, colors]) => colors.accent);
-    expect(accents.at(-1)).toBe("#f5b700");
+    expect(accents.at(-1)).toBe("#4d4d4d");
     expect(accents).not.toContain("#123456");
   });
 });

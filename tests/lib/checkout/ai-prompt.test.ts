@@ -22,7 +22,7 @@ describe("buildAiPrompt", () => {
   it("describes the pattern and the colors in words, not hex codes", () => {
     const prompt = promptFor();
     expect(prompt).toContain("franjas");
-    expect(prompt).toContain("verde oscuro");
+    expect(prompt).toContain("gris claro");
     expect(prompt).toContain("blanco");
     expect(prompt).not.toMatch(/#[0-9a-f]{6}/i);
   });

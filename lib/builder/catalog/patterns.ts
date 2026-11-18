@@ -29,11 +29,12 @@ export type PatternDef = {
   brandLogoAt?: { u: number; v: number };
 };
 
+// Neutrals, like the kit a visitor first sees: a color a new design brings in is never a team's color.
 const ROLE_DEFAULTS: Record<PatternRole, string> = {
-  primary: "#0a5c36",
+  primary: "#a6a6a6",
   secondary: "#ffffff",
-  accent: "#f5b700",
-  quaternary: "#d0161f",
+  accent: "#4d4d4d",
+  quaternary: "#000000",
 };
 
 const colorsFor = (roles: PatternRole[]): PatternColor[] =>

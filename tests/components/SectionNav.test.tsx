@@ -4,7 +4,7 @@ import { renderWithDesign } from "../helpers/render-with-design";
 import { SectionNav } from "@/components/builder/SectionNav";
 import type { StepId } from "@/lib/builder/steps";
 
-const NAMES = ["Camiseta", "Short", "Arquero", "Escudo y sponsors", "Pedido"];
+const NAMES = ["Jugador", "Short", "Arquero", "Escudo y sponsors", "Pedido"];
 const none = new Set<StepId>();
 
 describe("SectionNav (the line of steps)", () => {
@@ -27,7 +27,7 @@ describe("SectionNav (the line of steps)", () => {
   it("numbers the steps not done yet and ticks the ones done", () => {
     renderWithDesign(<SectionNav active="keeper" visited={new Set<StepId>(["player"])} onChange={() => {}} />);
     const badge = (name: string) => within(screen.getByRole("button", { name })).getByTestId("step-badge");
-    expect(badge("Camiseta")).toHaveAttribute("data-status", "done");
+    expect(badge("Jugador")).toHaveAttribute("data-status", "done");
     expect(badge("Arquero")).toHaveAttribute("data-status", "current");
     expect(badge("Arquero")).toHaveTextContent("3");
     expect(badge("Pedido")).toHaveAttribute("data-status", "todo");
@@ -38,7 +38,7 @@ describe("SectionNav (the line of steps)", () => {
     const first = renderWithDesign(<SectionNav active="player" visited={none} onChange={() => {}} />);
     expect(screen.getByRole("button", { name: "Short" })).toHaveTextContent("Opcional");
     expect(screen.getByRole("button", { name: "Arquero" })).toHaveTextContent("Opcional");
-    expect(screen.getByRole("button", { name: "Camiseta" })).not.toHaveTextContent("Opcional");
+    expect(screen.getByRole("button", { name: "Jugador" })).not.toHaveTextContent("Opcional");
     first.unmount();
     const { api } = renderWithDesign(
       <SectionNav active="logos" visited={new Set<StepId>(["player", "shorts", "keeper"])} onChange={() => {}} />

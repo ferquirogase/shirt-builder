@@ -49,7 +49,7 @@ describe("AiTryOn", () => {
     render(<AiTryOn order={order} />);
     open();
     const box = screen.getByRole("textbox", { name: "Prompt de ejemplo" }) as HTMLTextAreaElement;
-    expect(box.value).toContain("verde oscuro");
+    expect(box.value).toContain("gris claro");
     expect(box.value).toContain("LEO");
     fireEvent.change(box, { target: { value: "otro texto" } });
     expect(box.value).toBe("otro texto");
