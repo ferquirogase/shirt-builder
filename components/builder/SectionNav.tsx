@@ -1,7 +1,5 @@
 "use client";
-import { useState } from "react";
-import { SizeGuideDialog } from "@/components/size-guide/SizeGuideDialog";
-import { CheckIcon, RulerIcon } from "./icons";
+import { CheckIcon } from "./icons";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { STEPS, stepStatus, type StepId, type StepStatus } from "@/lib/builder/steps";
 
@@ -45,7 +43,6 @@ function StepBadge({ index, status }: { index: number; status: StepStatus }) {
 // line joins the steps and fills in as they are done.
 export function SectionNav({ active, visited, onChange }: Props) {
   const { state, setEditing } = useDesign();
-  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
 
   return (
     <nav
@@ -106,22 +103,6 @@ export function SectionNav({ active, visited, onChange }: Props) {
           </div>
         );
       })}
-      {/* Not a step: it opens the size chart over the builder, whichever step is open. */}
-      <button
-        type="button"
-        aria-label="Ver talles"
-        onClick={() => setSizeGuideOpen(true)}
-        className={[
-          "flex flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium text-muted transition-colors hover:text-foreground",
-          "md:mt-2 md:flex-none md:flex-row md:gap-3 md:rounded-2xl md:border-t md:border-line md:px-4 md:py-3 md:text-left md:text-sm md:hover:bg-black/5",
-        ].join(" ")}
-      >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center">
-          <RulerIcon className="h-6 w-6" />
-        </span>
-        <span>Talles</span>
-      </button>
-      <SizeGuideDialog open={sizeGuideOpen} withShorts={state.shorts.included} onClose={() => setSizeGuideOpen(false)} />
     </nav>
   );
 }

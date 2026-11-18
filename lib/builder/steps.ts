@@ -16,12 +16,14 @@ export type Step = {
   shows?: LookTarget;
   /** A garment that is offered, not required: its step asks whether to add it. */
   optional?: "shorts" | "keeper";
+  /** The size chart offered by the step's title: only the garments' steps, where sizes are thought about. */
+  sizeGuide?: "shirt" | "shorts";
 };
 
 export const STEPS: readonly Step[] = [
-  { id: "player", label: "Camiseta", shortLabel: "Camiseta", icon: "/icons/sections/kit-shirt-v2.webp", shows: "player" },
-  { id: "shorts", label: "Short", shortLabel: "Short", icon: "/icons/sections/kit-kit.webp", shows: "player", optional: "shorts" },
-  { id: "keeper", label: "Arquero", shortLabel: "Arquero", icon: "/icons/sections/kit-gloves.webp", shows: "keeper", optional: "keeper" },
+  { id: "player", label: "Camiseta", shortLabel: "Camiseta", icon: "/icons/sections/kit-shirt-v2.webp", shows: "player", sizeGuide: "shirt" },
+  { id: "shorts", label: "Short", shortLabel: "Short", icon: "/icons/sections/kit-kit.webp", shows: "player", optional: "shorts", sizeGuide: "shorts" },
+  { id: "keeper", label: "Arquero", shortLabel: "Arquero", icon: "/icons/sections/kit-gloves.webp", shows: "keeper", optional: "keeper", sizeGuide: "shirt" },
   { id: "logos", label: "Escudo y sponsors", shortLabel: "Logos", icon: "/icons/sections/escudo.webp" },
   { id: "order", label: "Pedido", shortLabel: "Pedido", icon: "/icons/sections/pedido.svg", shows: "player" },
 ];

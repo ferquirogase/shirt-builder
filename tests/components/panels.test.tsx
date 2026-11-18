@@ -505,7 +505,7 @@ describe("keeper in the panels", () => {
 describe("crest creator", () => {
   it("puts a first crest on the shirt when there is none", () => {
     const { api } = renderWithDesign(<CrestPanel />);
-    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Crear escudo" }));
     expect(api.current!.state.crestConfig).toEqual(INITIAL_CREST);
     expect(api.current!.state.logoDataUrl).toBe(crestDataUrl(INITIAL_CREST));
   });
@@ -513,7 +513,7 @@ describe("crest creator", () => {
   it("leaves an uploaded crest alone until the creator is used", () => {
     const { api } = renderWithDesign(<CrestPanel />);
     act(() => api.current!.dispatch({ type: "SET_LOGO", dataUrl: "data:image/png;base64,AAAA" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Crear escudo" }));
     expect(api.current!.state.logoDataUrl).toBe("data:image/png;base64,AAAA");
     expect(api.current!.state.crestConfig).toBeNull();
 
@@ -524,7 +524,7 @@ describe("crest creator", () => {
 
   it("chooses shape, background, colors and symbol", () => {
     const { api } = renderWithDesign(<CrestPanel />);
-    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Crear escudo" }));
 
     fireEvent.click(screen.getByRole("radio", { name: "Forma 7" }));
     fireEvent.click(screen.getByRole("radio", { name: "Mitad" }));
@@ -542,7 +542,7 @@ describe("crest creator", () => {
 
   it("chooses the border color, which starts as the secondary and follows it until chosen", () => {
     const { api } = renderWithDesign(<CrestPanel />);
-    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Crear escudo" }));
     const outline = screen.getByLabelText("Color del contorno del escudo") as HTMLInputElement;
     expect(outline.value).toBe(INITIAL_CREST.colors.secondary);
 
@@ -559,7 +559,7 @@ describe("crest creator", () => {
 
   it("takes initials, cleaned and limited to four", () => {
     const { api } = renderWithDesign(<CrestPanel />);
-    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Crear escudo" }));
     fireEvent.click(screen.getByRole("radio", { name: "Iniciales" }));
     expect(screen.getByLabelText("Iniciales")).toHaveAttribute("placeholder", "Hasta 4 letras");
     fireEvent.change(screen.getByLabelText("Iniciales"), { target: { value: "a b<c>de" } });
@@ -570,40 +570,47 @@ describe("crest creator", () => {
 
   it("removes the made crest", () => {
     const { api } = renderWithDesign(<CrestPanel />);
-    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Crear escudo" }));
     fireEvent.click(screen.getByRole("button", { name: "Quitar escudo" }));
     expect(api.current!.state.crestConfig).toBeNull();
     expect(api.current!.state.logoDataUrl).toBeNull();
   });
 
-  it("goes back to the upload tab when the crest is removed from the creator", () => {
+  it("goes back to the upload choice when the crest is removed from the creator", () => {
     renderWithDesign(<CrestPanel />);
-    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Crear escudo" }));
     fireEvent.click(screen.getByRole("button", { name: "Quitar escudo" }));
-    expect(screen.getByRole("tab", { name: "Subir el mío" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("radio", { name: "Subir el mío" })).toHaveAttribute("aria-checked", "true");
   });
 
-  it("goes back to the upload tab when the uploaded crest is removed while the creator is open", () => {
+  it("goes back to the upload choice when the uploaded crest is removed while the creator is open", () => {
     const { api } = renderWithDesign(<CrestPanel />);
     act(() => api.current!.dispatch({ type: "SET_LOGO", dataUrl: "data:image/png;base64,AAAA" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Crear escudo" }));
     fireEvent.click(screen.getByRole("button", { name: "Quitar escudo" }));
-    expect(screen.getByRole("tab", { name: "Subir el mío" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("radio", { name: "Subir el mío" })).toHaveAttribute("aria-checked", "true");
   });
 
   it("opens the creator again when an undo brings the made crest back", () => {
     const { api } = renderWithDesign(<CrestPanel />);
-    fireEvent.click(screen.getByRole("tab", { name: "Crear escudo" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Subir el mío" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Crear escudo" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Subir el mío" }));
     act(() => api.current!.dispatch({ type: "SET_LOGO", dataUrl: "data:image/png;base64,AAAA" }));
-    expect(screen.getByRole("tab", { name: "Subir el mío" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("radio", { name: "Subir el mío" })).toHaveAttribute("aria-checked", "true");
 
     act(() => api.current!.dispatch({ type: "UNDO" }));
-    expect(screen.getByRole("tab", { name: "Crear escudo" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("radio", { name: "Crear escudo" })).toHaveAttribute("aria-checked", "true");
   });
 
-  it("opens on the upload tab by default", () => {
+  it("offers uploading or making the crest as two cards to choose from, not as a second row of tabs", () => {
     renderWithDesign(<CrestPanel />);
-    expect(screen.getByRole("tab", { name: "Subir el mío" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("tablist", { name: "Origen del escudo" })).toBeNull();
+    const group = screen.getByRole("radiogroup", { name: "Origen del escudo" });
+    expect(within(group).getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(["Subir el mío", "Crear escudo"]);
+  });
+
+  it("opens on the upload choice by default", () => {
+    renderWithDesign(<CrestPanel />);
+    expect(screen.getByRole("radio", { name: "Subir el mío" })).toHaveAttribute("aria-checked", "true");
   });
 });

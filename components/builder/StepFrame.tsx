@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { STEPS, findStep, nextStep, stepIndex, stepStatus, type StepId } from "@/lib/builder/steps";
+import { SizeGuideButton } from "@/components/size-guide/SizeGuideButton";
 import { ArrowRightIcon } from "./icons";
 import { useGoToStep } from "./use-go-to-step";
 
@@ -14,11 +15,12 @@ type Props = {
 
 // Around every step's panel: where the user is (step N of 5, with the line of steps filling in) and,
 // at the bottom and always in sight, the way on to the next step. An optional garment not added yet
-// has no Siguiente: its own card asks whether to add it or go on without it.
+// has no Siguiente: its own card asks whether to add it or go on without it. A garment's step also has
+// the size chart by its title, open on that garment's chart.
 export function StepFrame({ step, visited, onGo, children }: Props) {
   const { state } = useDesign();
   const goTo = useGoToStep(onGo);
-  const { label, optional } = findStep(step);
+  const { label, optional, sizeGuide } = findStep(step);
   const next = nextStep(step);
   const deciding = optional !== undefined && !state[optional].included;
 
@@ -31,6 +33,12 @@ export function StepFrame({ step, visited, onGo, children }: Props) {
           </span>
           <span className="truncate text-base font-bold leading-tight">{label}</span>
         </p>
+        {sizeGuide && (
+          <SizeGuideButton
+            initial={sizeGuide}
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold text-muted underline-offset-2 transition-colors hover:bg-black/5 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 active:bg-black/10"
+          />
+        )}
         {/* On a phone the panel is short: the way on sits up here, small, instead of over the panel's content. */}
         {next && !deciding && (
           <button

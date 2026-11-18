@@ -3,15 +3,17 @@ import { useState } from "react";
 import { useDesign } from "@/lib/builder/state/design-context";
 import { INITIAL_CREST } from "@/lib/builder/crest/crest-config";
 import { useImageUpload } from "@/lib/builder/io/use-image-upload";
-import { UploadIcon } from "../icons";
+import { ShieldIcon, UploadIcon } from "../icons";
 import { CrestCreator } from "./CrestCreator";
 import { PanelShell } from "./PanelShell";
 import { SharedByBoth } from "./SharedByBoth";
 
 type Mode = "upload" | "create";
-const MODES: { id: Mode; label: string }[] = [
-  { id: "upload", label: "Subir el mío" },
-  { id: "create", label: "Crear escudo" },
+// Two ways to get a crest, as two cards to pick from: the step already has a row of tabs (Escudo,
+// Sponsors) above, and a second row of the same tabs read as more navigation, not as a choice.
+const MODES: { id: Mode; label: string; detail: string; Icon: typeof UploadIcon }[] = [
+  { id: "upload", label: "Subir el mío", detail: "Tu escudo en imagen", Icon: UploadIcon },
+  { id: "create", label: "Crear escudo", detail: "Forma, colores y símbolo", Icon: ShieldIcon },
 ];
 
 export function CrestPanel() {
@@ -39,22 +41,38 @@ export function CrestPanel() {
       hint={mode === "upload" ? "PNG, JPG o SVG. Máximo 2 MB." : "Armá un escudo si todavía no tenés uno."}
     >
       <SharedByBoth />
-      <div role="tablist" aria-label="Origen del escudo" className="mb-4 grid grid-cols-2 rounded-2xl bg-black/5 p-1">
-        {MODES.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={mode === id}
-            onClick={() => choose(id)}
-            className={[
-              "rounded-xl py-2 text-sm font-semibold transition",
-              mode === id ? "bg-white shadow-sm" : "text-muted hover:text-foreground",
-            ].join(" ")}
-          >
-            {label}
-          </button>
-        ))}
+      <div role="radiogroup" aria-label="Origen del escudo" className="mb-4 grid grid-cols-2 gap-2">
+        {MODES.map(({ id, label, detail, Icon }) => {
+          const checked = mode === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={checked}
+              aria-label={label}
+              onClick={() => choose(id)}
+              className={[
+                "flex min-w-0 flex-col items-start gap-2 rounded-2xl border-2 bg-white/70 p-3 text-left transition",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 active:bg-black/5",
+                checked ? "border-accent bg-white shadow-sm" : "border-transparent hover:border-line",
+              ].join(" ")}
+            >
+              <span
+                className={[
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                  checked ? "bg-accent text-foreground" : "bg-black/5 text-muted",
+                ].join(" ")}
+              >
+                <Icon className="h-5 w-5" />
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span className="text-sm font-semibold leading-tight">{label}</span>
+                <span className="mt-0.5 text-xs leading-snug text-muted">{detail}</span>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {mode === "upload" ? (
