@@ -15,7 +15,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 // One shirt, whichever it is: the menu picked the shirt, so these tabs are always the same three.
 // The shirt being edited is the one the viewer shows (`editing`), which the menu sets.
-export function GarmentPanel({ garment }: { garment: "player" | "keeper" }) {
+export function GarmentPanel({ garment, onSkip }: { garment: "player" | "keeper"; onSkip?: () => void }) {
   const { state, dispatch, setEditing } = useDesign();
   const [tab, setTab] = useState<Tab>("diseno");
 
@@ -25,7 +25,7 @@ export function GarmentPanel({ garment }: { garment: "player" | "keeper" }) {
         <h2 className="sr-only">Camiseta arquero</h2>
         <AddGarmentCard
           icon="/icons/sections/kit-gloves.webp"
-          title="Camiseta de arquero"
+          title={onSkip ? "¿Sumás la camiseta de arquero?" : "Camiseta de arquero"}
           description="Colores y patrón propios. Comparte escudo y sponsors."
           addLabel="Sumar camiseta de arquero"
           onAdd={() => {
@@ -33,6 +33,8 @@ export function GarmentPanel({ garment }: { garment: "player" | "keeper" }) {
             // Adding the keeper shows its shirt at once, so the effect of the button is seen.
             setEditing("keeper");
           }}
+          skipLabel={onSkip ? "Seguir sin arquero" : undefined}
+          onSkip={onSkip}
         />
       </section>
     );

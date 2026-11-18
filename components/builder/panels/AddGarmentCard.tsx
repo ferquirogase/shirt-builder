@@ -7,11 +7,14 @@ type Props = {
   description: ReactNode;
   addLabel: string;
   onAdd: () => void;
+  /** The other answer, in the steps: go on without this garment. */
+  skipLabel?: string;
+  onSkip?: () => void;
 };
 
 // What a garment that is not in the order yet shows instead of its panel: what it is and one
-// button to add it. Its entry in the menu says "Sumar", so the way here is always visible.
-export function AddGarmentCard({ icon, title, description, addLabel, onAdd }: Props) {
+// button to add it, and in the steps a second one to go on without it.
+export function AddGarmentCard({ icon, title, description, addLabel, onAdd, skipLabel, onSkip }: Props) {
   const id = `add-${addLabel.replace(/\s+/g, "-").toLowerCase()}`;
   return (
     <div className="flex flex-col items-center gap-3 p-5 text-center">
@@ -30,6 +33,15 @@ export function AddGarmentCard({ icon, title, description, addLabel, onAdd }: Pr
       >
         {addLabel}
       </button>
+      {skipLabel && onSkip && (
+        <button
+          type="button"
+          onClick={onSkip}
+          className="inline-flex h-11 items-center rounded-full border border-line px-6 text-sm font-semibold text-foreground hover:bg-black/5"
+        >
+          {skipLabel}
+        </button>
+      )}
     </div>
   );
 }
