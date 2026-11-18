@@ -3,7 +3,15 @@ import { useState } from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { SizeGuideDialog } from "@/components/size-guide/SizeGuideDialog";
 
-function Harness({ withShorts = false, onClose = () => {} }: { withShorts?: boolean; onClose?: () => void }) {
+function Harness({
+  withShorts = false,
+  initial,
+  onClose = () => {},
+}: {
+  withShorts?: boolean;
+  initial?: "shirt" | "shorts";
+  onClose?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -11,6 +19,7 @@ function Harness({ withShorts = false, onClose = () => {} }: { withShorts?: bool
       <SizeGuideDialog
         open={open}
         withShorts={withShorts}
+        initial={initial}
         onClose={() => {
           onClose();
           setOpen(false);
@@ -82,6 +91,13 @@ describe("SizeGuideDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cerrar" }));
     open();
     expect(screen.getByRole("tab", { name: "Camiseta" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("can open on the shorts' chart, for the shorts' step", () => {
+    render(<Harness withShorts initial="shorts" />);
+    open();
+    expect(screen.getByRole("tab", { name: "Short" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("img")).toHaveAttribute("src", "/talles/short.webp");
   });
 
   it("links to the picture at full size, to zoom in on a phone, in a new tab", () => {

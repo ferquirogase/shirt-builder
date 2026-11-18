@@ -6,6 +6,7 @@ import { findShortsPattern } from "@/lib/builder/catalog/shorts-patterns";
 import { availableSponsorSlots } from "@/lib/builder/catalog/sponsor-slots";
 import { formatMoney, pricePerPlayer } from "@/lib/checkout/pricing";
 import type { StepId } from "@/lib/builder/steps";
+import { SizeGuideButton } from "@/components/size-guide/SizeGuideButton";
 import { ArrowRightIcon } from "../icons";
 import { useGoToStep } from "../use-go-to-step";
 
@@ -69,6 +70,15 @@ export function OrderPanel({ onGo, onReview, busy = false }: Props) {
         <span className="font-semibold text-foreground">{formatMoney(pricePerPlayer(state.shorts.included))}</span> por jugador
         {state.shorts.included ? " (camiseta y short)" : ""}. En el pedido cargás nombres, números y talles.
       </p>
+
+      {/* The sizes are chosen on the checkout; here is where they start to be thought about. */}
+      <div className="flex items-center gap-3 rounded-2xl border border-line bg-white/70 px-4 py-3">
+        <span className="flex min-w-0 flex-col">
+          <span className="text-sm font-semibold">¿Qué talle pido?</span>
+          <span className="text-sm text-muted">Camiseta y short.</span>
+        </span>
+        <SizeGuideButton className="ml-auto inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-line px-3 text-sm font-semibold transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 active:bg-black/10" />
+      </div>
 
       <button
         type="button"

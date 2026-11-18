@@ -4,11 +4,11 @@ import { renderWithDesign } from "../helpers/render-with-design";
 import { SectionNav } from "@/components/builder/SectionNav";
 import type { StepId } from "@/lib/builder/steps";
 
-const NAMES = ["Camiseta", "Short", "Arquero", "Escudo y sponsors", "Pedido", "Ver talles"];
+const NAMES = ["Camiseta", "Short", "Arquero", "Escudo y sponsors", "Pedido"];
 const none = new Set<StepId>();
 
 describe("SectionNav (the line of steps)", () => {
-  it("lists the steps in order, then Talles", () => {
+  it("lists the steps in order", () => {
     renderWithDesign(<SectionNav active="player" visited={none} onChange={() => {}} />);
     const names = screen.getAllByRole("button").map((button) => button.getAttribute("aria-label"));
     expect(names).toEqual(NAMES);
@@ -70,20 +70,8 @@ describe("SectionNav (the line of steps)", () => {
     expect(api.current!.editing).toBe("keeper"); // crest and sponsors leave the shirt as it was
   });
 
-  it("has Talles last, and it opens the size chart without changing the step", () => {
-    const onChange = vi.fn();
-    const { api } = renderWithDesign(<SectionNav active="player" visited={none} onChange={onChange} />);
-    const button = screen.getByRole("button", { name: "Ver talles" });
-    expect(screen.getAllByRole("button").at(-1)).toBe(button);
-    button.focus();
-    fireEvent.click(button);
-    expect(onChange).not.toHaveBeenCalled();
-    const dialog = screen.getByRole("dialog", { name: "Guía de talles" });
-    expect(within(dialog).queryByRole("tab", { name: "Short" })).toBeNull();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Cerrar" }));
-    expect(document.activeElement).toBe(button);
-    act(() => api.current!.dispatch({ type: "SET_SHORTS_INCLUDED", value: true }));
-    fireEvent.click(button);
-    expect(within(screen.getByRole("dialog")).getByRole("tab", { name: "Short" })).toBeInTheDocument();
+  it("has no Talles button: the size chart is offered in the steps where sizes matter", () => {
+    renderWithDesign(<SectionNav active="player" visited={none} onChange={() => {}} />);
+    expect(screen.queryByRole("button", { name: "Ver talles" })).toBeNull();
   });
 });

@@ -31,7 +31,7 @@ describe("GarmentPanel for the player", () => {
     expect(screen.getByLabelText("Nombre")).toBeInTheDocument();
   });
 
-  it("no longer has the size chart: it is in the side menu", () => {
+  it("has no size chart of its own: it is by the step's title", () => {
     renderWithDesign(<GarmentPanel garment="player" />);
     expect(screen.queryByRole("button", { name: "Ver talles" })).toBeNull();
   });

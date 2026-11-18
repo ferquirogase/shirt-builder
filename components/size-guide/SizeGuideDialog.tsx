@@ -1,22 +1,30 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { guidesFor } from "@/lib/checkout/size-guides";
+import { guidesFor, type SizeGuide } from "@/lib/checkout/size-guides";
 
 const FOCUSABLE = "button:not([disabled]), [href], [tabindex]:not([tabindex='-1'])";
 
-// GEPE's size charts in a window over the order. It opens on the shirt's chart; when the order has
-// shorts there is a tab for theirs too. The charts are pictures, so a link opens one at full size to
+// GEPE's size charts in a window over the order. It opens on the shirt's chart (or the one asked for);
+// when there are shorts there is a tab for theirs too. The charts are pictures, so a link opens one at full size to
 // zoom in on a phone. It is drawn in the body of the page: inside a panel, a blur or a transform on an
 // ancestor would make "fixed" mean the panel, and cut it down to the panel's size.
-export function SizeGuideDialog({ open, withShorts, onClose }: { open: boolean; withShorts: boolean; onClose: () => void }) {
-  // Mounted only while open, so it starts on the shirt every time.
-  return open ? createPortal(<Content withShorts={withShorts} onClose={onClose} />, document.body) : null;
+type Props = {
+  open: boolean;
+  withShorts: boolean;
+  /** The chart it opens on: the shirt's unless said otherwise. */
+  initial?: SizeGuide["id"];
+  onClose: () => void;
+};
+
+export function SizeGuideDialog({ open, withShorts, initial = "shirt", onClose }: Props) {
+  // Mounted only while open, so it starts on the same chart every time.
+  return open ? createPortal(<Content withShorts={withShorts} initial={initial} onClose={onClose} />, document.body) : null;
 }
 
-function Content({ withShorts, onClose }: { withShorts: boolean; onClose: () => void }) {
+function Content({ withShorts, initial, onClose }: Omit<Props, "open"> & { initial: SizeGuide["id"] }) {
   const guides = guidesFor({ withShorts });
-  const [selected, setSelected] = useState(guides[0].id);
+  const [selected, setSelected] = useState(guides.some((g) => g.id === initial) ? initial : guides[0].id);
   const guide = guides.find((g) => g.id === selected) ?? guides[0];
   const dialog = useRef<HTMLDivElement>(null);
 
