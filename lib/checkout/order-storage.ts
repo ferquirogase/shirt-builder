@@ -1,6 +1,4 @@
-import { findPattern } from "@/lib/builder/catalog/patterns";
-import { findShortsPattern } from "@/lib/builder/catalog/shorts-patterns";
-import { initialDesignState, type DesignState } from "@/lib/builder/state/design-state";
+import { withColorDefaults, withDesignDefaults } from "@/lib/builder/state/design-defaults";
 import { SIZES, type Confirmation, type Order, type Thumbnails } from "./order";
 
 export const ORDER_KEY = "gepe:order";
@@ -57,51 +55,14 @@ function isImagePair(value: unknown): value is Thumbnails {
   return isRecord(value) && typeof value.front === "string" && typeof value.back === "string";
 }
 
-// A design saved before the moldes: it may lack the cuff and the fourth color, and may carry the
-// separate sleeve color that the sleeves no longer have.
-export function withColorDefaults(colors: DesignState["colors"]): DesignState["colors"] {
-  const { primary, secondary, accent, quaternary, collar, sleeveTrim } = colors;
-  return {
-    primary,
-    secondary,
-    accent,
-    quaternary: quaternary ?? initialDesignState.colors.quaternary,
-    collar,
-    sleeveTrim: sleeveTrim ?? secondary,
-  };
-}
+// How an older design is filled in lives with the design (a draft is filled in the same way).
+export { withColorDefaults };
 
-// The shorts as an order saved them. Before they had a design of their own they wore one of the shirt's
-// colors (`colorSource`): that becomes their main color, so they look as they did.
-function withShortsDesign(design: Order["design"]): DesignState["shorts"] {
-  const saved: Partial<DesignState["shorts"]> & { colorSource?: "primary" | "secondary" } = design.shorts ?? {};
-  const defaults = initialDesignState.shorts;
-  const colors = { ...defaults.colors, ...saved.colors };
-  if (!saved.colors && saved.colorSource && design.colors?.[saved.colorSource]) colors.primary = design.colors[saved.colorSource];
-  return {
-    included: saved.included ?? defaults.included,
-    patternId: saved.patternId && findShortsPattern(saved.patternId) ? saved.patternId : defaults.patternId,
-    colors,
-  };
-}
-
-// Orders saved before the shorts existed lack their fields: fill in the defaults.
+// Orders saved before the shorts, the keeper or the moldes lack fields: fill in the defaults.
 function withShortsDefaults(order: Order): Order {
-  const keeper = order.design.keeper;
-  // A torso pattern that has since been taken out of the catalog would draw nothing: use the default one.
-  const pattern = (id: string) => (findPattern(id) ? id : initialDesignState.bodyPatternId);
   return {
     ...order,
-    design: {
-      ...initialDesignState,
-      ...order.design,
-      bodyPatternId: pattern(order.design.bodyPatternId),
-      colors: withColorDefaults(order.design.colors),
-      keeper: keeper?.look
-        ? { ...keeper, look: { ...keeper.look, bodyPatternId: pattern(keeper.look.bodyPatternId), colors: withColorDefaults(keeper.look.colors) } }
-        : keeper,
-      shorts: withShortsDesign(order.design),
-    },
+    design: withDesignDefaults(order.design),
     roster: order.roster.map((line) => ({ ...line, shortsSize: line.shortsSize ?? "M", keeper: line.keeper ?? false })),
   };
 }
