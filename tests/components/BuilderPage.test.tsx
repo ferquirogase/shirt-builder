@@ -77,7 +77,7 @@ describe("BuilderPage", () => {
   it("opens on the player's shirt, with the keeper and the shorts to add, and switches entries", () => {
     render(<BuilderPage />);
     expect(screen.getByRole("heading", { name: "Diseño" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Camiseta" })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("button", { name: "Jugador" })).toHaveAttribute("aria-current", "step");
     expect(screen.getByRole("button", { name: "Arquero" })).toHaveTextContent("Opcional");
     expect(screen.getByRole("button", { name: "Short" })).toHaveTextContent("Opcional");
 
@@ -107,7 +107,7 @@ describe("BuilderPage", () => {
       expect(screen.getAllByRole("button", { name: "Siguiente: Short" })).toHaveLength(2);
       next();
       expect(current()).toBe("Short");
-      expect(within(screen.getByRole("button", { name: "Camiseta" })).getByTestId("step-badge")).toHaveAttribute("data-status", "done");
+      expect(within(screen.getByRole("button", { name: "Jugador" })).getByTestId("step-badge")).toHaveAttribute("data-status", "done");
     });
 
     it("asks whether to add the shorts: adding them shows their panel, leaving them out goes on to the keeper", () => {
@@ -139,7 +139,7 @@ describe("BuilderPage", () => {
       render(<BuilderPage />);
       fireEvent.click(screen.getByRole("button", { name: "Pedido" }));
       const summary = screen.getByRole("list", { name: "Tu equipo" });
-      expect(within(summary).getByText("Camiseta")).toBeInTheDocument();
+      expect(within(summary).getByText("Jugador")).toBeInTheDocument();
       expect(within(summary).getByText("Short")).toBeInTheDocument();
       expect(within(summary).getAllByText("No sumado")).toHaveLength(2); // shorts and keeper
       expect(within(summary).getByText("Sin escudo")).toBeInTheDocument();
@@ -172,7 +172,7 @@ describe("BuilderPage", () => {
       expect(await screen.findByRole("status")).toHaveTextContent("Recuperamos tu diseño");
       expect(current()).toBe("Arquero");
       expect(screen.getByTestId("viewer")).toHaveAttribute("data-editing", "keeper");
-      expect(within(screen.getByRole("button", { name: "Camiseta" })).getByTestId("step-badge")).toHaveAttribute("data-status", "done");
+      expect(within(screen.getByRole("button", { name: "Jugador" })).getByTestId("step-badge")).toHaveAttribute("data-status", "done");
       expect(loadDraft()?.design.bodyPatternId).toBe("molde-03");
     });
 
@@ -180,7 +180,7 @@ describe("BuilderPage", () => {
       render(<BuilderPage />);
       await waitFor(() => expect(loadDraft()).not.toBeNull()); // it starts saving once it has looked
       expect(screen.queryByRole("status")).toBeNull();
-      expect(current()).toBe("Camiseta");
+      expect(current()).toBe("Jugador");
     });
 
     it("opens the draft rather than an order's design: the draft is the newer one", async () => {
@@ -302,7 +302,7 @@ describe("BuilderPage", () => {
       render(<BuilderPage />);
       const panelOpen = () => screen.getByRole("button", { name: /(Plegar|Desplegar) panel/ }).getAttribute("aria-expanded");
 
-      fireEvent.click(screen.getByRole("button", { name: "Camiseta" })); // the active one
+      fireEvent.click(screen.getByRole("button", { name: "Jugador" })); // the active one
       expect(panelOpen()).toBe("false");
 
       fireEvent.click(screen.getByRole("button", { name: "Escudo y sponsors" })); // another one

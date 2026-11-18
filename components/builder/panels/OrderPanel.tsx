@@ -21,7 +21,7 @@ type Row = { name: string; detail: string; step: StepId; missing: boolean; canAd
 function rowsOf(state: DesignState): Row[] {
   const sponsors = availableSponsorSlots(state).filter((slot) => state.sponsors[slot.id]).length;
   return [
-    { name: "Camiseta", detail: findPattern(state.bodyPatternId)?.label ?? "Lisa", step: "player", missing: false },
+    { name: "Jugador", detail: findPattern(state.bodyPatternId)?.label ?? "Lisa", step: "player", missing: false },
     state.shorts.included
       ? { name: "Short", detail: findShortsPattern(state.shorts.patternId)?.label ?? "Liso", step: "shorts", missing: false }
       : { name: "Short", detail: "No sumado", step: "shorts", missing: true, canAdd: true },

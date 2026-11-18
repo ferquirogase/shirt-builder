@@ -21,7 +21,7 @@ export type Step = {
 };
 
 export const STEPS: readonly Step[] = [
-  { id: "player", label: "Camiseta", shortLabel: "Camiseta", icon: "/icons/sections/kit-shirt-v2.webp", shows: "player", sizeGuide: "shirt" },
+  { id: "player", label: "Jugador", shortLabel: "Jugador", icon: "/icons/sections/kit-shirt-v2.webp", shows: "player", sizeGuide: "shirt" },
   { id: "shorts", label: "Short", shortLabel: "Short", icon: "/icons/sections/kit-kit.webp", shows: "player", optional: "shorts", sizeGuide: "shorts" },
   { id: "keeper", label: "Arquero", shortLabel: "Arquero", icon: "/icons/sections/kit-gloves.webp", shows: "keeper", optional: "keeper", sizeGuide: "shirt" },
   { id: "logos", label: "Escudo y sponsors", shortLabel: "Logos", icon: "/icons/sections/escudo.webp" },

@@ -7,7 +7,7 @@ const withShorts = { ...initialDesignState, shorts: { ...initialDesignState.shor
 describe("the builder's steps", () => {
   it("go shirt, shorts, keeper, crest and sponsors, order: the garments first, then what goes on all of them", () => {
     expect(STEPS.map((s) => s.id)).toEqual(["player", "shorts", "keeper", "logos", "order"]);
-    expect(STEPS.map((s) => s.label)).toEqual(["Camiseta", "Short", "Arquero", "Escudo y sponsors", "Pedido"]);
+    expect(STEPS.map((s) => s.label)).toEqual(["Jugador", "Short", "Arquero", "Escudo y sponsors", "Pedido"]);
   });
 
   it("marks the shorts and the keeper as optional: they are offered, not required", () => {
