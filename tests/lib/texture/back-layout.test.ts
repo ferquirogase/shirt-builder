@@ -18,16 +18,42 @@ const BACK_HEIGHT = back.v1 - back.v0; // canvas fraction covered by vFrac 0..1
 const CAP_HEIGHT = 0.72; // capital height as a share of the font size
 // canvas fraction -> vFrac along the back panel
 const toV = (canvasFraction: number) => canvasFraction / BACK_HEIGHT;
-const halfBox = (slotId: string) => toV((findSponsorSlot(slotId)!.baseBox * SPONSOR_MAX_SCALE) / 2);
+// Half the height of a placement's box at its largest, in vFrac (its height, not its width: a wide rectangle).
+const halfBox = (slotId: string) => {
+  const slot = findSponsorSlot(slotId)!;
+  return toV(((slot.baseHeight ?? slot.baseBox) * SPONSOR_MAX_SCALE) / 2);
+};
 
 // Text runs from its top (toward the collar) down to its baseline.
 const nameTop = NAME_V_FRAC - toV(NAME_FONT_FRACTION * CAP_HEIGHT);
 const numberTop = NUMBER_V_FRAC - toV(NUMBER_FONT_FRACTION * CAP_HEIGHT);
 
 describe("back layout (GEPE model, sponsors at max scale)", () => {
-  it("keeps the name and number where they were before the sponsors (25% and 55%)", () => {
+  it("keeps the name where it was, and raises the number a little and makes it bigger, to make room for 6 and 7", () => {
     expect(NAME_V_FRAC).toBe(0.25);
-    expect(NUMBER_V_FRAC).toBe(0.55);
+    expect(NUMBER_V_FRAC).toBeLessThan(0.55);
+    expect(NUMBER_FONT_FRACTION).toBeGreaterThan(0.12);
+  });
+
+  it("puts sponsor 6 at the name's height, centered on its letters: it takes the name's place", () => {
+    const nameMiddle = NAME_V_FRAC - toV(NAME_FONT_FRACTION * CAP_HEIGHT) / 2;
+    expect(UPPER_BACK_V_FRAC).toBeCloseTo(nameMiddle, 2);
+  });
+
+  it("lets 6 and 7 be as big as the front ones (1, 2, 3)", () => {
+    const front = findSponsorSlot("belly")!;
+    for (const id of ["upper-back", "lower-back"]) {
+      const slot = findSponsorSlot(id)!;
+      expect(slot.baseBox, id).toBe(front.baseBox);
+      expect(slot.baseHeight, id).toBe(front.baseHeight);
+    }
+  });
+
+  it("keeps 7 above the label on the back's hem, even at its largest", () => {
+    // backLabel's edge nearer the collar, as a vFrac of the back (v grows from the collar to the hem).
+    const label = GEPE_UV_REGIONS.backLabel!;
+    const labelTop = (label.v0 - back.v0) / BACK_HEIGHT;
+    expect(LOWER_BACK_V_FRAC + halfBox("lower-back")).toBeLessThanOrEqual(labelTop);
   });
 
   it("puts the GEPE logo at the nape between the collar and the name, clear of both", () => {

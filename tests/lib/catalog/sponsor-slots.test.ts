@@ -11,6 +11,7 @@ import {
   sponsorNumber,
 } from "@/lib/builder/catalog/sponsor-slots";
 import { GEPE_UV_REGIONS } from "@/lib/builder/geometry/uv-regions";
+import { BRAND_BOX_FRACTION } from "@/lib/builder/texture/texture-compositor";
 import { SHORTS_UV_REGIONS, SHORTS_UV_STRETCH } from "@/lib/builder/geometry/shorts-uv-regions";
 
 const ALL_REGIONS = { ...GEPE_UV_REGIONS, ...SHORTS_UV_REGIONS };
@@ -100,14 +101,42 @@ describe("sponsor slots", () => {
     }
   });
 
-  it("sizes them: the chest column widest, then the sleeves, the small corners and the back", () => {
+  it("fits sponsor 1 inside the horizontal band of Banda al pecho, centered, even at its biggest", () => {
+    // molde-07-front.png: the band is rows 248..462 of 1024, laid on bodyFrontPattern (v 0.5 at row 0, 0.0476 at 1024).
+    const pattern = GEPE_UV_REGIONS.bodyFrontPattern!;
+    const rowToV = (row: number) => pattern.v1 - (row / 1024) * (pattern.v1 - pattern.v0);
+    const [bandTop, bandBottom] = [rowToV(248), rowToV(462)];
+    const front = GEPE_UV_REGIONS.bodyFront;
+    const slot = findSponsorSlot("abdomen")!;
+    const v = front.v0 + slot.vFrac * (front.v1 - front.v0);
+    expect(v).toBeCloseTo((bandTop + bandBottom) / 2, 2);
+    const half = ((slot.baseHeight ?? slot.baseBox) * SPONSOR_MAX_SCALE) / 2;
+    expect(v + half).toBeLessThanOrEqual(bandTop);
+    expect(v - half).toBeGreaterThanOrEqual(bandBottom);
+  });
+
+  it("moves 2 and 3 up as much as 1, so the column keeps its spacing", () => {
+    const v = (id: string) => findSponsorSlot(id)!.vFrac;
+    expect(v("abdomen") - v("belly")).toBeCloseTo(0.17, 5);
+    expect(v("belly") - v("waist")).toBeCloseTo(0.17, 5);
+  });
+
+  it("keeps 8 above the maker's logo: at scale 1 the two boxes do not overlap", () => {
+    const front = GEPE_UV_REGIONS.bodyFront;
+    const slot = findSponsorSlot("chest-right")!;
+    const v = front.v0 + slot.vFrac * (front.v1 - front.v0);
+    const logoTop = GEPE_UV_REGIONS.brandLogoAt!.v + BRAND_BOX_FRACTION / 2;
+    expect(v - (slot.baseHeight ?? slot.baseBox) / 2).toBeGreaterThanOrEqual(logoTop);
+  });
+
+  it("sizes them: the chest column and the back widest, then the sleeves and the small corners", () => {
     const size = (id: string) => findSponsorSlot(id)!.baseBox;
     expect(size("sleeve-left")).toBe(0.05);
     expect(size("sleeve-right")).toBe(0.05);
-    expect(size("lower-back")).toBe(0.045);
+    expect(size("lower-back")).toBe(size("abdomen"));
     expect(size("chest-right")).toBe(size("chest-left"));
     expect(size("chest-right")).toBeLessThan(size("abdomen"));
-    expect(size("upper-back")).toBeLessThan(size("lower-back"));
+    expect(size("upper-back")).toBe(size("lower-back"));
   });
 
   it("puts the two upper chest placements on either side, on the shoulders beside the collar, above the logo and the crest", () => {

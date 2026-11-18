@@ -315,10 +315,10 @@ describe("drawDesignToCanvas", () => {
       const fonts: string[] = [];
       (ctx.fillText as ReturnType<typeof vi.fn>).mockImplementation(() => fonts.push(ctx.font));
       drawDesignToCanvas(ctx, 1000, withStyle({ playerNumber: "10" }), blank, regions, "'Oswald', sans-serif");
-      // Number base 0.12 * 1000 = 120px, times the typeface's scale.
+      // Number base 0.135 * 1000 = 135px, times the typeface's scale.
       // The example name comes first (0.05 * 1000 = 50px); the number is the last text.
       expect(fonts.at(-1)).toMatch(new RegExp(`^${DEFAULT_PRESET.weight} [\\d.]+px 'Oswald', sans-serif$`));
-      expect(fontPx(fonts.at(-1)!)).toBeCloseTo(120 * DEFAULT_PRESET.numberScale, 5);
+      expect(fontPx(fonts.at(-1)!)).toBeCloseTo(135 * DEFAULT_PRESET.numberScale, 5);
     });
 
     it("fills with the style's fill color", () => {
@@ -359,8 +359,8 @@ describe("drawDesignToCanvas", () => {
       expect(seen.strokeStyle).toBe(OUTLINE_COLOR);
       expect(seen.lineJoin).toBe("round");
       // Strokes are centered on the glyph edge, so the line is twice the visible border.
-      // Number size: 0.12 * 1000 = 120px, times the typeface's scale.
-      expect(seen.lineWidth).toBeCloseTo(120 * DEFAULT_PRESET.numberScale * OUTLINE_WIDTH * 2, 5);
+      // Number size: 0.135 * 1000 = 135px, times the typeface's scale.
+      expect(seen.lineWidth).toBeCloseTo(135 * DEFAULT_PRESET.numberScale * OUTLINE_WIDTH * 2, 5);
     });
 
     it("draws the border in the color the style asks for", () => {
@@ -479,7 +479,7 @@ describe("drawDesignToCanvas", () => {
         nameNumberStyle: { ...initialDesignState.nameNumberStyle, presetId: "gone" },
       });
       expect(() => drawDesignToCanvas(ctx, 1000, design, blank, regions)).not.toThrow();
-      expect(fontPx(fonts.at(-1)!)).toBeCloseTo(120 * DEFAULT_PRESET.numberScale, 5);
+      expect(fontPx(fonts.at(-1)!)).toBeCloseTo(135 * DEFAULT_PRESET.numberScale, 5);
     });
   });
 
@@ -649,9 +649,9 @@ describe("drawDesignToCanvas", () => {
       const [img, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(img).toBe(forDark);
       // bodyFront u .3..0.7, v .5..0.9: 0.30 across -> u 0.42 -> x 420; same height as the crest, y 216.
-      // Smaller than the crest (52px): a maker's mark is 3% of the canvas.
-      expect(w).toBeCloseTo(30, 5);
-      expect(h).toBeCloseTo(30 * (381 / 512), 5);
+      // Smaller than the crest (52px): a maker's mark is 2.1% of the canvas (it was 3%).
+      expect(w).toBeCloseTo(21, 5);
+      expect(h).toBeCloseTo(21 * (381 / 512), 5);
       expect(x + w / 2).toBeCloseTo(420, 5);
       expect(y + h / 2).toBeCloseTo(216, 5);
     });
@@ -770,13 +770,13 @@ describe("drawDesignToCanvas", () => {
         expect(ty).toBeCloseTo(860, 5);
         const [img, x, y, w, h] = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[1];
         expect(img).toBe(forDark);
-        // Smaller than the logo on the chest (30px): 2.2% of the canvas. Centered on the translated point.
+        // 2.2% of the canvas, about as big as the logo on the chest (21px). Centered on the translated point.
         expect(w).toBeCloseTo(22, 5);
         expect(h).toBeCloseTo(22 * (381 / 512), 5);
         // Made shorter on the canvas, because the collar stretches the cloth upwards there.
         expect((ctx.scale as ReturnType<typeof vi.fn>).mock.calls).toEqual([[1, NAPE_BRAND_SQUEEZE_Y]]);
         const chestWidth = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls[0][3];
-        expect(w).toBeLessThan(chestWidth);
+        expect(w).toBeLessThan(chestWidth * 1.1);
         expect(x + w / 2).toBeCloseTo(0, 5);
         expect(y + h / 2).toBeCloseTo(0, 5);
       });
@@ -936,9 +936,9 @@ describe("drawDesignToCanvas", () => {
       const img = square("abdomen");
       drawDesignToCanvas(ctx, 1000, designWith({ abdomen: entry() }), { ...base, sponsorImages: { abdomen: img } }, regions);
       const { x, y, w, h, translate, rotate } = drawn(ctx, img);
-      // bodyFront u .3..0.7 -> center u 0.5 -> x 500; v .5..0.9, vFrac 0.58 -> v 0.732 -> y 268.
+      // bodyFront u .3..0.7 -> center u 0.5 -> x 500; v .5..0.9, vFrac 0.63 -> v 0.752 -> y 248.
       expect(translate[0][0]).toBeCloseTo(500, 5);
-      expect(translate[0][1]).toBeCloseTo(268, 5);
+      expect(translate[0][1]).toBeCloseTo(248, 5);
       expect(rotate.slice(0, -2)).toHaveLength(0); // the last two turns are the example name and number
       expect(w).toBeCloseTo(50, 5); // baseBox 0.05 of 1000
       expect(h).toBeCloseTo(50, 5);
@@ -999,11 +999,11 @@ describe("drawDesignToCanvas", () => {
       drawDesignToCanvas(ctx, 1000, designWith({ "lower-back": entry() }), { ...base, sponsorImages: { "lower-back": low } }, regions);
       // The sponsor, then the example name and number, all turned like the back.
       expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI], [Math.PI], [Math.PI]]);
-      // bodyBack u .3..0.7 -> x 500; vFrac 0.66 -> v 0.1+0.66*0.4=0.364 -> y 636.
+      // bodyBack u .3..0.7 -> x 500; vFrac 0.64 -> v 0.1+0.64*0.4=0.356 -> y 644. A square image fits the 0.12 x 0.05 box by its height.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       expect(t[0][0]).toBeCloseTo(500, 5);
-      expect(t[0][1]).toBeCloseTo(636, 5);
-      expect(drawn(ctx, low).w).toBeCloseTo(45, 5);
+      expect(t[0][1]).toBeCloseTo(644, 5);
+      expect(drawn(ctx, low).w).toBeCloseTo(50, 5);
     });
 
     it("draws the rest of the front placements on GEPE's center column and upper chest", () => {
@@ -1021,15 +1021,15 @@ describe("drawDesignToCanvas", () => {
       );
       // None is turned; the only turns are the example name's and the number's, drawn last.
       expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(2);
-      // bodyFront u .3..0.7, v .5..0.9: belly vFrac .41 -> v .664 -> y 336; waist .24 -> v .596 -> y 404.
-      // chest-right uFrac .27 -> u .408 -> x 408, chest-left .73 -> u .592 -> x 592, both vFrac .8 -> v .82 -> y 180.
+      // bodyFront u .3..0.7, v .5..0.9: belly vFrac .46 -> v .684 -> y 316; waist .29 -> v .616 -> y 384.
+      // chest-right uFrac .27 -> u .408 -> x 408, chest-left .73 -> u .592 -> x 592, both vFrac .85 -> v .84 -> y 160.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       // The four sponsors, and then the number's 0 (translated too, to be turned).
       expect(t.slice(0, 4).map(([x, y]) => [Math.round(x), Math.round(y)])).toEqual([
-        [500, 336],
-        [500, 404],
-        [408, 180],
-        [592, 180],
+        [500, 316],
+        [500, 384],
+        [408, 160],
+        [592, 160],
       ]);
     });
 
@@ -1039,11 +1039,11 @@ describe("drawDesignToCanvas", () => {
       drawDesignToCanvas(ctx, 1000, designWith({ "upper-back": entry() }), { ...base, sponsorImages: { "upper-back": upper } }, regions);
       // The sponsor and then the number's 0, both turned like the back.
       expect((ctx.rotate as ReturnType<typeof vi.fn>).mock.calls).toEqual([[Math.PI], [Math.PI]]);
-      // bodyBack v .1..0.5, vFrac .275 -> v .21 -> y 790.
+      // bodyBack v .1..0.5, vFrac .21 -> v .184 -> y 816. A square image fits the 0.12 x 0.05 box by its height.
       const t = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls;
       expect(t[0][0]).toBeCloseTo(500, 5);
-      expect(t[0][1]).toBeCloseTo(790, 5);
-      expect(drawn(ctx, upper).w).toBeCloseTo(30, 5);
+      expect(t[0][1]).toBeCloseTo(816, 5);
+      expect(drawn(ctx, upper).w).toBeCloseTo(50, 5);
     });
 
     it("does not draw the upper back sponsor while the player has a name, but draws it again without one", () => {
@@ -1163,7 +1163,7 @@ describe("drawDesignToCanvas", () => {
     it("sits where sponsor 1 would be, upright (the back's is turned)", () => {
       const ctx = createMockCtx();
       drawDesignToCanvas(ctx, 1000, withChest({ playerNumber: "10" }), blank, regions);
-      // bodyFront u .3..0.7 -> x 500; v .5..0.9, vFrac .58 -> v .732 -> y 268. Drawn first, before the back.
+      // bodyFront u .3..0.7 -> x 500; v .5..0.9, vFrac .63 -> v .752 -> y 248. Drawn first, before the back.
       const [tx, ty] = (ctx.translate as ReturnType<typeof vi.fn>).mock.calls[0];
       expect(tx).toBeCloseTo(500, 5);
       expect(ty).toBeGreaterThan(200);

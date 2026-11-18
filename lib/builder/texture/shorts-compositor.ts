@@ -1,5 +1,7 @@
 import {
   SHORTS_CREST_BOX_FRACTION,
+  SHORTS_BRAND_BOX_FRACTION,
+  SHORTS_BRAND_STRETCH,
   SHORTS_CREST_STRETCH,
   SHORTS_FRONT_LAYOUT,
   SHORTS_HEM_BAND_TOP_V,
@@ -15,7 +17,7 @@ import { UV_FLIP_Y } from "../geometry/uv-regions";
 import { getNameNumberPreset } from "../catalog/name-number-presets";
 import { availableSponsorSlots, clampSponsorScale, isShortsSlot, type SponsorSlotId } from "../catalog/sponsor-slots";
 import type { DesignState } from "../state/design-state";
-import { BRAND_BOX_FRACTION, drawBrandLogoAt, fitLogoBox, isLightUnder, pointInRegionToCanvas } from "./texture-compositor";
+import { drawBrandLogoAt, fitLogoBox, isLightUnder, pointInRegionToCanvas } from "./texture-compositor";
 import { displayNumber, drawStyledText } from "./number-text";
 
 export type ShortsCompositorImages = {
@@ -176,8 +178,8 @@ function drawFront(
     { forLight: images.brandLogoForLight ?? null, forDark: images.brandLogoForDark ?? null },
     color,
     place(SHORTS_FRONT_LAYOUT.brand),
-    BRAND_BOX_FRACTION,
-    { squeeze: SHORTS_UV_STRETCH }
+    SHORTS_BRAND_BOX_FRACTION,
+    { squeeze: SHORTS_BRAND_STRETCH }
   );
 
   const style = design.nameNumberStyle;
