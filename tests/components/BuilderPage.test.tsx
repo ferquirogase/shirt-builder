@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { clearPatternMarkupCache } from "@/lib/builder/texture/pattern-thumbnail";
 import { initialDesignState } from "@/lib/builder/state/design-state";
 import { createPlayerLine } from "@/lib/checkout/order";
 import { forgetSplash, markSplashSeen } from "@/lib/builder/splash";
+import { loadDraft, saveDraft } from "@/lib/builder/state/design-draft";
+import { SPLASH_FADE_MS, SPLASH_MAX_MS } from "@/lib/builder/splash";
+import { DRAFT_NOTICE_MS } from "@/components/builder/DraftKeeper";
 import {
   clearDesignImages,
   clearKeeperDesignImages,
@@ -150,6 +153,72 @@ describe("BuilderPage", () => {
       const panel = document.getElementById("section-panel")!;
       fireEvent.click(within(panel).getByRole("button", { name: "Hacer pedido" }));
       await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
+    });
+  });
+
+  describe("autosave", () => {
+    const current = () =>
+      screen.getByRole("navigation", { name: "Etapas" }).querySelector('[aria-current="step"]')!.getAttribute("aria-label");
+
+    it("keeps the design, the open step and the steps done across a reload, and says it brought them back", async () => {
+      const first = render(<BuilderPage />);
+      fireEvent.click(screen.getByRole("radio", { name: "Rayas" }));
+      fireEvent.click(screen.getByRole("button", { name: "Arquero" }));
+      fireEvent.click(screen.getByRole("button", { name: "Sumar camiseta de arquero" }));
+      await waitFor(() => expect(loadDraft()?.step).toBe("keeper"));
+      first.unmount();
+
+      render(<BuilderPage />);
+      expect(await screen.findByRole("status")).toHaveTextContent("Recuperamos tu diseño");
+      expect(current()).toBe("Arquero");
+      expect(screen.getByTestId("viewer")).toHaveAttribute("data-editing", "keeper");
+      expect(within(screen.getByRole("button", { name: "Camiseta" })).getByTestId("step-badge")).toHaveAttribute("data-status", "done");
+      expect(loadDraft()?.design.bodyPatternId).toBe("molde-03");
+    });
+
+    it("opens as new, with no notice, when nothing was saved", async () => {
+      render(<BuilderPage />);
+      await waitFor(() => expect(loadDraft()).not.toBeNull()); // it starts saving once it has looked
+      expect(screen.queryByRole("status")).toBeNull();
+      expect(current()).toBe("Camiseta");
+    });
+
+    it("opens the draft rather than an order's design: the draft is the newer one", async () => {
+      saveOrder({
+        design: { ...initialDesignState, playerName: "ORDER" },
+        thumbnails: null,
+        roster: [createPlayerLine("p1")],
+      });
+      saveDraft({ design: { ...initialDesignState, playerName: "DRAFT" }, step: "logos", visited: ["player"] });
+      render(<BuilderPage />);
+      expect(await screen.findByRole("status")).toHaveTextContent("Recuperamos tu diseño");
+      expect(current()).toBe("Escudo y sponsors");
+      await waitFor(() => expect(loadDraft()?.design.playerName).toBe("DRAFT"));
+    });
+
+    it("waits for the splash to go before saying it brought the design back, so it is not missed", () => {
+      vi.useFakeTimers();
+      try {
+        forgetSplash();
+        saveDraft({ design: { ...initialDesignState, bodyPatternId: "molde-03" }, step: "player", visited: [] });
+        render(<BuilderPage />);
+        act(() => vi.advanceTimersByTime(DRAFT_NOTICE_MS + 100));
+        expect(screen.queryByText("Recuperamos tu diseño")).toBeNull();
+        act(() => vi.advanceTimersByTime(SPLASH_MAX_MS)); // the splash starts to fade
+        act(() => vi.advanceTimersByTime(SPLASH_FADE_MS)); // and is gone
+        expect(screen.getByText("Recuperamos tu diseño")).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("forgets the design when it is reset", async () => {
+      saveDraft({ design: { ...initialDesignState, bodyPatternId: "molde-03" }, step: "player", visited: [] });
+      render(<BuilderPage />);
+      await screen.findByRole("status");
+      fireEvent.click(screen.getByRole("button", { name: "Resetear diseño" }));
+      fireEvent.click(screen.getByRole("button", { name: "¿Seguro? Se pierden los cambios" }));
+      await waitFor(() => expect(loadDraft()?.design.bodyPatternId).toBe(initialDesignState.bodyPatternId));
     });
   });
 

@@ -24,6 +24,7 @@ import type { ViewSide } from "@/lib/builder/geometry/camera-math";
 import { useModelReady } from "@/lib/builder/use-model-ready";
 import { useSplash } from "@/lib/builder/use-splash";
 import { Header } from "./Header";
+import { DraftKeeper } from "./DraftKeeper";
 import { RestoreOrderDesign } from "./RestoreOrderDesign";
 import { SplashScreen } from "./SplashScreen";
 import { SectionNav } from "./SectionNav";
@@ -153,6 +154,15 @@ export function BuilderPage() {
   return (
     <DesignProvider>
       <RestoreOrderDesign />
+      <DraftKeeper
+        step={section}
+        visited={visited}
+        holdNotice={splash !== "gone"}
+        onRestore={(step, done) => {
+          setSection(step);
+          setVisited(done);
+        }}
+      />
       <SplashScreen phase={splash} />
       {/* Out of reach (keyboard and screen readers too) until the splash lets go. */}
       <div className="min-h-dvh" inert={splash === "showing"}>
