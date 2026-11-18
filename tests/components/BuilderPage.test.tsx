@@ -74,25 +74,92 @@ describe("BuilderPage", () => {
   it("opens on the player's shirt, with the keeper and the shorts to add, and switches entries", () => {
     render(<BuilderPage />);
     expect(screen.getByRole("heading", { name: "Diseño" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Camiseta jugador" })).toHaveAttribute("aria-current", "true");
-    expect(screen.getByRole("button", { name: "Camiseta arquero" })).toHaveTextContent("Sumar");
-    expect(screen.getByRole("button", { name: "Short" })).toHaveTextContent("Sumar");
+    expect(screen.getByRole("button", { name: "Camiseta" })).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("button", { name: "Arquero" })).toHaveTextContent("Opcional");
+    expect(screen.getByRole("button", { name: "Short" })).toHaveTextContent("Opcional");
 
     fireEvent.click(screen.getByRole("tab", { name: "Colores" }));
     expect(screen.getByRole("heading", { name: "Colores" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Escudo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Escudo y sponsors" }));
     expect(screen.getByRole("heading", { name: "Escudo" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Short" }));
     expect(screen.getByRole("button", { name: "Sumar short" })).toBeInTheDocument();
   });
 
+  describe("steps", () => {
+    // Two of them, one for a phone (in the panel's title row) and one for wider screens (at its bottom).
+    const next = () => fireEvent.click(screen.getAllByRole("button", { name: /^Siguiente/ })[0]);
+    const current = () =>
+      screen.getByRole("navigation", { name: "Etapas" }).querySelector('[aria-current="step"]')!.getAttribute("aria-label");
+
+    it("says which step this is, of how many, at the top of the panel", () => {
+      render(<BuilderPage />);
+      expect(screen.getByText("Paso 1 de 5")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Arquero" }));
+      expect(screen.getByText("Paso 3 de 5")).toBeInTheDocument();
+    });
+
+    it("goes on from the shirt to the shorts with Siguiente, and ticks the shirt as done", () => {
+      render(<BuilderPage />);
+      expect(screen.getAllByRole("button", { name: "Siguiente: Short" })).toHaveLength(2);
+      next();
+      expect(current()).toBe("Short");
+      expect(within(screen.getByRole("button", { name: "Camiseta" })).getByTestId("step-badge")).toHaveAttribute("data-status", "done");
+    });
+
+    it("asks whether to add the shorts: adding them shows their panel, leaving them out goes on to the keeper", () => {
+      render(<BuilderPage />);
+      next();
+      fireEvent.click(screen.getByRole("button", { name: "Seguir sin short" }));
+      expect(current()).toBe("Arquero");
+      expect(screen.getByRole("button", { name: "Short" })).toHaveTextContent("No sumado");
+
+      fireEvent.click(screen.getByRole("button", { name: "Short" }));
+      fireEvent.click(screen.getByRole("button", { name: "Sumar short" }));
+      expect(screen.getByRole("tab", { name: "Diseño" })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: "Siguiente: Arquero" })).toHaveLength(2);
+    });
+
+    it("leaves the keeper out the same way and goes on to crest and sponsors, which have a tab each", () => {
+      render(<BuilderPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Arquero" }));
+      fireEvent.click(screen.getByRole("button", { name: "Seguir sin arquero" }));
+      expect(current()).toBe("Escudo y sponsors");
+      expect(screen.getByRole("heading", { name: "Escudo" })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("tab", { name: "Sponsors" }));
+      expect(screen.getByRole("heading", { name: "Sponsor" })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: "Siguiente: Pedido" })).toHaveLength(2);
+    });
+
+    it("ends on a summary of the kit, with a way back to each step and the order button", async () => {
+      captureDesignImages.mockResolvedValue({ thumbnails: { front: "F", back: "B" }, images: { front: "FF", back: "BB" } });
+      render(<BuilderPage />);
+      fireEvent.click(screen.getByRole("button", { name: "Pedido" }));
+      const summary = screen.getByRole("list", { name: "Tu equipo" });
+      expect(within(summary).getByText("Camiseta")).toBeInTheDocument();
+      expect(within(summary).getByText("Short")).toBeInTheDocument();
+      expect(within(summary).getAllByText("No sumado")).toHaveLength(2); // shorts and keeper
+      expect(within(summary).getByText("Sin escudo")).toBeInTheDocument();
+      expect(within(summary).getByText("Sin sponsors")).toBeInTheDocument();
+      expect(screen.queryAllByRole("button", { name: /^Siguiente/ })).toHaveLength(0);
+
+      fireEvent.click(within(summary).getByRole("button", { name: "Sumar Short" }));
+      expect(current()).toBe("Short");
+
+      fireEvent.click(screen.getByRole("button", { name: "Pedido" }));
+      const panel = document.getElementById("section-panel")!;
+      fireEvent.click(within(panel).getByRole("button", { name: "Hacer pedido" }));
+      await waitFor(() => expect(push).toHaveBeenCalledWith("/checkout", { transitionTypes: ["nav-forward"] }));
+    });
+  });
+
   it("shows the keeper's shirt in the viewer once it is added from its own entry", () => {
     render(<BuilderPage />);
     expect(screen.getByTestId("viewer")).toHaveAttribute("data-editing", "player");
-    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Arquero" }));
     fireEvent.click(screen.getByRole("button", { name: "Sumar camiseta de arquero" }));
     expect(screen.getByTestId("viewer")).toHaveAttribute("data-editing", "keeper");
-    expect(screen.getByRole("button", { name: "Camiseta arquero" })).not.toHaveTextContent("Sumar");
+    expect(screen.getByRole("button", { name: "Arquero" })).toHaveTextContent("Sumado");
   });
 
   it("switches the viewer between Frente and Espalda and back with the reset button", () => {
@@ -142,7 +209,7 @@ describe("BuilderPage", () => {
       expect(handle).toHaveAttribute("aria-expanded", "true");
       expect(handle).toHaveAttribute("aria-controls", "section-panel");
       expect(handle.className).toContain("md:hidden"); // the desktop column is never folded
-      expect(document.getElementById("section-panel")!.className).toContain("max-md:max-h-[28dvh]");
+      expect(document.getElementById("section-panel")!.className).toContain("max-md:max-h-[34dvh]");
     });
 
     it("folds and unfolds the panel with the handle, keeping its content mounted", () => {
@@ -166,14 +233,14 @@ describe("BuilderPage", () => {
       render(<BuilderPage />);
       const panelOpen = () => screen.getByRole("button", { name: /(Plegar|Desplegar) panel/ }).getAttribute("aria-expanded");
 
-      fireEvent.click(screen.getByRole("button", { name: "Camiseta jugador" })); // the active one
+      fireEvent.click(screen.getByRole("button", { name: "Camiseta" })); // the active one
       expect(panelOpen()).toBe("false");
 
-      fireEvent.click(screen.getByRole("button", { name: "Escudo" })); // another one
+      fireEvent.click(screen.getByRole("button", { name: "Escudo y sponsors" })); // another one
       expect(panelOpen()).toBe("true");
       expect(screen.getByRole("heading", { name: "Escudo" })).toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole("button", { name: "Escudo" })); // now the active one
+      fireEvent.click(screen.getByRole("button", { name: "Escudo y sponsors" })); // now the active one
       expect(panelOpen()).toBe("false");
       expect(screen.getByRole("heading", { name: "Escudo" })).toBeInTheDocument();
     });
@@ -201,7 +268,7 @@ describe("BuilderPage", () => {
   it("also photographs the keeper's shirt when the keeper is in the design, then goes back to the player", async () => {
     captureDesignImages.mockResolvedValueOnce(playerShots).mockResolvedValueOnce(keeperShots);
     render(<BuilderPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Arquero" }));
     fireEvent.click(screen.getByRole("button", { name: "Sumar camiseta de arquero" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
@@ -223,7 +290,7 @@ describe("BuilderPage", () => {
       return playerShots;
     });
     render(<BuilderPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Arquero" }));
     fireEvent.click(screen.getByRole("button", { name: "Sumar camiseta de arquero" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));
@@ -249,7 +316,7 @@ describe("BuilderPage", () => {
   it("goes to the checkout without the keeper's photos when taking them fails", async () => {
     captureDesignImages.mockResolvedValueOnce(playerShots).mockRejectedValueOnce(new Error("tainted canvas"));
     render(<BuilderPage />);
-    fireEvent.click(screen.getByRole("button", { name: "Camiseta arquero" }));
+    fireEvent.click(screen.getByRole("button", { name: "Arquero" }));
     fireEvent.click(screen.getByRole("button", { name: "Sumar camiseta de arquero" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Hacer pedido" }));

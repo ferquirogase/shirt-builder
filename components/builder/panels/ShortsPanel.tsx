@@ -16,7 +16,7 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 // The shorts: a design of their own (the owners' moldes) and colors of their own, never the shirt's.
-export function ShortsPanel() {
+export function ShortsPanel({ onSkip }: { onSkip?: () => void } = {}) {
   const { state, dispatch } = useDesign();
   const [tab, setTab] = useState<Tab>("diseno");
   // Which color's palette is open: one at a time, so the panel stays short.
@@ -28,10 +28,12 @@ export function ShortsPanel() {
         <h2 className="sr-only">Short</h2>
         <AddGarmentCard
           icon="/icons/sections/kit-kit.webp"
-          title="Short"
+          title={onSkip ? "¿Sumás el short?" : "Short"}
           description={`Diseño y colores propios. Suma ${formatMoney(PRICE_PER_SHORTS)} por jugador.`}
           addLabel="Sumar short"
           onAdd={() => dispatch({ type: "SET_SHORTS_INCLUDED", value: true })}
+          skipLabel={onSkip ? "Seguir sin short" : undefined}
+          onSkip={onSkip}
         />
       </section>
     );

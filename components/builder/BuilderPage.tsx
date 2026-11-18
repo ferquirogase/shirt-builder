@@ -26,32 +26,43 @@ import { useSplash } from "@/lib/builder/use-splash";
 import { Header } from "./Header";
 import { RestoreOrderDesign } from "./RestoreOrderDesign";
 import { SplashScreen } from "./SplashScreen";
-import { SectionNav, type NavId } from "./SectionNav";
+import { SectionNav } from "./SectionNav";
+import { StepFrame } from "./StepFrame";
 import { Viewer3D } from "./viewer/Viewer3D";
 import { ViewerControls } from "./viewer/ViewerControls";
-import { CrestPanel } from "./panels/CrestPanel";
 import { GarmentPanel } from "./panels/GarmentPanel";
+import { LogosPanel } from "./panels/LogosPanel";
+import { OrderPanel } from "./panels/OrderPanel";
 import { ShortsPanel } from "./panels/ShortsPanel";
-import { SponsorPanel } from "./panels/SponsorPanel";
+import { useGoToStep } from "./use-go-to-step";
+import { nextStep, type StepId } from "@/lib/builder/steps";
 
-function SectionPanel({ section }: { section: NavId }) {
-  switch (section) {
+type ReviewFn = (design: DesignState, showKit: (target: LookTarget) => void) => void;
+
+function StepPanel({ step, onGo, onReview, busy }: { step: StepId; onGo: (id: StepId) => void; onReview: ReviewFn; busy: boolean }) {
+  const goTo = useGoToStep(onGo);
+  // Leaving an optional garment out goes on to the step after it.
+  const skip = () => goTo(nextStep(step)!);
+  switch (step) {
     case "player":
-    case "keeper":
-      return <GarmentPanel garment={section} />;
+      return <GarmentPanel garment="player" />;
     case "shorts":
-      return <ShortsPanel />;
-    case "crest":
-      return <CrestPanel />;
-    case "sponsor":
-      return <SponsorPanel />;
+      return <ShortsPanel onSkip={skip} />;
+    case "keeper":
+      return <GarmentPanel garment="keeper" onSkip={skip} />;
+    case "logos":
+      return <LogosPanel />;
+    case "order":
+      return <OrderPanel onGo={onGo} onReview={onReview} busy={busy} />;
   }
 }
 
 export function BuilderPage() {
   const splash = useSplash(useModelReady());
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [section, setSection] = useState<NavId>("player");
+  const [section, setSection] = useState<StepId>("player");
+  // The steps that were left at least once: the line ticks them as done.
+  const [visited, setVisited] = useState<ReadonlySet<StepId>>(() => new Set());
   const [view, setView] = useState<ViewSide>("front");
   const [viewToken, setViewToken] = useState(0);
   const [resetPose, setResetPose] = useState(false);
@@ -68,14 +79,21 @@ export function BuilderPage() {
     setViewToken((token) => token + 1);
   }
 
-  // Tapping the active tab folds or unfolds the panel; another tab opens it on that section.
-  function handleSectionChange(id: NavId) {
+  // Opening another step leaves this one: it counts as done (or, for a garment not added, left out).
+  function goToStep(id: StepId) {
+    if (id === section) return;
+    setVisited((seen) => new Set(seen).add(section));
+    setSection(id);
+    setPanelOpen(true);
+  }
+
+  // Tapping the current step on the line folds or unfolds the panel; another step opens it there.
+  function handleSectionChange(id: StepId) {
     if (id === section) {
       setPanelOpen((open) => !open);
       return;
     }
-    setSection(id);
-    setPanelOpen(true);
+    goToStep(id);
   }
 
   // The two sides of the shirt for the story image: the camera turns (visibly,
@@ -180,15 +198,17 @@ export function BuilderPage() {
               {/* Folded = invisible and zero-height on mobile only; it stays mounted so nothing typed is lost. */}
               <div
                 id="section-panel"
-                className={["max-md:overflow-y-auto", panelOpen ? "max-md:max-h-[28dvh]" : "max-md:invisible max-md:max-h-0"].join(" ")}
+                className={["max-md:overflow-y-auto", panelOpen ? "max-md:max-h-[34dvh]" : "max-md:invisible max-md:max-h-0"].join(" ")}
               >
-                <SectionPanel section={section} />
+                <StepFrame step={section} visited={visited} onGo={goToStep}>
+                  <StepPanel step={section} onGo={goToStep} onReview={handleReview} busy={reviewing || sharing} />
+                </StepFrame>
               </div>
             </div>
 
             {/* Navigation: tab bar on mobile, sidebar (first) on desktop. */}
             <div className="order-3 md:order-1">
-              <SectionNav active={section} onChange={handleSectionChange} />
+              <SectionNav active={section} visited={visited} onChange={handleSectionChange} />
             </div>
           </div>
         </main>
