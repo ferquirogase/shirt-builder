@@ -105,7 +105,8 @@ export type LookAction = Extract<
 
 export const initialDesignState: DesignState = {
   bodyPatternId: "molde-01",
-  colors: { primary: "#0a5c36", secondary: "#ffffff", accent: "#f5b700", quaternary: "#d0161f", collar: "#ffffff", sleeveTrim: "#ffffff" },
+  // White, black and grays: a blank canvas, so the visitor picks the colors (see ROLE_DEFAULTS too).
+  colors: { primary: "#a6a6a6", secondary: "#ffffff", accent: "#4d4d4d", quaternary: "#000000", collar: "#ffffff", sleeveTrim: "#ffffff" },
   logoDataUrl: null,
   crestConfig: null,
   sponsors: {},

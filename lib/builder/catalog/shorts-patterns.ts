@@ -13,7 +13,8 @@ export type ShortsPatternDef = {
 const LABELS: Record<ShortsRole, string> = { primary: "Color principal", secondary: "Color 2", accent: "Color 3" };
 // The colors the shorts start with: their own from the start, never the shirt's (the owners' ask). The same
 // defaults as the shirt's, so a new kit matches until one of them is changed.
-export const SHORTS_DEFAULT_COLORS: Record<ShortsRole, string> = { primary: "#0a5c36", secondary: "#ffffff", accent: "#f5b700" };
+// Neutrals, like the shirt the visitor first sees.
+export const SHORTS_DEFAULT_COLORS: Record<ShortsRole, string> = { primary: "#4d4d4d", secondary: "#ffffff", accent: "#a6a6a6" };
 
 const colorsFor = (roles: ShortsRole[]) => roles.map((role) => ({ role, label: LABELS[role], default: SHORTS_DEFAULT_COLORS[role] }));
 

@@ -734,7 +734,8 @@ describe("drawDesignToCanvas", () => {
 
     it("falls back to the primary color when pixels can't be read (no getImageData)", () => {
       const dark = createMockCtx();
-      drawDesignToCanvas(dark, 1000, initialDesignState, { ...base, ...brand }, regions); // primary #0a5c36 is dark
+      const green = { ...initialDesignState, colors: { ...initialDesignState.colors, primary: "#0a5c36" } };
+      drawDesignToCanvas(dark, 1000, green, { ...base, ...brand }, regions); // primary #0a5c36 is dark
       expect(drawnImages(dark)).toEqual([forDark, forDark]);
 
       const light = createMockCtx();
@@ -748,7 +749,8 @@ describe("drawDesignToCanvas", () => {
       (ctx as unknown as { getImageData: unknown }).getImageData = vi.fn(() => {
         throw new Error("SecurityError");
       });
-      expect(() => drawDesignToCanvas(ctx, 1000, initialDesignState, { ...base, ...brand }, regions)).not.toThrow();
+      const green = { ...initialDesignState, colors: { ...initialDesignState.colors, primary: "#0a5c36" } };
+      expect(() => drawDesignToCanvas(ctx, 1000, green, { ...base, ...brand }, regions)).not.toThrow();
       expect(drawnImages(ctx)).toEqual([forDark, forDark]);
     });
 

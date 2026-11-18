@@ -91,7 +91,7 @@ describe("designReducer", () => {
     });
 
     it("starts with the defaults of the initial patterns", () => {
-      expect(initialDesignState.colors.primary).toBe("#0a5c36");
+      expect(initialDesignState.colors.primary).toBe("#a6a6a6");
       expect(initialDesignState.colors.secondary).toBe("#ffffff");
     });
 
@@ -124,7 +124,7 @@ describe("colorsAfterPatternChange", () => {
 
   it("keeps roles in use and gives a role not in use the pattern default", () => {
     const colors = colorsAfterPatternChange(state, "molde-12");
-    expect(colors.accent).toBe("#f5b700");
+    expect(colors.accent).toBe("#4d4d4d");
     expect(colors.primary).toBe("#111111");
     expect(colors.secondary).toBe("#222222");
   });
@@ -276,7 +276,7 @@ describe("sponsors", () => {
 
 describe("shorts", () => {
   it("starts as shirt only, plain, with colors of its own", () => {
-    expect(initialDesignState.shorts).toEqual({ included: false, patternId: "shorts-plain", colors: { primary: "#0a5c36", secondary: "#ffffff", accent: "#f5b700" } });
+    expect(initialDesignState.shorts).toEqual({ included: false, patternId: "shorts-plain", colors: { primary: "#4d4d4d", secondary: "#ffffff", accent: "#a6a6a6" } });
   });
 
   it("includes and drops the shorts", () => {
@@ -428,7 +428,7 @@ describe("keeper", () => {
   it("takes the pattern's default colors for new roles, like the team does", () => {
     let state = withKeeper();
     state = designReducer(state, { type: "SET_BODY_PATTERN", id: "molde-19", target: "keeper" });
-    expect(state.keeper.look!.colors.quaternary).toBe("#d0161f");
+    expect(state.keeper.look!.colors.quaternary).toBe("#000000");
   });
 
   it("ignores keeper edits while the keeper is not in the order", () => {
